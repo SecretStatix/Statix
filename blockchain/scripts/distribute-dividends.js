@@ -81,6 +81,32 @@ async function main() {
   await setBatchTx.wait();
   console.log("   Performance set!");
 
+  // 2b. Calculate top 30% outperformers off-chain and submit eligible list
+  console.log("\n2b. Selecting top 30% outperformers...");
+  const outperformers = [];
+  for (let i = 0; i < onChainData.player_indices.length; i++) {
+    const idx = onChainData.player_indices[i];
+    const player = deployments.players.find((p) => p.index === idx);
+    if (!player) continue;
+    const weeklyProj = player.season_projection / 17;
+    const actual = onChainData.actual_points_scaled[i] / 1e6;
+    if (weeklyProj > 0 && actual > weeklyProj) {
+      outperformers.push({ index: idx, outperf: (actual - weeklyProj) / weeklyProj });
+    }
+  }
+
+  // Sort descending by outperformance, take top 30%
+  outperformers.sort((a, b) => b.outperf - a.outperf);
+  const top30Count = Math.max(1, Math.ceil(outperformers.length * 0.3));
+  const eligible = outperformers.slice(0, top30Count);
+
+  console.log(`   ${outperformers.length} outperformers total, top ${top30Count} eligible:`);
+  eligible.forEach((e) => console.log(`     Player #${e.index}: +${(e.outperf * 100).toFixed(1)}%`));
+
+  const eligibleTx = await fantasy.setOutperformerEligible(eligible.map((e) => e.index));
+  await eligibleTx.wait();
+  console.log("   Eligible list submitted on-chain!");
+
   // 3. Check if there are fees to distribute
   const totalFees = await fantasy.totalWeeklyFees();
   console.log(`\n3. Total weekly fees: ${hre.ethers.formatUnits(totalFees, 6)} USDC`);
