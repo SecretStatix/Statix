@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment files (contain private keys & secrets)
+.env
+.env.local
+.env.production
+
+# Build artifacts
+**/artifacts/
+**/cache/
+blockchain/typechain-types/
+frontend/.next/
+frontend/out/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/

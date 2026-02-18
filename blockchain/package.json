@@ -1,0 +1,28 @@
+{
+  "name": "blockchain",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "generate-players": "node scripts/generate-players.js",
+    "deploy:sepolia": "hardhat run scripts/deploy-fantasy.js --network base-sepolia",
+    "deploy:local": "hardhat run scripts/deploy-fantasy.js --network localhost",
+    "mint-usdc:sepolia": "hardhat run scripts/mint-usdc.js --network base-sepolia",
+    "mint-usdc:local": "hardhat run scripts/mint-usdc.js --network localhost",
+    "distribute:sepolia": "hardhat run scripts/distribute-dividends.js --network base-sepolia",
+    "distribute:local": "hardhat run scripts/distribute-dividends.js --network localhost"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "hardhat": "^2.28.6"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^17.3.1"
+  }
+}

@@ -1,0 +1,952 @@
+[
+  {
+    "id": "shai_gilgeous_alexander",
+    "nba_id": 1628983,
+    "name": "Shai Gilgeous-Alexander",
+    "team": "OKC",
+    "position": "F",
+    "symbol": "GILGS",
+    "avg_fantasy_points": 54,
+    "weekly_projection": 189,
+    "season_projection": 4428,
+    "avg_stats": {
+      "PTS": 32.7,
+      "REB": 5,
+      "AST": 6.4,
+      "STL": 1.7,
+      "BLK": 1,
+      "TOV": 2.4
+    }
+  },
+  {
+    "id": "giannis_antetokounmpo",
+    "nba_id": 203507,
+    "name": "Giannis Antetokounmpo",
+    "team": "MIL",
+    "position": "F",
+    "symbol": "ANTEG",
+    "avg_fantasy_points": 57.63,
+    "weekly_projection": 201.71,
+    "season_projection": 4725.66,
+    "avg_stats": {
+      "PTS": 30.4,
+      "REB": 11.9,
+      "AST": 6.5,
+      "STL": 0.9,
+      "BLK": 1.2,
+      "TOV": 3.1
+    }
+  },
+  {
+    "id": "nikola_joki_",
+    "nba_id": 203999,
+    "name": "Nikola Jokić",
+    "team": "DEN",
+    "position": "F",
+    "symbol": "JOKIN",
+    "avg_fantasy_points": 64.04,
+    "weekly_projection": 224.14,
+    "season_projection": 5251.28,
+    "avg_stats": {
+      "PTS": 29.6,
+      "REB": 12.7,
+      "AST": 10.2,
+      "STL": 1.8,
+      "BLK": 0.6,
+      "TOV": 3.3
+    }
+  },
+  {
+    "id": "anthony_edwards",
+    "nba_id": 1630162,
+    "name": "Anthony Edwards",
+    "team": "MIN",
+    "position": "F",
+    "symbol": "EDWAA",
+    "avg_fantasy_points": 43.39,
+    "weekly_projection": 151.86,
+    "season_projection": 3557.98,
+    "avg_stats": {
+      "PTS": 27.6,
+      "REB": 5.7,
+      "AST": 4.5,
+      "STL": 1.2,
+      "BLK": 0.6,
+      "TOV": 3.2
+    }
+  },
+  {
+    "id": "jayson_tatum",
+    "nba_id": 1628369,
+    "name": "Jayson Tatum",
+    "team": "BOS",
+    "position": "F",
+    "symbol": "TATUJ",
+    "avg_fantasy_points": 48.14,
+    "weekly_projection": 168.49,
+    "season_projection": 3947.48,
+    "avg_stats": {
+      "PTS": 26.8,
+      "REB": 8.7,
+      "AST": 6,
+      "STL": 1.1,
+      "BLK": 0.5,
+      "TOV": 2.9
+    }
+  },
+  {
+    "id": "kevin_durant",
+    "nba_id": 201142,
+    "name": "Kevin Durant",
+    "team": "PHX",
+    "position": "F",
+    "symbol": "DURAK",
+    "avg_fantasy_points": 43,
+    "weekly_projection": 150.5,
+    "season_projection": 3526,
+    "avg_stats": {
+      "PTS": 26.6,
+      "REB": 6,
+      "AST": 4.2,
+      "STL": 0.8,
+      "BLK": 1.2,
+      "TOV": 3.1
+    }
+  },
+  {
+    "id": "cade_cunningham",
+    "nba_id": 1630595,
+    "name": "Cade Cunningham",
+    "team": "DET",
+    "position": "F",
+    "symbol": "CUNNC",
+    "avg_fantasy_points": 48.07,
+    "weekly_projection": 168.25,
+    "season_projection": 3941.74,
+    "avg_stats": {
+      "PTS": 26.1,
+      "REB": 6.1,
+      "AST": 9.1,
+      "STL": 1,
+      "BLK": 0.8,
+      "TOV": 4.4
+    }
+  },
+  {
+    "id": "jalen_brunson",
+    "nba_id": 1628973,
+    "name": "Jalen Brunson",
+    "team": "NYK",
+    "position": "F",
+    "symbol": "BRUNJ",
+    "avg_fantasy_points": 40.93,
+    "weekly_projection": 143.25,
+    "season_projection": 3356.26,
+    "avg_stats": {
+      "PTS": 26,
+      "REB": 2.9,
+      "AST": 7.3,
+      "STL": 0.9,
+      "BLK": 0.1,
+      "TOV": 2.5
+    }
+  },
+  {
+    "id": "devin_booker",
+    "nba_id": 1626164,
+    "name": "Devin Booker",
+    "team": "PHX",
+    "position": "F",
+    "symbol": "BOOKD",
+    "avg_fantasy_points": 41.57,
+    "weekly_projection": 145.5,
+    "season_projection": 3408.74,
+    "avg_stats": {
+      "PTS": 25.6,
+      "REB": 4.1,
+      "AST": 7.1,
+      "STL": 0.9,
+      "BLK": 0.2,
+      "TOV": 2.9
+    }
+  },
+  {
+    "id": "damian_lillard",
+    "nba_id": 203081,
+    "name": "Damian Lillard",
+    "team": "MIL",
+    "position": "F",
+    "symbol": "LILLD",
+    "avg_fantasy_points": 42.59,
+    "weekly_projection": 149.06,
+    "season_projection": 3492.38,
+    "avg_stats": {
+      "PTS": 24.9,
+      "REB": 4.7,
+      "AST": 7.1,
+      "STL": 1.2,
+      "BLK": 0.2,
+      "TOV": 2.8
+    }
+  },
+  {
+    "id": "stephen_curry",
+    "nba_id": 201939,
+    "name": "Stephen Curry",
+    "team": "GSW",
+    "position": "F",
+    "symbol": "CURRS",
+    "avg_fantasy_points": 40.38,
+    "weekly_projection": 141.33,
+    "season_projection": 3311.16,
+    "avg_stats": {
+      "PTS": 24.5,
+      "REB": 4.4,
+      "AST": 6,
+      "STL": 1.1,
+      "BLK": 0.4,
+      "TOV": 2.9
+    }
+  },
+  {
+    "id": "karl_anthony_towns",
+    "nba_id": 1626157,
+    "name": "Karl-Anthony Towns",
+    "team": "NYK",
+    "position": "F",
+    "symbol": "TOWNK",
+    "avg_fantasy_points": 46.81,
+    "weekly_projection": 163.83,
+    "season_projection": 3838.42,
+    "avg_stats": {
+      "PTS": 24.4,
+      "REB": 12.8,
+      "AST": 3.1,
+      "STL": 1,
+      "BLK": 0.7,
+      "TOV": 2.7
+    }
+  },
+  {
+    "id": "lebron_james",
+    "nba_id": 2544,
+    "name": "LeBron James",
+    "team": "LAL",
+    "position": "F",
+    "symbol": "JAMEL",
+    "avg_fantasy_points": 47.16,
+    "weekly_projection": 165.06,
+    "season_projection": 3867.12,
+    "avg_stats": {
+      "PTS": 24.4,
+      "REB": 7.8,
+      "AST": 8.2,
+      "STL": 1,
+      "BLK": 0.6,
+      "TOV": 3.7
+    }
+  },
+  {
+    "id": "trae_young",
+    "nba_id": 1629027,
+    "name": "Trae Young",
+    "team": "ATL",
+    "position": "F",
+    "symbol": "YOUNT",
+    "avg_fantasy_points": 44.82,
+    "weekly_projection": 156.87,
+    "season_projection": 3675.24,
+    "avg_stats": {
+      "PTS": 24.2,
+      "REB": 3.1,
+      "AST": 11.6,
+      "STL": 1.2,
+      "BLK": 0.2,
+      "TOV": 4.7
+    }
+  },
+  {
+    "id": "franz_wagner",
+    "nba_id": 1630532,
+    "name": "Franz Wagner",
+    "team": "ORL",
+    "position": "F",
+    "symbol": "WAGNF",
+    "avg_fantasy_points": 40.89,
+    "weekly_projection": 143.12,
+    "season_projection": 3352.98,
+    "avg_stats": {
+      "PTS": 24.2,
+      "REB": 5.7,
+      "AST": 4.7,
+      "STL": 1.3,
+      "BLK": 0.4,
+      "TOV": 2.3
+    }
+  },
+  {
+    "id": "donovan_mitchell",
+    "nba_id": 1628378,
+    "name": "Donovan Mitchell",
+    "team": "CLE",
+    "position": "F",
+    "symbol": "MITCD",
+    "avg_fantasy_points": 39.3,
+    "weekly_projection": 137.55,
+    "season_projection": 3222.6,
+    "avg_stats": {
+      "PTS": 24,
+      "REB": 4.5,
+      "AST": 5,
+      "STL": 1.3,
+      "BLK": 0.2,
+      "TOV": 2.1
+    }
+  },
+  {
+    "id": "tyler_herro",
+    "nba_id": 1629639,
+    "name": "Tyler Herro",
+    "team": "MIA",
+    "position": "F",
+    "symbol": "HERRT",
+    "avg_fantasy_points": 39.09,
+    "weekly_projection": 136.81,
+    "season_projection": 3205.38,
+    "avg_stats": {
+      "PTS": 23.9,
+      "REB": 5.2,
+      "AST": 5.5,
+      "STL": 0.9,
+      "BLK": 0.2,
+      "TOV": 2.6
+    }
+  },
+  {
+    "id": "de_aaron_fox",
+    "nba_id": 1628368,
+    "name": "De'Aaron Fox",
+    "team": "SAS",
+    "position": "F",
+    "symbol": "FOXD",
+    "avg_fantasy_points": 41.61,
+    "weekly_projection": 145.63,
+    "season_projection": 3412.02,
+    "avg_stats": {
+      "PTS": 23.5,
+      "REB": 4.8,
+      "AST": 6.3,
+      "STL": 1.5,
+      "BLK": 0.4,
+      "TOV": 2.8
+    }
+  },
+  {
+    "id": "zach_lavine",
+    "nba_id": 203897,
+    "name": "Zach LaVine",
+    "team": "SAC",
+    "position": "F",
+    "symbol": "LAVIZ",
+    "avg_fantasy_points": 34.96,
+    "weekly_projection": 122.36,
+    "season_projection": 2866.72,
+    "avg_stats": {
+      "PTS": 23.3,
+      "REB": 4.3,
+      "AST": 4.2,
+      "STL": 0.8,
+      "BLK": 0.2,
+      "TOV": 2.8
+    }
+  },
+  {
+    "id": "james_harden",
+    "nba_id": 201935,
+    "name": "James Harden",
+    "team": "LAC",
+    "position": "F",
+    "symbol": "HARDJ",
+    "avg_fantasy_points": 45.11,
+    "weekly_projection": 157.89,
+    "season_projection": 3699.02,
+    "avg_stats": {
+      "PTS": 22.8,
+      "REB": 5.8,
+      "AST": 8.7,
+      "STL": 1.5,
+      "BLK": 0.7,
+      "TOV": 4.3
+    }
+  },
+  {
+    "id": "demar_derozan",
+    "nba_id": 201942,
+    "name": "DeMar DeRozan",
+    "team": "SAC",
+    "position": "F",
+    "symbol": "DEROD",
+    "avg_fantasy_points": 35.68,
+    "weekly_projection": 124.88,
+    "season_projection": 2925.76,
+    "avg_stats": {
+      "PTS": 22.2,
+      "REB": 3.9,
+      "AST": 4.4,
+      "STL": 0.8,
+      "BLK": 0.4,
+      "TOV": 1.4
+    }
+  },
+  {
+    "id": "jaylen_brown",
+    "nba_id": 1627759,
+    "name": "Jaylen Brown",
+    "team": "BOS",
+    "position": "F",
+    "symbol": "BROWJ",
+    "avg_fantasy_points": 37.81,
+    "weekly_projection": 132.33,
+    "season_projection": 3100.42,
+    "avg_stats": {
+      "PTS": 22.2,
+      "REB": 5.8,
+      "AST": 4.5,
+      "STL": 1.2,
+      "BLK": 0.3,
+      "TOV": 2.6
+    }
+  },
+  {
+    "id": "jaren_jackson_jr_",
+    "nba_id": 1628991,
+    "name": "Jaren Jackson Jr.",
+    "team": "MEM",
+    "position": "F",
+    "symbol": "JRJ",
+    "avg_fantasy_points": 37.92,
+    "weekly_projection": 132.72,
+    "season_projection": 3109.44,
+    "avg_stats": {
+      "PTS": 22.2,
+      "REB": 5.6,
+      "AST": 2,
+      "STL": 1.2,
+      "BLK": 1.5,
+      "TOV": 2.1
+    }
+  },
+  {
+    "id": "norman_powell",
+    "nba_id": 1626181,
+    "name": "Norman Powell",
+    "team": "LAC",
+    "position": "F",
+    "symbol": "POWEN",
+    "avg_fantasy_points": 31.19,
+    "weekly_projection": 109.17,
+    "season_projection": 2557.58,
+    "avg_stats": {
+      "PTS": 21.8,
+      "REB": 3.2,
+      "AST": 2.1,
+      "STL": 1.2,
+      "BLK": 0.2,
+      "TOV": 1.8
+    }
+  },
+  {
+    "id": "jalen_williams",
+    "nba_id": 1631114,
+    "name": "Jalen Williams",
+    "team": "OKC",
+    "position": "F",
+    "symbol": "WILLJ",
+    "avg_fantasy_points": 40.31,
+    "weekly_projection": 141.08,
+    "season_projection": 3305.42,
+    "avg_stats": {
+      "PTS": 21.6,
+      "REB": 5.3,
+      "AST": 5.1,
+      "STL": 1.6,
+      "BLK": 0.7,
+      "TOV": 2.2
+    }
+  },
+  {
+    "id": "jamal_murray",
+    "nba_id": 1627750,
+    "name": "Jamal Murray",
+    "team": "DEN",
+    "position": "F",
+    "symbol": "MURRJ",
+    "avg_fantasy_points": 38.68,
+    "weekly_projection": 135.38,
+    "season_projection": 3171.76,
+    "avg_stats": {
+      "PTS": 21.4,
+      "REB": 3.9,
+      "AST": 6,
+      "STL": 1.4,
+      "BLK": 0.5,
+      "TOV": 2.1
+    }
+  },
+  {
+    "id": "rj_barrett",
+    "nba_id": 1629628,
+    "name": "RJ Barrett",
+    "team": "TOR",
+    "position": "F",
+    "symbol": "BARRR",
+    "avg_fantasy_points": 37.16,
+    "weekly_projection": 130.06,
+    "season_projection": 3047.12,
+    "avg_stats": {
+      "PTS": 21.1,
+      "REB": 6.3,
+      "AST": 5.4,
+      "STL": 0.8,
+      "BLK": 0.3,
+      "TOV": 2.9
+    }
+  },
+  {
+    "id": "jalen_green",
+    "nba_id": 1630224,
+    "name": "Jalen Green",
+    "team": "HOU",
+    "position": "F",
+    "symbol": "GREEJ",
+    "avg_fantasy_points": 32.72,
+    "weekly_projection": 114.52,
+    "season_projection": 2683.04,
+    "avg_stats": {
+      "PTS": 21,
+      "REB": 4.6,
+      "AST": 3.4,
+      "STL": 0.9,
+      "BLK": 0.3,
+      "TOV": 2.5
+    }
+  },
+  {
+    "id": "darius_garland",
+    "nba_id": 1629636,
+    "name": "Darius Garland",
+    "team": "CLE",
+    "position": "F",
+    "symbol": "GARLD",
+    "avg_fantasy_points": 35.53,
+    "weekly_projection": 124.36,
+    "season_projection": 2913.46,
+    "avg_stats": {
+      "PTS": 20.6,
+      "REB": 2.9,
+      "AST": 6.7,
+      "STL": 1.2,
+      "BLK": 0.1,
+      "TOV": 2.5
+    }
+  },
+  {
+    "id": "jordan_poole",
+    "nba_id": 1629673,
+    "name": "Jordan Poole",
+    "team": "WAS",
+    "position": "F",
+    "symbol": "POOLJ",
+    "avg_fantasy_points": 32.95,
+    "weekly_projection": 115.33,
+    "season_projection": 2701.9,
+    "avg_stats": {
+      "PTS": 20.5,
+      "REB": 3,
+      "AST": 4.5,
+      "STL": 1.3,
+      "BLK": 0.4,
+      "TOV": 3
+    }
+  },
+  {
+    "id": "coby_white",
+    "nba_id": 1629632,
+    "name": "Coby White",
+    "team": "CHI",
+    "position": "F",
+    "symbol": "WHITC",
+    "avg_fantasy_points": 32.49,
+    "weekly_projection": 113.72,
+    "season_projection": 2664.18,
+    "avg_stats": {
+      "PTS": 20.4,
+      "REB": 3.7,
+      "AST": 4.5,
+      "STL": 0.9,
+      "BLK": 0.2,
+      "TOV": 2.4
+    }
+  },
+  {
+    "id": "miles_bridges",
+    "nba_id": 1628970,
+    "name": "Miles Bridges",
+    "team": "CHA",
+    "position": "F",
+    "symbol": "BRIDM",
+    "avg_fantasy_points": 37.25,
+    "weekly_projection": 130.38,
+    "season_projection": 3054.5,
+    "avg_stats": {
+      "PTS": 20.3,
+      "REB": 7.5,
+      "AST": 3.9,
+      "STL": 0.7,
+      "BLK": 0.7,
+      "TOV": 2.1
+    }
+  },
+  {
+    "id": "pascal_siakam",
+    "nba_id": 1627783,
+    "name": "Pascal Siakam",
+    "team": "IND",
+    "position": "F",
+    "symbol": "SIAKP",
+    "avg_fantasy_points": 36.38,
+    "weekly_projection": 127.33,
+    "season_projection": 2983.16,
+    "avg_stats": {
+      "PTS": 20.2,
+      "REB": 6.9,
+      "AST": 3.4,
+      "STL": 0.9,
+      "BLK": 0.5,
+      "TOV": 1.4
+    }
+  },
+  {
+    "id": "austin_reaves",
+    "nba_id": 1630559,
+    "name": "Austin Reaves",
+    "team": "LAL",
+    "position": "F",
+    "symbol": "REAVA",
+    "avg_fantasy_points": 36.1,
+    "weekly_projection": 126.35,
+    "season_projection": 2960.2,
+    "avg_stats": {
+      "PTS": 20.2,
+      "REB": 4.5,
+      "AST": 5.8,
+      "STL": 1.1,
+      "BLK": 0.3,
+      "TOV": 2.4
+    }
+  },
+  {
+    "id": "scottie_barnes",
+    "nba_id": 1630567,
+    "name": "Scottie Barnes",
+    "team": "TOR",
+    "position": "F",
+    "symbol": "BARNS",
+    "avg_fantasy_points": 41.64,
+    "weekly_projection": 145.74,
+    "season_projection": 3414.48,
+    "avg_stats": {
+      "PTS": 19.3,
+      "REB": 7.7,
+      "AST": 5.8,
+      "STL": 1.4,
+      "BLK": 1,
+      "TOV": 2.8
+    }
+  },
+  {
+    "id": "anfernee_simons",
+    "nba_id": 1629014,
+    "name": "Anfernee Simons",
+    "team": "POR",
+    "position": "F",
+    "symbol": "SIMOA",
+    "avg_fantasy_points": 30.74,
+    "weekly_projection": 107.59,
+    "season_projection": 2520.68,
+    "avg_stats": {
+      "PTS": 19.3,
+      "REB": 2.7,
+      "AST": 4.8,
+      "STL": 0.9,
+      "BLK": 0.1,
+      "TOV": 2
+    }
+  },
+  {
+    "id": "desmond_bane",
+    "nba_id": 1630217,
+    "name": "Desmond Bane",
+    "team": "ORL",
+    "position": "F",
+    "symbol": "BANED",
+    "avg_fantasy_points": 36.87,
+    "weekly_projection": 129.05,
+    "season_projection": 3023.34,
+    "avg_stats": {
+      "PTS": 19.2,
+      "REB": 6.1,
+      "AST": 5.3,
+      "STL": 1.2,
+      "BLK": 0.4,
+      "TOV": 2.4
+    }
+  },
+  {
+    "id": "domantas_sabonis",
+    "nba_id": 1627734,
+    "name": "Domantas Sabonis",
+    "team": "SAC",
+    "position": "F",
+    "symbol": "SABOD",
+    "avg_fantasy_points": 45.18,
+    "weekly_projection": 158.13,
+    "season_projection": 3704.76,
+    "avg_stats": {
+      "PTS": 19.1,
+      "REB": 13.9,
+      "AST": 6,
+      "STL": 0.7,
+      "BLK": 0.4,
+      "TOV": 2.9
+    }
+  },
+  {
+    "id": "alperen_sengun",
+    "nba_id": 1630578,
+    "name": "Alperen Sengun",
+    "team": "HOU",
+    "position": "F",
+    "symbol": "SENGA",
+    "avg_fantasy_points": 41.91,
+    "weekly_projection": 146.69,
+    "season_projection": 3436.62,
+    "avg_stats": {
+      "PTS": 19.1,
+      "REB": 10.3,
+      "AST": 4.9,
+      "STL": 1.1,
+      "BLK": 0.8,
+      "TOV": 2.6
+    }
+  },
+  {
+    "id": "julius_randle",
+    "nba_id": 203944,
+    "name": "Julius Randle",
+    "team": "MIN",
+    "position": "F",
+    "symbol": "RANDJ",
+    "avg_fantasy_points": 34.17,
+    "weekly_projection": 119.59,
+    "season_projection": 2801.94,
+    "avg_stats": {
+      "PTS": 18.7,
+      "REB": 7.1,
+      "AST": 4.7,
+      "STL": 0.7,
+      "BLK": 0.2,
+      "TOV": 2.8
+    }
+  },
+  {
+    "id": "tyrese_haliburton",
+    "nba_id": 1630169,
+    "name": "Tyrese Haliburton",
+    "team": "IND",
+    "position": "F",
+    "symbol": "HALIT",
+    "avg_fantasy_points": 41.3,
+    "weekly_projection": 144.55,
+    "season_projection": 3386.6,
+    "avg_stats": {
+      "PTS": 18.6,
+      "REB": 3.5,
+      "AST": 9.2,
+      "STL": 1.4,
+      "BLK": 0.7,
+      "TOV": 1.6
+    }
+  },
+  {
+    "id": "shaedon_sharpe",
+    "nba_id": 1631101,
+    "name": "Shaedon Sharpe",
+    "team": "POR",
+    "position": "F",
+    "symbol": "SHARS",
+    "avg_fantasy_points": 29.3,
+    "weekly_projection": 102.55,
+    "season_projection": 2402.6,
+    "avg_stats": {
+      "PTS": 18.5,
+      "REB": 4.5,
+      "AST": 2.8,
+      "STL": 0.9,
+      "BLK": 0.2,
+      "TOV": 2.1
+    }
+  },
+  {
+    "id": "evan_mobley",
+    "nba_id": 1630596,
+    "name": "Evan Mobley",
+    "team": "CLE",
+    "position": "F",
+    "symbol": "MOBLE",
+    "avg_fantasy_points": 39.96,
+    "weekly_projection": 139.86,
+    "season_projection": 3276.72,
+    "avg_stats": {
+      "PTS": 18.5,
+      "REB": 9.3,
+      "AST": 3.2,
+      "STL": 0.9,
+      "BLK": 1.6,
+      "TOV": 2
+    }
+  },
+  {
+    "id": "nikola_vu_evi_",
+    "nba_id": 202696,
+    "name": "Nikola Vučević",
+    "team": "CHI",
+    "position": "F",
+    "symbol": "VUEN",
+    "avg_fantasy_points": 38.77,
+    "weekly_projection": 135.69,
+    "season_projection": 3179.14,
+    "avg_stats": {
+      "PTS": 18.5,
+      "REB": 10.1,
+      "AST": 3.5,
+      "STL": 0.8,
+      "BLK": 0.7,
+      "TOV": 1.6
+    }
+  },
+  {
+    "id": "collin_sexton",
+    "nba_id": 1629012,
+    "name": "Collin Sexton",
+    "team": "UTA",
+    "position": "F",
+    "symbol": "SEXTC",
+    "avg_fantasy_points": 27.84,
+    "weekly_projection": 97.44,
+    "season_projection": 2282.88,
+    "avg_stats": {
+      "PTS": 18.4,
+      "REB": 2.7,
+      "AST": 4.2,
+      "STL": 0.7,
+      "BLK": 0.1,
+      "TOV": 2.5
+    }
+  },
+  {
+    "id": "michael_porter_jr_",
+    "nba_id": 1629008,
+    "name": "Michael Porter Jr.",
+    "team": "DEN",
+    "position": "F",
+    "symbol": "JRM",
+    "avg_fantasy_points": 31.65,
+    "weekly_projection": 110.77,
+    "season_projection": 2595.3,
+    "avg_stats": {
+      "PTS": 18.2,
+      "REB": 7,
+      "AST": 2.1,
+      "STL": 0.6,
+      "BLK": 0.5,
+      "TOV": 1.4
+    }
+  },
+  {
+    "id": "bam_adebayo",
+    "nba_id": 1628389,
+    "name": "Bam Adebayo",
+    "team": "MIA",
+    "position": "F",
+    "symbol": "ADEBB",
+    "avg_fantasy_points": 39.97,
+    "weekly_projection": 139.89,
+    "season_projection": 3277.54,
+    "avg_stats": {
+      "PTS": 18.1,
+      "REB": 9.6,
+      "AST": 4.3,
+      "STL": 1.3,
+      "BLK": 0.7,
+      "TOV": 2.1
+    }
+  },
+  {
+    "id": "og_anunoby",
+    "nba_id": 1628384,
+    "name": "OG Anunoby",
+    "team": "NYK",
+    "position": "F",
+    "symbol": "ANUNO",
+    "avg_fantasy_points": 32.86,
+    "weekly_projection": 115.01,
+    "season_projection": 2694.52,
+    "avg_stats": {
+      "PTS": 18,
+      "REB": 4.8,
+      "AST": 2.2,
+      "STL": 1.5,
+      "BLK": 0.9,
+      "TOV": 1.4
+    }
+  },
+  {
+    "id": "andrew_wiggins",
+    "nba_id": 203952,
+    "name": "Andrew Wiggins",
+    "team": "MIA",
+    "position": "F",
+    "symbol": "WIGGA",
+    "avg_fantasy_points": 31,
+    "weekly_projection": 108.5,
+    "season_projection": 2542,
+    "avg_stats": {
+      "PTS": 18,
+      "REB": 4.5,
+      "AST": 2.6,
+      "STL": 1,
+      "BLK": 0.8,
+      "TOV": 1.7
+    }
+  },
+  {
+    "id": "mikal_bridges",
+    "nba_id": 1628969,
+    "name": "Mikal Bridges",
+    "team": "NYK",
+    "position": "F",
+    "symbol": "BRIDM",
+    "avg_fantasy_points": 29.59,
+    "weekly_projection": 103.56,
+    "season_projection": 2426.38,
+    "avg_stats": {
+      "PTS": 17.6,
+      "REB": 3.2,
+      "AST": 3.7,
+      "STL": 0.9,
+      "BLK": 0.5,
+      "TOV": 1.6
+    }
+  }
+]
