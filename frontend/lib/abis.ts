@@ -1433,7 +1433,7 @@ let _chainId = 84532; // Default to Base Sepolia
 
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const d = require("../../deployments.json");
+  const d = require("../deployments.json");
   if (d?.contracts) {
     _contracts = d.contracts;
     _chainId = d.chainId || 84532;
