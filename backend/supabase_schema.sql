@@ -90,3 +90,12 @@ CREATE POLICY "Public read" ON dividend_claims FOR SELECT USING (true);
 CREATE POLICY "Public read" ON weekly_performance FOR SELECT USING (true);
 CREATE POLICY "Public read" ON weekly_dividends FOR SELECT USING (true);
 CREATE POLICY "Public read" ON users FOR SELECT USING (true);
+
+-- Service role write policies (backend uses service_role key to write)
+CREATE POLICY "Service insert" ON transactions FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service insert" ON dividend_claims FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service insert" ON weekly_performance FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service upsert" ON weekly_performance FOR UPDATE USING (true);
+CREATE POLICY "Service insert" ON weekly_dividends FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service upsert" ON weekly_dividends FOR UPDATE USING (true);
+CREATE POLICY "Service insert" ON users FOR INSERT WITH CHECK (true);

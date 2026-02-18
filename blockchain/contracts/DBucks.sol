@@ -98,9 +98,10 @@ contract DBucks is ERC20, Ownable, ReentrancyGuard {
      * In practice: USDC balance > totalSupply means there's excess.
      */
     function withdrawProtocolFees(address to) external onlyOwner {
-        uint256 excess = usdc.balanceOf(address(this)) - totalSupply();
-        if (excess > 0) {
-            usdc.safeTransfer(to, excess);
+        uint256 usdcBal = usdc.balanceOf(address(this));
+        uint256 supply = totalSupply();
+        if (usdcBal > supply) {
+            usdc.safeTransfer(to, usdcBal - supply);
         }
     }
 }

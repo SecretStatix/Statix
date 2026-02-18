@@ -59,6 +59,17 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
     // Holdings: playerIndex => user => shares (scaled 1e6)
     mapping(uint256 => mapping(address => uint256)) public holdings;
 
+    // Snapshot: week-end holdings to prevent dividend gaming
+    // week => playerIdx => user => shares at end of that week
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public weekEndHoldings;
+    // playerIdx => user => last week that was snapshotted
+    mapping(uint256 => mapping(address => uint256)) public lastSnapshotWeek;
+    // week => playerIdx => totalShares at distribution time
+    mapping(uint256 => mapping(uint256 => uint256)) public weekEndTotalShares;
+
+    // Player existence check (avoids zero-collision on playerIdToIndex)
+    mapping(string => bool) public playerIdExists;
+
     // Fees
     uint256 public constant FEE_BPS = 150; // 1.5%
     uint256 public constant DIVIDEND_FEE_BPS = 6700; // 67% of fee to dividends
@@ -130,9 +141,28 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
                 active: true
             });
             playerIdToIndex[_playerIds[i]] = idx;
+            playerIdExists[_playerIds[i]] = true;
             playerCount++;
 
             emit PlayerAdded(idx, _names[i], _symbols[i]);
+        }
+    }
+
+    // ============== SNAPSHOT HELPERS ==============
+
+    /**
+     * @notice Lazily snapshot a user's holdings for all past weeks they missed
+     * @dev Called before any buy/sell to lock in week-end balances
+     */
+    function _snapshotHoldings(uint256 _playerIdx, address _user) internal {
+        uint256 snapped = lastSnapshotWeek[_playerIdx][_user];
+        uint256 upTo = currentWeek - 1;
+        if (snapped < upTo && currentWeek > 1) {
+            uint256 currentHolding = holdings[_playerIdx][_user];
+            for (uint256 w = snapped + 1; w <= upTo; w++) {
+                weekEndHoldings[w][_playerIdx][_user] = currentHolding;
+            }
+            lastSnapshotWeek[_playerIdx][_user] = upTo;
         }
     }
 
@@ -204,6 +234,9 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
             paymentToken.safeTransfer(protocolFeeRecipient, protocolFee);
         }
 
+        // Snapshot holdings before modification
+        _snapshotHoldings(_playerIdx, msg.sender);
+
         // Update AMM
         p.virtualShares -= _sharesOut;
         p.virtualCash += cost;
@@ -238,6 +271,9 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
         if (protocolFee > 0) {
             paymentToken.safeTransfer(protocolFeeRecipient, protocolFee);
         }
+
+        // Snapshot holdings before modification
+        _snapshotHoldings(_playerIdx, msg.sender);
 
         // Update AMM
         Player storage p = players[_playerIdx];
@@ -301,6 +337,9 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
 
         uint256 totalPositive = 0;
         for (uint256 i = 0; i < playerCount; i++) {
+            // Snapshot each player's totalShares at distribution time
+            weekEndTotalShares[currentWeek][i] = players[i].totalShares;
+
             int256 op = weeklyPerformance[currentWeek][i].outperformance;
             if (op > 0) totalPositive += uint256(op);
         }
@@ -333,8 +372,11 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
         uint256 totalAllShares = 0;
 
         for (uint256 i = 0; i < playerCount; i++) {
-            uint256 userShares = holdings[i][_user];
-            uint256 playerTotal = players[i].totalShares;
+            // Use snapshotted week-end holdings (prevents gaming by buying before claim)
+            uint256 userShares = lastSnapshotWeek[i][_user] >= _week
+                ? weekEndHoldings[_week][i][_user]
+                : holdings[i][_user];
+            uint256 playerTotal = weekEndTotalShares[_week][i];
 
             totalUserShares += userShares;
             totalAllShares += playerTotal;

@@ -8,22 +8,26 @@ import json
 from pathlib import Path
 
 _deployment = None
+_deployment_mtime = 0
 _abi_cache = {}
 
 
 def get_deployment():
-    """Load deployment addresses."""
-    global _deployment
-    if _deployment:
-        return _deployment
+    """Load deployment addresses. Reloads if file has changed on disk."""
+    global _deployment, _deployment_mtime
 
     deploy_path = Path(__file__).parent / "deployments.json"
     if not deploy_path.exists():
         print("WARNING: deployments.json not found. Deploy contracts first.")
         return None
 
+    current_mtime = deploy_path.stat().st_mtime
+    if _deployment and current_mtime == _deployment_mtime:
+        return _deployment
+
     with open(deploy_path) as f:
         _deployment = json.load(f)
+    _deployment_mtime = current_mtime
     return _deployment
 
 

@@ -3,7 +3,7 @@ Admin routes - weekly performance updates, dividend triggers.
 Protected by admin key in production.
 """
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 import os
@@ -14,12 +14,15 @@ from db import get_supabase, get_store
 
 router = APIRouter()
 
-ADMIN_KEY = os.getenv("ADMIN_KEY", "dev-admin-key")
+ADMIN_KEY = os.getenv("ADMIN_KEY")
+if not ADMIN_KEY:
+    import warnings
+    warnings.warn("ADMIN_KEY not set! Admin endpoints will reject all requests.", stacklevel=2)
 
 
 def verify_admin(authorization: str = Header(None)):
-    """Simple admin key check."""
-    if authorization != f"Bearer {ADMIN_KEY}":
+    """Admin key check. Rejects all requests if ADMIN_KEY env var is not set."""
+    if not ADMIN_KEY or authorization != f"Bearer {ADMIN_KEY}":
         raise HTTPException(status_code=403, detail="Not authorized")
 
 
@@ -35,12 +38,11 @@ class ManualPerformance(BaseModel):
 
 
 @router.post("/update-weekly-stats")
-async def update_weekly_stats(update: WeeklyUpdate, authorization: str = Header(None)):
+async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
     """
     Pull real NBA stats for the week and calculate fantasy points.
     Returns data ready to be submitted on-chain.
     """
-    verify_admin(authorization)
 
     deployment = get_deployment()
     if not deployment:
@@ -111,12 +113,11 @@ async def update_weekly_stats(update: WeeklyUpdate, authorization: str = Header(
 
 
 @router.post("/set-performance-manual")
-async def set_performance_manual(data: ManualPerformance, authorization: str = Header(None)):
+async def set_performance_manual(data: ManualPerformance, _=Depends(verify_admin)):
     """
     Manually set performance data (for testing or manual override).
     Returns data formatted for on-chain submission.
     """
-    verify_admin(authorization)
 
     on_chain_data = {
         "player_indices": [p["player_index"] for p in data.performances],
@@ -133,9 +134,8 @@ async def set_performance_manual(data: ManualPerformance, authorization: str = H
 
 
 @router.get("/refresh-players")
-async def refresh_players(authorization: str = Header(None)):
+async def refresh_players(_=Depends(verify_admin)):
     """Force refresh player data from NBA API."""
-    verify_admin(authorization)
 
     import os
     cache_path = os.path.join(os.path.dirname(__file__), "..", "player_cache.json")

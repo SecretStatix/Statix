@@ -40,7 +40,14 @@ def calculate_fantasy_points(stats: dict) -> float:
     )
 
 
-def fetch_top_players(season: str = "2024-25", top_n: int = 50) -> List[dict]:
+def _current_nba_season() -> str:
+    """Calculate current NBA season string (e.g., '2025-26') from date."""
+    now = datetime.now()
+    year = now.year if now.month >= 10 else now.year - 1
+    return f"{year}-{str(year + 1)[-2:]}"
+
+
+def fetch_top_players(season: str = None, top_n: int = 50) -> List[dict]:
     """
     Fetch top N NBA players by fantasy points (PTS-based ranking as proxy).
     Returns list of player dicts with id, name, team, position, season averages.
@@ -54,7 +61,10 @@ def fetch_top_players(season: str = "2024-25", top_n: int = 50) -> List[dict]:
                 print(f"Using cached player data ({len(cache['players'])} players)")
                 return cache["players"][:top_n]
 
-    print(f"Fetching top {top_n} players from NBA API...")
+    if season is None:
+        season = _current_nba_season()
+
+    print(f"Fetching top {top_n} players from NBA API (season {season})...")
 
     # Get league leaders by PTS to find top players
     leaders = leagueleaders.LeagueLeaders(
@@ -112,22 +122,26 @@ def fetch_top_players(season: str = "2024-25", top_n: int = 50) -> List[dict]:
     return players_list
 
 
+_position_cache: Dict[int, str] = {}
+
+
 def _get_position(player_id: int) -> str:
-    """Get player position from static data."""
-    all_players = nba_players.get_players()
-    for p in all_players:
-        if p["id"] == player_id:
-            return p.get("position", "F")
-    return "F"
+    """Get player position from static data (cached lookup)."""
+    if not _position_cache:
+        for p in nba_players.get_players():
+            _position_cache[p["id"]] = p.get("position", "F")
+    return _position_cache.get(player_id, "F")
 
 
 def fetch_player_game_log(
-    player_id: int, season: str = "2024-25", last_n_games: int = 0
+    player_id: int, season: str = None, last_n_games: int = 0
 ) -> List[dict]:
     """
     Fetch a player's game log for the season.
     Returns list of game dicts with date, opponent, stats, fantasy points.
     """
+    if season is None:
+        season = _current_nba_season()
     log = playergamelog.PlayerGameLog(
         player_id=player_id,
         season=season,
@@ -167,7 +181,7 @@ def get_weekly_actuals(
     player_id: int,
     week_start: str,
     week_end: str,
-    season: str = "2024-25",
+    season: str = None,
 ) -> dict:
     """
     Get a player's actual fantasy points for a specific week.
