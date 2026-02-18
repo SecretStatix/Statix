@@ -73,6 +73,7 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
     mapping(uint256 => mapping(uint256 => WeeklyPerformance)) public weeklyPerformance; // week => playerIdx => perf
     mapping(uint256 => WeeklyDividend) public weeklyDividends; // week => dividend info
     mapping(uint256 => mapping(address => bool)) public hasClaimed; // week => user => claimed
+    mapping(uint256 => mapping(uint256 => bool)) public outperformerEligible; // week => playerIdx => eligible for 80% pool
 
     // ============== EVENTS ==============
 
@@ -288,6 +289,16 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice Set which players are eligible for the outperformer pool (top 30%, sorted off-chain)
+     * @param _playerIdxs Array of eligible player indices (only these get the 80% pool)
+     */
+    function setOutperformerEligible(uint256[] calldata _playerIdxs) external onlyOwner {
+        for (uint256 i = 0; i < _playerIdxs.length; i++) {
+            outperformerEligible[currentWeek][_playerIdxs[i]] = true;
+        }
+    }
+
+    /**
      * @notice Distribute dividends for current week
      */
     function distributeDividends() external onlyOwner {
@@ -302,7 +313,7 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
         uint256 totalPositive = 0;
         for (uint256 i = 0; i < playerCount; i++) {
             int256 op = weeklyPerformance[currentWeek][i].outperformance;
-            if (op > 0) totalPositive += uint256(op);
+            if (op > 0 && outperformerEligible[currentWeek][i]) totalPositive += uint256(op);
         }
         wd.totalPositiveOutperf = totalPositive;
         wd.distributed = true;
@@ -340,7 +351,7 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
             totalAllShares += playerTotal;
 
             int256 op = weeklyPerformance[_week][i].outperformance;
-            if (op > 0 && wd.totalPositiveOutperf > 0 && playerTotal > 0) {
+            if (op > 0 && outperformerEligible[_week][i] && wd.totalPositiveOutperf > 0 && playerTotal > 0) {
                 uint256 playerPool = (wd.outperformerPool * uint256(op)) / wd.totalPositiveOutperf;
                 outperformerDividend += (playerPool * userShares) / playerTotal;
             }
