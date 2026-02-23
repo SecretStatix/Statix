@@ -32,27 +32,20 @@ def get_deployment():
 
 
 def get_abi(contract_name: str) -> list:
-    """Load contract ABI from Hardhat artifacts."""
+    """Load contract ABI from bundled abis/ directory."""
     if contract_name in _abi_cache:
         return _abi_cache[contract_name]
 
-    artifact_path = (
-        Path(__file__).parent.parent
-        / "blockchain"
-        / "artifacts"
-        / "contracts"
-        / f"{contract_name}.sol"
-        / f"{contract_name}.json"
-    )
+    abi_path = Path(__file__).parent / "abis" / f"{contract_name}.json"
 
-    if not artifact_path.exists():
-        raise FileNotFoundError(f"ABI not found: {artifact_path}")
+    if not abi_path.exists():
+        raise FileNotFoundError(f"ABI not found: {abi_path}")
 
-    with open(artifact_path) as f:
-        artifact = json.load(f)
+    with open(abi_path) as f:
+        abi = json.load(f)
 
-    _abi_cache[contract_name] = artifact["abi"]
-    return artifact["abi"]
+    _abi_cache[contract_name] = abi
+    return abi
 
 
 def get_contract_info():

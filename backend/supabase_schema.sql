@@ -83,6 +83,8 @@ $$ LANGUAGE plpgsql;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE dividend_claims ENABLE ROW LEVEL SECURITY;
+ALTER TABLE weekly_performance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE weekly_dividends ENABLE ROW LEVEL SECURITY;
 
 -- Public read policies (anyone can see leaderboard/transactions)
 CREATE POLICY "Public read" ON transactions FOR SELECT USING (true);
