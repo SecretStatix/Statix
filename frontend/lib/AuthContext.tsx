@@ -28,12 +28,9 @@ export function useAuth() {
 const PUBLIC_PATHS = ['/login', '/signup'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // TODO: Re-enable auth after testing. Set to false to require login.
-  const BYPASS_AUTH = true;
-
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(BYPASS_AUTH ? false : true);
-  const [isApproved, setIsApproved] = useState(BYPASS_AUTH ? true : false);
+  const [loading, setLoading] = useState(true);
+  const [isApproved, setIsApproved] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -48,8 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    if (BYPASS_AUTH) return; // Skip auth check
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
@@ -75,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (BYPASS_AUTH || loading) return; // Skip redirect check
+    if (loading) return;
 
     const isPublicPath = PUBLIC_PATHS.includes(pathname);
     const isPendingPath = pathname === '/pending';
