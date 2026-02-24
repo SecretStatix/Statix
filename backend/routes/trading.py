@@ -7,14 +7,13 @@ NOTE: Backend quotes are approximations based on pool state read from chain.
 The on-chain getBuyQuote/getSellQuote are the authoritative source of truth.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 import os
 
 from chain import get_deployment, get_contract_info, get_abi
 from db import get_supabase, get_store
-from routes.admin import verify_admin
 
 router = APIRouter()
 
@@ -164,10 +163,10 @@ async def get_quote(req: QuoteRequest):
 
 
 @router.post("/log-transaction")
-async def log_transaction(tx: TransactionLog, _=Depends(verify_admin)):
+async def log_transaction(tx: TransactionLog):
     """
     Log a completed on-chain transaction to Supabase.
-    Requires admin auth to prevent fake transaction logs.
+    Public endpoint — blockchain is the source of truth; Supabase is for analytics/leaderboard.
     """
 
     supabase = get_supabase()

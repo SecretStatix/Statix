@@ -16,7 +16,11 @@ const fs = require("fs");
 const path = require("path");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
-const ADMIN_KEY = process.env.ADMIN_KEY || "dev-admin-key";
+const ADMIN_KEY = process.env.ADMIN_KEY;
+if (!ADMIN_KEY) {
+  console.error("ADMIN_KEY env var is required");
+  process.exit(1);
+}
 
 async function main() {
   const deployments = JSON.parse(
@@ -72,65 +76,89 @@ async function main() {
     console.log(`   Using mock data for ${onChainData.player_indices.length} players`);
   }
 
-  // 2. Submit performance on-chain
-  console.log("\n2. Submitting performance data on-chain...");
-  const setBatchTx = await fantasy.setWeeklyPerformanceBatch(
-    onChainData.player_indices,
-    onChainData.actual_points_scaled.map((v) => BigInt(v))
-  );
-  await setBatchTx.wait();
-  console.log("   Performance set!");
+  // 1b. Pause trading during distribution
+  console.log("\n1b. Pausing trading...");
+  const pauseTx = await fantasy.setTradingPaused(true);
+  await pauseTx.wait();
+  console.log("   Trading paused.");
 
-  // 2b. Calculate top 30% outperformers off-chain and submit eligible list
-  console.log("\n2b. Selecting top 30% outperformers...");
-  const outperformers = [];
-  for (let i = 0; i < onChainData.player_indices.length; i++) {
-    const idx = onChainData.player_indices[i];
-    const player = deployments.players.find((p) => p.index === idx);
-    if (!player) continue;
-    const weeklyProj = player.season_projection / 17;
-    const actual = onChainData.actual_points_scaled[i] / 1e6;
-    if (weeklyProj > 0 && actual > weeklyProj) {
-      outperformers.push({ index: idx, outperf: (actual - weeklyProj) / weeklyProj });
+  try {
+    // 2. Submit performance on-chain
+    console.log("\n2. Submitting performance data on-chain...");
+    const setBatchTx = await fantasy.setWeeklyPerformanceBatch(
+      onChainData.player_indices,
+      onChainData.actual_points_scaled.map((v) => BigInt(v))
+    );
+    await setBatchTx.wait();
+    console.log("   Performance set!");
+
+    // 2b. Calculate top 30% outperformers off-chain and submit eligible list
+    console.log("\n2b. Selecting top 30% outperformers...");
+    const outperformers = [];
+    for (let i = 0; i < onChainData.player_indices.length; i++) {
+      const idx = onChainData.player_indices[i];
+      const player = deployments.players.find((p) => p.index === idx);
+      if (!player) continue;
+      const weeklyProj = player.season_projection / 17;
+      const actual = onChainData.actual_points_scaled[i] / 1e6;
+      if (weeklyProj > 0 && actual > weeklyProj) {
+        outperformers.push({ index: idx, outperf: (actual - weeklyProj) / weeklyProj });
+      }
     }
+
+    // Sort descending by outperformance, take top 30%
+    outperformers.sort((a, b) => b.outperf - a.outperf);
+    const top30Count = Math.max(1, Math.ceil(outperformers.length * 0.3));
+    const eligible = outperformers.slice(0, top30Count);
+
+    console.log(`   ${outperformers.length} outperformers total, top ${top30Count} eligible:`);
+    eligible.forEach((e) => console.log(`     Player #${e.index}: +${(e.outperf * 100).toFixed(1)}%`));
+
+    const eligibleTx = await fantasy.setOutperformerEligible(eligible.map((e) => e.index));
+    await eligibleTx.wait();
+    console.log("   Eligible list submitted on-chain!");
+
+    // 3. Check if there are fees to distribute
+    const totalFees = await fantasy.totalWeeklyFees();
+    console.log(`\n3. Total weekly fees: ${hre.ethers.formatUnits(totalFees, 6)} USDC`);
+
+    if (totalFees === 0n) {
+      console.log("   No fees to distribute. Users need to trade first!");
+      console.log("   Skipping distribution and week advance. Unpausing trading.");
+      const unpauseTx = await fantasy.setTradingPaused(false);
+      await unpauseTx.wait();
+      console.log("   Trading unpaused.");
+      return;
+    }
+
+    // 4. Distribute dividends
+    console.log("\n4. Distributing dividends...");
+    const distTx = await fantasy.distributeDividends();
+    await distTx.wait();
+    console.log("   Dividends distributed!");
+
+    // 5. Advance week (auto-unpauses trading)
+    console.log("\n5. Advancing to next week...");
+    const advanceTx = await fantasy.advanceWeek();
+    await advanceTx.wait();
+    const newWeek = await fantasy.currentWeek();
+    console.log(`   Now on week ${newWeek}`);
+
+    console.log("\nDone! Users can now claim their dividends for week " + currentWeek);
+  } catch (error) {
+    // Unpause trading on any failure so users aren't stuck
+    console.error("\nError during distribution:", error.message);
+    console.log("Attempting to unpause trading...");
+    try {
+      const unpauseTx = await fantasy.setTradingPaused(false);
+      await unpauseTx.wait();
+      console.log("Trading unpaused after error.");
+    } catch (e) {
+      console.error("CRITICAL: Failed to unpause trading! Manual intervention needed.");
+      console.error("Run: npx hardhat run --network baseSepolia -e 'const f = await ethers.getContractAt(\"DividendFantasy\", \"" + fantasyAddress + "\"); await (await f.setTradingPaused(false)).wait()'");
+    }
+    throw error;
   }
-
-  // Sort descending by outperformance, take top 30%
-  outperformers.sort((a, b) => b.outperf - a.outperf);
-  const top30Count = Math.max(1, Math.ceil(outperformers.length * 0.3));
-  const eligible = outperformers.slice(0, top30Count);
-
-  console.log(`   ${outperformers.length} outperformers total, top ${top30Count} eligible:`);
-  eligible.forEach((e) => console.log(`     Player #${e.index}: +${(e.outperf * 100).toFixed(1)}%`));
-
-  const eligibleTx = await fantasy.setOutperformerEligible(eligible.map((e) => e.index));
-  await eligibleTx.wait();
-  console.log("   Eligible list submitted on-chain!");
-
-  // 3. Check if there are fees to distribute
-  const totalFees = await fantasy.totalWeeklyFees();
-  console.log(`\n3. Total weekly fees: ${hre.ethers.formatUnits(totalFees, 6)} USDC`);
-
-  if (totalFees === 0n) {
-    console.log("   No fees to distribute. Users need to trade first!");
-    console.log("   Skipping distribution and week advance.");
-    return;
-  }
-
-  // 4. Distribute dividends
-  console.log("\n4. Distributing dividends...");
-  const distTx = await fantasy.distributeDividends();
-  await distTx.wait();
-  console.log("   Dividends distributed!");
-
-  // 5. Advance week
-  console.log("\n5. Advancing to next week...");
-  const advanceTx = await fantasy.advanceWeek();
-  await advanceTx.wait();
-  const newWeek = await fantasy.currentWeek();
-  console.log(`   Now on week ${newWeek}`);
-
-  console.log("\nDone! Users can now claim their dividends for week " + currentWeek);
 }
 
 main().catch((error) => {

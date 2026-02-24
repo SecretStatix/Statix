@@ -1,11 +1,11 @@
 {
-  "network": "baseSepolia",
+  "network": "base-sepolia",
   "chainId": 84532,
   "deployer": "0x6a4df962E91E27BC8DC7739617f10962b042ceB7",
   "contracts": {
-    "MockUSDC": "0x2e55291a26D395203E4870e11C1B036FE0441c2b",
-    "DBucks": "0xa0673ea4dbB8549D065c4CcAC66512A94Ad85758",
-    "DividendFantasy": "0x60B8FD60960C1fB27C7E18b0EE0BC8A54bCc923A"
+    "MockUSDC": "0xCf2E60A1467bcdEf807D6ae85675a2E36f6614CE",
+    "DBucks": "0x1E6e8307C4451D2694f19db5363503C756C0b7B5",
+    "DividendFantasy": "0x8b95B59923032a0EF82AFe3d78B832f4a4513eE1"
   },
   "faucetMode": true,
   "faucetLimit": "100000",
@@ -511,5 +511,5 @@
       "season_projection": 2426.38
     }
   ],
-  "deployedAt": "2026-02-23T22:42:21.280Z"
+  "deployedAt": "2026-02-24T02:29:17.704Z"
 }

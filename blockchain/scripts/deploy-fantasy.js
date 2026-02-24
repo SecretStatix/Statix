@@ -11,6 +11,16 @@ const INITIAL_CASH = 10000n * 10n ** 6n;  // $10,000 (so price = $10/share)
 // Faucet: 100,000 D-Bucks per address on testnet
 const FAUCET_LIMIT = 100000n * 10n ** 6n;
 
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function getGasOverrides(deployer) {
+  const feeData = await deployer.provider.getFeeData();
+  return {
+    maxFeePerGas: feeData.maxFeePerGas * 2n,
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas * 2n,
+  };
+}
+
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
@@ -22,30 +32,37 @@ async function main() {
   // 1. Deploy MockUSDC (underlying asset — on mainnet this would be real USDC)
   console.log("1. Deploying MockUSDC (underlying)...");
   const MockUSDC = await hre.ethers.getContractFactory("MockUSDC");
-  const usdc = await MockUSDC.deploy();
+  let gas = await getGasOverrides(deployer);
+  const usdc = await MockUSDC.deploy(gas);
   await usdc.waitForDeployment();
   const usdcAddress = await usdc.getAddress();
   console.log("   MockUSDC:", usdcAddress);
+  await delay(5000);
 
   // 2. Deploy DBucks (casino-chip wrapper)
   console.log("2. Deploying DBucks...");
+  gas = await getGasOverrides(deployer);
   const DBucks = await hre.ethers.getContractFactory("DBucks");
   const dbucks = await DBucks.deploy(
     usdcAddress,
     true,        // faucet mode ON for testnet
-    FAUCET_LIMIT
+    FAUCET_LIMIT,
+    gas
   );
   await dbucks.waitForDeployment();
   const dbucksAddress = await dbucks.getAddress();
   console.log("   DBucks:", dbucksAddress);
+  await delay(5000);
 
   // 3. Deploy DividendFantasy (uses DBucks as payment token)
   console.log("3. Deploying DividendFantasy...");
+  gas = await getGasOverrides(deployer);
   const DividendFantasy = await hre.ethers.getContractFactory("DividendFantasy");
-  const fantasy = await DividendFantasy.deploy(dbucksAddress, deployerAddress);
+  const fantasy = await DividendFantasy.deploy(dbucksAddress, deployerAddress, gas);
   await fantasy.waitForDeployment();
   const fantasyAddress = await fantasy.getAddress();
   console.log("   DividendFantasy:", fantasyAddress);
+  await delay(5000);
 
   // 4. Add players in batches of 10
   console.log(`\n4. Adding ${PLAYERS.length} players in batches...\n`);
@@ -63,22 +80,36 @@ async function main() {
 
     process.stdout.write(`   Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.map((p) => p.symbol).join(", ")}...`);
 
+    gas = await getGasOverrides(deployer);
     const tx = await fantasy.addPlayers(
       names, symbols, playerIds, projections,
-      INITIAL_SHARES, INITIAL_CASH
+      INITIAL_SHARES, INITIAL_CASH,
+      gas
     );
     await tx.wait();
     console.log(" done");
+    await delay(3000);
   }
 
   // 5. Seed D-Bucks into the DividendFantasy contract for dividend payouts
   // Mint MockUSDC to deployer, deposit into DBucks, transfer to contract
   console.log("\n5. Seeding D-Bucks for dividend pool...");
   const seedAmount = 1000000n * 10n ** 6n; // 1M
-  await (await usdc.mint(deployerAddress, seedAmount)).wait();
-  await (await usdc.approve(dbucksAddress, seedAmount)).wait();
-  await (await dbucks.deposit(seedAmount)).wait();
-  await (await dbucks.transfer(fantasyAddress, seedAmount)).wait();
+
+  gas = await getGasOverrides(deployer);
+  await (await usdc.mint(deployerAddress, seedAmount, gas)).wait();
+  await delay(3000);
+
+  gas = await getGasOverrides(deployer);
+  await (await usdc.approve(dbucksAddress, seedAmount, gas)).wait();
+  await delay(3000);
+
+  gas = await getGasOverrides(deployer);
+  await (await dbucks.deposit(seedAmount, gas)).wait();
+  await delay(3000);
+
+  gas = await getGasOverrides(deployer);
+  await (await dbucks.transfer(fantasyAddress, seedAmount, gas)).wait();
   console.log("   Seeded 1,000,000 D-Bucks to contract");
 
   // 6. Save deployment info
@@ -110,6 +141,7 @@ async function main() {
     path.join(__dirname, "..", "deployments.json"),
     path.join(__dirname, "..", "..", "backend", "deployments.json"),
     path.join(__dirname, "..", "..", "frontend", "deployments.json"),
+    path.join(__dirname, "..", "..", "frontend", "public", "deployments.json"),
   ];
 
   for (const p of paths) {

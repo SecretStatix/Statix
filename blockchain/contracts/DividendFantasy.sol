@@ -79,6 +79,13 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
     uint256 public totalWeeklyFees;
     address public protocolFeeRecipient;
 
+    // Trading pause (used during dividend distribution window)
+    bool public tradingPaused;
+
+    // Emergency controls
+    bool public killed;  // Permanent shutdown — disables everything except emergency exit
+    mapping(address => bool) public blacklisted; // Banned addresses
+
     // Dividends
     uint256 public currentWeek;
     mapping(uint256 => mapping(uint256 => WeeklyPerformance)) public weeklyPerformance; // week => playerIdx => perf
@@ -94,6 +101,13 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
     event DividendsDistributed(uint256 indexed week, uint256 totalPool, uint256 basePool, uint256 outperformerPool);
     event DividendClaimed(uint256 indexed week, address indexed user, uint256 amount);
     event WeekAdvanced(uint256 newWeek);
+    event TradingPaused(bool paused);
+    event EmergencyShutdown(uint256 timestamp);
+    event EmergencyDrain(address indexed to, uint256 amount);
+    event EmergencyExit(address indexed user, uint256 totalRefund);
+    event AddressBlacklisted(address indexed user, bool banned);
+    event ForceLiquidation(address indexed user, uint256 indexed playerIndex, uint256 shares, uint256 refund);
+    event PlayerPoolReset(uint256 indexed playerIndex, uint256 newShares, uint256 newCash);
 
     // ============== CONSTRUCTOR ==============
 
@@ -214,6 +228,9 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
      * @param _maxCost Max willing to pay (slippage protection)
      */
     function buy(uint256 _playerIdx, uint256 _sharesOut, uint256 _maxCost) external nonReentrant {
+        require(!killed, "Contract shut down");
+        require(!tradingPaused, "Trading paused");
+        require(!blacklisted[msg.sender], "Address banned");
         require(_playerIdx < playerCount, "Invalid player");
         Player storage p = players[_playerIdx];
         require(p.active, "Player not active");
@@ -256,6 +273,9 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
      * @param _minRevenue Min to receive (slippage protection)
      */
     function sell(uint256 _playerIdx, uint256 _sharesIn, uint256 _minRevenue) external nonReentrant {
+        require(!killed, "Contract shut down");
+        require(!tradingPaused, "Trading paused");
+        // Note: blacklisted users CAN sell (so they're not trapped), just can't buy
         require(_playerIdx < playerCount, "Invalid player");
         require(holdings[_playerIdx][msg.sender] >= _sharesIn, "Insufficient shares");
 
@@ -367,7 +387,16 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
         require(weeklyDividends[currentWeek].distributed, "Distribute first");
         currentWeek++;
         totalWeeklyFees = 0;
+        tradingPaused = false; // Auto-unpause after distribution cycle
         emit WeekAdvanced(currentWeek);
+    }
+
+    /**
+     * @notice Pause/unpause trading (use during dividend distribution window)
+     */
+    function setTradingPaused(bool _paused) external onlyOwner {
+        tradingPaused = _paused;
+        emit TradingPaused(_paused);
     }
 
     /**
@@ -410,11 +439,18 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
      * @notice Claim dividend for a week
      */
     function claimDividend(uint256 _week) external nonReentrant {
+        require(!killed, "Contract shut down - use emergencyExit");
         require(weeklyDividends[_week].distributed, "Not distributed");
         require(!hasClaimed[_week][msg.sender], "Already claimed");
 
         uint256 dividend = calculateDividend(_week, msg.sender);
         require(dividend > 0, "No dividend");
+
+        // Cap to contract balance to prevent insolvency
+        uint256 balance = paymentToken.balanceOf(address(this));
+        if (dividend > balance) {
+            dividend = balance;
+        }
 
         hasClaimed[_week][msg.sender] = true;
         paymentToken.safeTransfer(msg.sender, dividend);
@@ -426,6 +462,7 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
      * @notice Claim dividends for multiple weeks
      */
     function claimMultipleWeeks(uint256[] calldata _weeks) external nonReentrant {
+        require(!killed, "Contract shut down - use emergencyExit");
         uint256 total = 0;
         for (uint256 i = 0; i < _weeks.length; i++) {
             uint256 w = _weeks[i];
@@ -438,7 +475,164 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
             }
         }
         require(total > 0, "No dividends");
+
+        // Cap to contract balance to prevent insolvency
+        uint256 balance = paymentToken.balanceOf(address(this));
+        if (total > balance) {
+            total = balance;
+        }
+
         paymentToken.safeTransfer(msg.sender, total);
+    }
+
+    // ============== EMERGENCY CONTROLS ==============
+
+    /**
+     * @notice PERMANENT kill switch — disables all trading and claims
+     * @dev Cannot be undone. Users can still call emergencyExit() to withdraw.
+     */
+    function emergencyShutdown() external onlyOwner {
+        killed = true;
+        tradingPaused = true;
+        emit EmergencyShutdown(block.timestamp);
+    }
+
+    /**
+     * @notice Fair exit: user sells ALL their shares at current market price
+     * @dev Only available after emergency shutdown. Sells each holding through AMM.
+     */
+    function emergencyExit() external nonReentrant {
+        require(killed, "Not in emergency mode");
+
+        uint256 totalRefund = 0;
+
+        for (uint256 i = 0; i < playerCount; i++) {
+            uint256 userShares = holdings[i][msg.sender];
+            if (userShares == 0) continue;
+
+            // Calculate fair market value via AMM
+            Player storage p = players[i];
+            uint256 newShares = p.virtualShares + userShares;
+            uint256 revenue = (p.virtualCash * userShares) / newShares;
+
+            // Update AMM state
+            p.virtualShares = newShares;
+            p.virtualCash -= revenue;
+            p.totalShares -= userShares;
+
+            // Clear holdings
+            holdings[i][msg.sender] = 0;
+
+            totalRefund += revenue;
+        }
+
+        require(totalRefund > 0, "Nothing to withdraw");
+
+        // Cap to actual balance
+        uint256 bal = paymentToken.balanceOf(address(this));
+        if (totalRefund > bal) {
+            totalRefund = bal;
+        }
+
+        paymentToken.safeTransfer(msg.sender, totalRefund);
+        emit EmergencyExit(msg.sender, totalRefund);
+    }
+
+    /**
+     * @notice Owner drains all D-Bucks from the contract
+     * @dev Nuclear option — use when contract needs to be fully abandoned
+     */
+    function emergencyDrain(address _to) external onlyOwner {
+        require(_to != address(0), "Invalid address");
+        uint256 bal = paymentToken.balanceOf(address(this));
+        require(bal > 0, "Nothing to drain");
+        paymentToken.safeTransfer(_to, bal);
+        emit EmergencyDrain(_to, bal);
+    }
+
+    /**
+     * @notice Ban/unban an address from trading
+     * @dev Banned users can still sell (so they're not trapped) but can't buy
+     */
+    function setBlacklist(address _user, bool _banned) external onlyOwner {
+        blacklisted[_user] = _banned;
+        emit AddressBlacklisted(_user, _banned);
+    }
+
+    /**
+     * @notice Force liquidate a user's position for a specific player
+     * @dev Sells their shares at current AMM price and refunds them
+     */
+    function forceLiquidate(address _user, uint256 _playerIdx) external onlyOwner {
+        require(_playerIdx < playerCount, "Invalid player");
+        uint256 userShares = holdings[_playerIdx][_user];
+        require(userShares > 0, "No holdings");
+
+        // Snapshot before modification
+        _snapshotHoldings(_playerIdx, _user);
+
+        // Calculate fair value via AMM
+        Player storage p = players[_playerIdx];
+        uint256 newShares = p.virtualShares + userShares;
+        uint256 revenue = (p.virtualCash * userShares) / newShares;
+
+        // Update AMM
+        p.virtualShares = newShares;
+        p.virtualCash -= revenue;
+        p.totalShares -= userShares;
+
+        // Clear holdings
+        holdings[_playerIdx][_user] = 0;
+
+        // Refund user (no fee on forced liquidation)
+        uint256 bal = paymentToken.balanceOf(address(this));
+        uint256 refund = revenue > bal ? bal : revenue;
+        if (refund > 0) {
+            paymentToken.safeTransfer(_user, refund);
+        }
+
+        emit ForceLiquidation(_user, _playerIdx, userShares, refund);
+    }
+
+    /**
+     * @notice Reset a player's AMM pool back to initial values
+     * @dev Use if a pool gets manipulated. Does NOT affect user holdings.
+     * @param _playerIdx Player to reset
+     * @param _newShares New virtual shares (e.g., 1000e6)
+     * @param _newCash New virtual cash (e.g., 10000e6)
+     */
+    function resetPlayerPool(uint256 _playerIdx, uint256 _newShares, uint256 _newCash) external onlyOwner {
+        require(_playerIdx < playerCount, "Invalid player");
+        Player storage p = players[_playerIdx];
+        p.virtualShares = _newShares;
+        p.virtualCash = _newCash;
+        emit PlayerPoolReset(_playerIdx, _newShares, _newCash);
+    }
+
+    /**
+     * @notice Deactivate/reactivate a specific player
+     * @dev Deactivated players can't be bought but can still be sold
+     */
+    function setPlayerActive(uint256 _playerIdx, bool _active) external onlyOwner {
+        require(_playerIdx < playerCount, "Invalid player");
+        players[_playerIdx].active = _active;
+    }
+
+    /**
+     * @notice Skip current week — advance without distributing dividends
+     * @dev Use when weekly data is bad or missing. Fees roll over to next week.
+     */
+    function skipWeek() external onlyOwner {
+        // Mark as distributed (with zero pools) so advanceWeek can proceed
+        WeeklyDividend storage wd = weeklyDividends[currentWeek];
+        if (!wd.distributed) {
+            wd.distributed = true;
+            // totalPool stays 0 — no one can claim for this week
+            // totalWeeklyFees carry over to next week
+        }
+        currentWeek++;
+        tradingPaused = false;
+        emit WeekAdvanced(currentWeek);
     }
 
     // ============== VIEW FUNCTIONS ==============

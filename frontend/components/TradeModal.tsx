@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
 import { PlayerData } from './PlayerGrid';
@@ -15,6 +15,7 @@ import {
   useHoldings,
   formatUSDC,
 } from '@/hooks/useContracts';
+import { logTransaction } from '@/lib/api';
 
 interface TradeModalProps {
   isOpen: boolean;
@@ -37,23 +38,39 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
 
   // On-chain writes
   const { approve, isPending: approving, isSuccess: approved } = useApproveDBucks();
-  const { buy, isPending: buying, isSuccess: bought } = useBuyShares();
-  const { sell, isPending: selling, isSuccess: sold } = useSellShares();
+  const { buy, hash: buyHash, isPending: buying, isSuccess: bought } = useBuyShares();
+  const { sell, hash: sellHash, isPending: selling, isSuccess: sold } = useSellShares();
+
+  // Refs to capture trade-time values (avoids stale closure in success effect)
+  const tradeInfoRef = useRef<{ side: 'buy' | 'sell'; shares: number; total: number } | null>(null);
 
   // Reset on close
   useEffect(() => {
     if (!isOpen) {
       setAmount('');
       setMode('buy');
+      tradeInfoRef.current = null;
     }
   }, [isOpen]);
 
-  // Close on success
+  // Log transaction to Supabase and close on success
   useEffect(() => {
     if (bought || sold) {
+      const txHash = bought ? buyHash : sellHash;
+      const info = tradeInfoRef.current;
+      if (txHash && address && info) {
+        logTransaction(
+          address,
+          player.index,
+          info.side,
+          info.shares,
+          info.total,
+          txHash
+        ).catch(console.error);
+      }
       setTimeout(() => onClose(), 2000);
     }
-  }, [bought, sold, onClose]);
+  }, [bought, sold, buyHash, sellHash, address, player.index, onClose]);
 
   if (!isOpen) return null;
 
@@ -109,6 +126,9 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
 
   const handleTrade = () => {
     if (!quote || !shares) return;
+
+    // Capture trade info in ref before initiating (avoids stale closure)
+    tradeInfoRef.current = { side: mode, shares, total: quote.total };
 
     if (mode === 'buy') {
       if (needsApproval) {
