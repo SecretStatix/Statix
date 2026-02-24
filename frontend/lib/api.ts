@@ -1,6 +1,6 @@
 // API client for Dividend Fantasy backend
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://claude-foundation-production.up.railway.app";
 
 async function fetchAPI(path: string, options?: RequestInit) {
   const res = await fetch(`${API_URL}${path}`, {
