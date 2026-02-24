@@ -2,7 +2,8 @@
 
 import './globals.css';
 import { Providers } from './providers';
-import { Navbar } from '@/components/Navbar';
+import { AuthProvider } from '@/lib/AuthContext';
+import { NavbarWrapper } from '@/components/NavbarWrapper';
 
 export default function RootLayout({
   children,
@@ -12,12 +13,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-gray-900 text-white min-h-screen">
-        <Providers>
-          <Navbar />
-          <main className="container mx-auto px-4 py-8">
-            {children}
-          </main>
-        </Providers>
+        <AuthProvider>
+          <Providers>
+            <NavbarWrapper />
+            <main className="container mx-auto px-4 py-8">
+              {children}
+            </main>
+          </Providers>
+        </AuthProvider>
       </body>
     </html>
   );
