@@ -25,7 +25,7 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_PATHS = ['/login', '/signup'];
+const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -74,6 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const isPublicPath = PUBLIC_PATHS.includes(pathname);
     const isPendingPath = pathname === '/pending';
+    const isResetPath = pathname === '/reset-password';
+
+    if (isResetPath && session) {
+      return;
+    }
 
     if (!session && !isPublicPath) {
       router.push('/login');
