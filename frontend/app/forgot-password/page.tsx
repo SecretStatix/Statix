@@ -3,43 +3,61 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [sent, setSent] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
     });
 
-    if (authError) {
-      setError(authError.message);
+    if (resetError) {
+      setError(resetError.message);
       setLoading(false);
       return;
     }
 
-    router.push('/');
+    setSent(true);
+    setLoading(false);
   };
+
+  if (sent) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-gray-800 rounded-xl max-w-md w-full p-8 text-center">
+          <div className="text-5xl mb-4">📧</div>
+          <h2 className="text-2xl font-bold mb-4">Check Your Email</h2>
+          <p className="text-gray-400 mb-6">
+            We sent a password reset link to <span className="text-white font-medium">{email}</span>.
+            Click the link in the email to set a new password.
+          </p>
+          <Link
+            href="/login"
+            className="text-orange-400 hover:text-orange-300 font-medium"
+          >
+            Back to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="bg-gray-800 rounded-xl max-w-md w-full">
-        {/* Header */}
         <div className="p-6 border-b border-gray-700 text-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-transparent bg-clip-text">
             Dividend Fantasy
           </h1>
-          <p className="text-gray-400 mt-2">Log in to your account</p>
+          <p className="text-gray-400 mt-2">Reset your password</p>
         </div>
 
         {error && (
@@ -48,7 +66,10 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <p className="text-sm text-gray-400">
+            Enter the email address you signed up with and we&apos;ll send you a link to reset your password.
+          </p>
           <div>
             <label className="block text-sm text-gray-400 mb-1">Email</label>
             <input
@@ -60,36 +81,19 @@ export default function LoginPage() {
               placeholder="you@example.com"
             />
           </div>
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Your password"
-            />
-          </div>
-
-          <div className="flex justify-end">
-            <Link href="/forgot-password" className="text-sm text-gray-500 hover:text-orange-400 transition">
-              Forgot password?
-            </Link>
-          </div>
 
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 rounded-lg font-semibold transition"
           >
-            {loading ? 'Logging in...' : 'Log In'}
+            {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
 
           <p className="text-center text-gray-400 text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-orange-400 hover:text-orange-300">
-              Sign up
+            Remember your password?{' '}
+            <Link href="/login" className="text-orange-400 hover:text-orange-300">
+              Log in
             </Link>
           </p>
         </form>
