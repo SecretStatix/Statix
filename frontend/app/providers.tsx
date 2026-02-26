@@ -1,28 +1,44 @@
 'use client';
 
+import { PrivyProvider } from '@privy-io/react-auth';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import { base, baseSepolia } from 'wagmi/chains';
-import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit';
-import '@rainbow-me/rainbowkit/styles.css';
+import { WagmiProvider, createConfig } from '@privy-io/wagmi';
+import { baseSepolia, base } from 'viem/chains';
+import { http } from 'wagmi';
 
-const config = getDefaultConfig({
-  appName: 'Dividend Fantasy',
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'demo',
+const wagmiConfig = createConfig({
   chains: [baseSepolia, base],
-  ssr: true,
+  transports: {
+    [baseSepolia.id]: http(),
+    [base.id]: http(),
+  },
 });
 
 const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={config}>
+    <PrivyProvider
+      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'missing-privy-app-id'}
+      config={{
+        appearance: {
+          theme: 'dark',
+          accentColor: '#ea580c', // orange-600 to match existing theme
+        },
+        embeddedWallets: {
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
+        },
+        defaultChain: baseSepolia,
+        supportedChains: [baseSepolia, base],
+      }}
+    >
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
+        <WagmiProvider config={wagmiConfig}>
           {children}
-        </RainbowKitProvider>
+        </WagmiProvider>
       </QueryClientProvider>
-    </WagmiProvider>
+    </PrivyProvider>
   );
 }
