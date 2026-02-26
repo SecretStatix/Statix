@@ -550,6 +550,7 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
      * @dev Nuclear option — use when contract needs to be fully abandoned
      */
     function emergencyDrain(address _to) external onlyOwner {
+        require(killed, "Must shutdown first");
         require(_to != address(0), "Invalid address");
         uint256 bal = paymentToken.balanceOf(address(this));
         require(bal > 0, "Nothing to drain");

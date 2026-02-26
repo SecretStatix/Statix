@@ -2,7 +2,7 @@
 Player routes - real NBA data + on-chain price data.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
 import json
@@ -102,7 +102,7 @@ async def get_player(player_id: str):
 
 
 @router.get("/{player_id}/games")
-async def get_player_games(player_id: str, last_n: int = 10):
+async def get_player_games(player_id: str, last_n: int = Query(default=10, le=82)):
     """Get a player's recent game log."""
     players = _get_players()
     target = None
@@ -121,5 +121,5 @@ async def get_player_games(player_id: str, last_n: int = 10):
     try:
         games = fetch_player_game_log(nba_id, last_n_games=last_n)
         return {"player_id": player_id, "games": games}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch game log")
