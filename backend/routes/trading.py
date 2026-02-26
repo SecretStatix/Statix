@@ -43,6 +43,9 @@ class TransactionLog(BaseModel):
     shares: float
     cost: float
     tx_hash: str
+    player_name: Optional[str] = None
+    fee: Optional[float] = None
+    price_per_share: Optional[float] = None
 
 
 @router.get("/contracts")
@@ -169,18 +172,83 @@ async def log_transaction(tx: TransactionLog):
     Public endpoint — blockchain is the source of truth; Supabase is for analytics/leaderboard.
     """
 
+    row = {
+        "wallet_address": tx.wallet_address,
+        "player_index": tx.player_index,
+        "side": tx.side,
+        "shares": tx.shares,
+        "cost": tx.cost,
+        "tx_hash": tx.tx_hash,
+    }
+    if tx.player_name is not None:
+        row["player_name"] = tx.player_name
+    if tx.fee is not None:
+        row["fee"] = tx.fee
+    if tx.price_per_share is not None:
+        row["price_per_share"] = tx.price_per_share
+
     supabase = get_supabase()
     if supabase:
-        supabase.table("transactions").insert({
-            "wallet_address": tx.wallet_address,
-            "player_index": tx.player_index,
-            "side": tx.side,
-            "shares": tx.shares,
-            "cost": tx.cost,
-            "tx_hash": tx.tx_hash,
-        }).execute()
+        supabase.table("transactions").insert(row).execute()
     else:
         store = get_store()
         store["transactions"].append(tx.model_dump())
 
     return {"status": "logged"}
+
+
+@router.get("/history/{wallet_address}")
+async def get_transaction_history(wallet_address: str, limit: int = 50):
+    """Get recent transaction history for a wallet address."""
+    supabase = get_supabase()
+    if supabase:
+        result = (
+            supabase.table("transactions")
+            .select("*")
+            .eq("wallet_address", wallet_address.lower())
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return result.data
+    else:
+        store = get_store()
+        txs = [
+            t for t in store["transactions"]
+            if t.get("wallet_address", "").lower() == wallet_address.lower()
+        ]
+        return list(reversed(txs[-limit:]))
+
+
+@router.get("/summary/{wallet_address}")
+async def get_trading_summary(wallet_address: str):
+    """Get trading summary stats for a wallet address."""
+    supabase = get_supabase()
+    if supabase:
+        result = (
+            supabase.table("transactions")
+            .select("*")
+            .eq("wallet_address", wallet_address.lower())
+            .execute()
+        )
+        txs = result.data
+    else:
+        store = get_store()
+        txs = [
+            t for t in store["transactions"]
+            if t.get("wallet_address", "").lower() == wallet_address.lower()
+        ]
+
+    total_trades = len(txs)
+    total_volume = sum(abs(float(t.get("cost", 0))) for t in txs)
+    total_fees = sum(float(t.get("fee", 0)) for t in txs)
+    buys = sum(1 for t in txs if t.get("side") == "buy")
+    sells = sum(1 for t in txs if t.get("side") == "sell")
+
+    return {
+        "total_trades": total_trades,
+        "total_volume": round(total_volume, 2),
+        "total_fees": round(total_fees, 2),
+        "buys": buys,
+        "sells": sells,
+    }

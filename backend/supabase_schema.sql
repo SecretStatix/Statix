@@ -101,3 +101,10 @@ CREATE POLICY "Service upsert" ON weekly_performance FOR UPDATE USING (true);
 CREATE POLICY "Service insert" ON weekly_dividends FOR INSERT WITH CHECK (true);
 CREATE POLICY "Service upsert" ON weekly_dividends FOR UPDATE USING (true);
 CREATE POLICY "Service insert" ON users FOR INSERT WITH CHECK (true);
+
+-- ============================================================
+-- Migration: Add transaction detail columns (run in SQL editor)
+-- ============================================================
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS player_name TEXT;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS fee NUMERIC DEFAULT 0;
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS price_per_share NUMERIC DEFAULT 0;
