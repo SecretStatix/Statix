@@ -1,13 +1,14 @@
 'use client';
 
 import { useAccount } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { usePrivy } from '@privy-io/react-auth';
 import { PlayerGrid } from '@/components/PlayerGrid';
 import { Portfolio } from '@/components/Portfolio';
 import { DividendSummary } from '@/components/DividendSummary';
 
 export default function Home() {
   const { isConnected } = useAccount();
+  const { login } = usePrivy();
 
   return (
     <div className="space-y-16">
@@ -38,7 +39,12 @@ export default function Home() {
               Connect your wallet to start trading player shares and earning dividends.
             </p>
             <div className="flex justify-center">
-              <ConnectButton />
+              <button
+                onClick={login}
+                className="bg-primary hover:bg-primary-600 text-primary-foreground font-semibold px-6 py-3 rounded-xl transition-colors"
+              >
+                Connect Wallet
+              </button>
             </div>
           </div>
         </section>

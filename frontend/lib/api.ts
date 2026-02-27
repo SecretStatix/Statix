@@ -3,11 +3,10 @@
 
 import { getDemoPlayers, getDemoPlayer, getDemoPlayerGames, getDemoPlayerTransactions, getDemoLeaderboard } from './demo-data';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://claude-foundation-production.up.railway.app";
 const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'; // Remove this + 5 checks to disable demo
 
 async function fetchAPI(path: string, options?: RequestInit) {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(path, {
     ...options,
     headers: {
       "Content-Type": "application/json",
