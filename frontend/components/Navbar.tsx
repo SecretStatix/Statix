@@ -1,73 +1,102 @@
 'use client';
 
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
-import { TrendingUp, BarChart3, User, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
-
-const NAV_LINKS = [
-  { href: '/', label: 'Market', icon: TrendingUp },
-  { href: '/portfolio', label: 'Portfolio', icon: User },
-  { href: '/dividends', label: 'Dividends', icon: BarChart3 },
-  { href: '/leaderboard', label: 'Leaderboard', icon: Info },
-];
+import { usePrivy, useWallets } from '@privy-io/react-auth';
+import { useBalance } from 'wagmi';
 
 export function Navbar() {
   const { user, signOut } = useAuth();
-  const pathname = usePathname();
-  const username = user?.user_metadata?.username || user?.email?.split('@')[0] || '';
+  const { ready, authenticated, login, logout: privyLogout } = usePrivy();
+  const { wallets } = useWallets();
+  const username = user?.user_metadata?.username || user?.email?.split('@')[0] || 'User';
+  const fundedRef = useRef(false);
+
+  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+  const activeWallet = embeddedWallet || wallets[0];
+
+  const { data: ethBalance } = useBalance({
+    address: activeWallet?.address as `0x${string}`,
+    query: { enabled: !!activeWallet },
+  });
+
+  // Auto-fund new wallets with gas
+  useEffect(() => {
+    if (!activeWallet || fundedRef.current) return;
+    if (!ethBalance || ethBalance.value > BigInt(0)) return;
+
+    fundedRef.current = true;
+    fetch('/api/fund-gas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: activeWallet.address }),
+    }).catch(() => {});
+  }, [activeWallet, ethBalance]);
+
+  const truncateAddress = (addr: string) =>
+    `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
+  const handleSignOut = async () => {
+    if (authenticated) {
+      await privyLogout();
+    }
+    await signOut();
+  };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-card/90 backdrop-blur-sm">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm group-hover:bg-primary-600 transition-colors shadow-lg shadow-primary/20">
-                SX
-              </div>
-              <span className="text-xl font-bold text-foreground hidden sm:inline tracking-tight">
-                Statix
-              </span>
-            </Link>
+    <nav className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-50">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <span className="text-2xl">🏀</span>
+            <span className="font-bold text-xl">Dividend Fantasy</span>
+          </Link>
 
-            <div className="hidden md:flex items-center gap-1">
-              {NAV_LINKS.map(({ href, label, icon: Icon }) => {
-                const isActive = pathname === href;
-                return (
-                  <Link key={href} href={href}>
-                    <button
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {label}
-                    </button>
-                  </Link>
-                );
-              })}
-            </div>
+          {/* Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link href="/" className="text-gray-300 hover:text-white transition">
+              Market
+            </Link>
+            <Link href="/portfolio" className="text-gray-300 hover:text-white transition">
+              Portfolio
+            </Link>
+            <Link href="/dividends" className="text-gray-300 hover:text-white transition">
+              Dividends
+            </Link>
+            <Link href="/leaderboard" className="text-gray-300 hover:text-white transition">
+              Leaderboard
+            </Link>
           </div>
 
-          <div className="flex items-center gap-3">
-            <ConnectButton />
-            {username && (
-              <div className="hidden sm:flex items-center gap-3 pl-3 border-l border-white/[0.08]">
-                <span className="text-sm text-muted-foreground">{username}</span>
-                <button
-                  onClick={signOut}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Log out
-                </button>
+          {/* Right side: wallet + user info */}
+          <div className="flex items-center gap-4">
+            {ready && authenticated && activeWallet ? (
+              <div className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-1.5">
+                <div className="w-2 h-2 rounded-full bg-green-400" />
+                <span className="text-sm text-gray-300 font-mono">
+                  {truncateAddress(activeWallet.address)}
+                </span>
               </div>
-            )}
+            ) : ready && !authenticated ? (
+              <button
+                onClick={login}
+                className="bg-orange-600 hover:bg-orange-700 text-white text-sm px-4 py-1.5 rounded-lg transition font-medium"
+              >
+                Connect Wallet
+              </button>
+            ) : null}
+
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400">{username}</span>
+              <button
+                onClick={handleSignOut}
+                className="text-sm text-gray-500 hover:text-white transition px-3 py-1 rounded-lg hover:bg-gray-800"
+              >
+                Log out
+              </button>
+            </div>
           </div>
         </div>
       </div>

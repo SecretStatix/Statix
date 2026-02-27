@@ -7,10 +7,14 @@ NOTE: Backend quotes are approximations based on pool state read from chain.
 The on-chain getBuyQuote/getSellQuote are the authoritative source of truth.
 """
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, field_validator
 from typing import Optional
 import os
+import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 from chain import get_deployment, get_contract_info, get_abi
 from db import get_supabase, get_store
@@ -43,6 +47,30 @@ class TransactionLog(BaseModel):
     shares: float
     cost: float
     tx_hash: str
+    player_name: Optional[str] = None
+    fee: Optional[float] = None
+    price_per_share: Optional[float] = None
+
+    @field_validator("wallet_address")
+    @classmethod
+    def validate_wallet(cls, v: str) -> str:
+        if not re.match(r"^0x[a-fA-F0-9]{40}$", v):
+            raise ValueError("Invalid Ethereum address")
+        return v.lower()
+
+    @field_validator("player_index")
+    @classmethod
+    def validate_player_index(cls, v: int) -> int:
+        if v < 0 or v >= 50:
+            raise ValueError("player_index must be 0-49")
+        return v
+
+    @field_validator("side")
+    @classmethod
+    def validate_side(cls, v: str) -> str:
+        if v not in ("buy", "sell"):
+            raise ValueError("side must be 'buy' or 'sell'")
+        return v
 
 
 @router.get("/contracts")
@@ -78,8 +106,8 @@ def _get_pool_state(player_index: int):
             virtual_shares = player[3] / 1e6
             virtual_cash = player[4] / 1e6
             return virtual_shares, virtual_cash
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to read pool state from chain for player {player_index}: {e}")
 
     # Fallback to initial values
     return 1000.0, 10000.0
@@ -197,18 +225,83 @@ async def log_transaction(tx: TransactionLog):
     Public endpoint — blockchain is the source of truth; Supabase is for analytics/leaderboard.
     """
 
+    row = {
+        "wallet_address": tx.wallet_address,
+        "player_index": tx.player_index,
+        "side": tx.side,
+        "shares": tx.shares,
+        "cost": tx.cost,
+        "tx_hash": tx.tx_hash,
+    }
+    if tx.player_name is not None:
+        row["player_name"] = tx.player_name
+    if tx.fee is not None:
+        row["fee"] = tx.fee
+    if tx.price_per_share is not None:
+        row["price_per_share"] = tx.price_per_share
+
     supabase = get_supabase()
     if supabase:
-        supabase.table("transactions").insert({
-            "wallet_address": tx.wallet_address,
-            "player_index": tx.player_index,
-            "side": tx.side,
-            "shares": tx.shares,
-            "cost": tx.cost,
-            "tx_hash": tx.tx_hash,
-        }).execute()
+        supabase.table("transactions").insert(row).execute()
     else:
         store = get_store()
         store["transactions"].append(tx.model_dump())
 
     return {"status": "logged"}
+
+
+@router.get("/history/{wallet_address}")
+async def get_transaction_history(wallet_address: str, limit: int = Query(default=50, le=200)):
+    """Get recent transaction history for a wallet address."""
+    supabase = get_supabase()
+    if supabase:
+        result = (
+            supabase.table("transactions")
+            .select("*")
+            .eq("wallet_address", wallet_address.lower())
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return result.data
+    else:
+        store = get_store()
+        txs = [
+            t for t in store["transactions"]
+            if t.get("wallet_address", "").lower() == wallet_address.lower()
+        ]
+        return list(reversed(txs[-limit:]))
+
+
+@router.get("/summary/{wallet_address}")
+async def get_trading_summary(wallet_address: str):
+    """Get trading summary stats for a wallet address."""
+    supabase = get_supabase()
+    if supabase:
+        result = (
+            supabase.table("transactions")
+            .select("*")
+            .eq("wallet_address", wallet_address.lower())
+            .execute()
+        )
+        txs = result.data
+    else:
+        store = get_store()
+        txs = [
+            t for t in store["transactions"]
+            if t.get("wallet_address", "").lower() == wallet_address.lower()
+        ]
+
+    total_trades = len(txs)
+    total_volume = sum(abs(float(t.get("cost", 0))) for t in txs)
+    total_fees = sum(float(t.get("fee", 0)) for t in txs)
+    buys = sum(1 for t in txs if t.get("side") == "buy")
+    sells = sum(1 for t in txs if t.get("side") == "sell")
+
+    return {
+        "total_trades": total_trades,
+        "total_volume": round(total_volume, 2),
+        "total_fees": round(total_fees, 2),
+        "buys": buys,
+        "sells": sells,
+    }

@@ -6,6 +6,7 @@ Protected by admin key in production.
 from fastapi import APIRouter, HTTPException, Header, Depends
 from pydantic import BaseModel
 from typing import List, Optional
+import hmac
 import os
 
 from nba_stats import fetch_top_players, get_weekly_actuals, calculate_fantasy_points
@@ -22,7 +23,7 @@ if not ADMIN_KEY:
 
 def verify_admin(authorization: str = Header(None)):
     """Admin key check. Rejects all requests if ADMIN_KEY env var is not set."""
-    if not ADMIN_KEY or authorization != f"Bearer {ADMIN_KEY}":
+    if not ADMIN_KEY or not hmac.compare_digest(authorization or "", f"Bearer {ADMIN_KEY}"):
         raise HTTPException(status_code=403, detail="Not authorized")
 
 
