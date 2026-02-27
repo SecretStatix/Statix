@@ -6,10 +6,10 @@ import Link from 'next/link';
 
 const NDA_TEXT = `CONFIDENTIAL BETA TESTING AGREEMENT
 
-This Non-Disclosure Agreement ("Agreement") is entered into by and between Dividend Fantasy ("Company") and the undersigned beta tester ("Tester").
+This Non-Disclosure Agreement ("Agreement") is entered into by and between Statix ("Company") and the undersigned beta tester ("Tester").
 
 1. CONFIDENTIALITY
-Tester agrees that all information regarding the Dividend Fantasy platform, including but not limited to its features, functionality, trading mechanics, user interface, and any proprietary technology, constitutes confidential information.
+Tester agrees that all information regarding the Statix platform, including but not limited to its features, functionality, trading mechanics, user interface, and any proprietary technology, constitutes confidential information.
 
 2. NON-DISCLOSURE
 Tester shall not disclose, publish, or otherwise share any confidential information with any third party without prior written consent from the Company.
@@ -114,20 +114,23 @@ export default function SignupPage() {
     setLoading(false);
   };
 
+  const inputClass = "w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary transition [color-scheme:dark]";
+
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-gray-800 rounded-xl max-w-md w-full p-8 text-center">
-          <div className="text-5xl mb-4">📧</div>
-          <h2 className="text-2xl font-bold mb-4">Check Your Email</h2>
-          <p className="text-gray-400 mb-6">
-            We sent a confirmation link to <span className="text-white font-medium">{email}</span>. 
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+          <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-3">Check Your Email</h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            We sent a confirmation link to <span className="text-foreground font-medium">{email}</span>.
             Click the link to activate your account.
           </p>
-          <Link
-            href="/login"
-            className="text-orange-400 hover:text-orange-300 font-medium"
-          >
+          <Link href="/login" className="text-sm text-primary hover:text-primary/80 font-medium">
             Back to Login
           </Link>
         </div>
@@ -136,147 +139,90 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="bg-gray-800 rounded-xl max-w-md w-full">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-700 text-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-transparent bg-clip-text">
-            Dividend Fantasy
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+        <div className="p-8 border-b border-border text-center">
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
+            <span className="text-white font-bold text-lg">SX</span>
+          </div>
+          <h1 className="text-xl font-bold text-foreground">
+            {step === 'info' ? 'Create your Statix account' : 'Review & Accept NDA'}
           </h1>
-          <p className="text-gray-400 mt-2">
-            {step === 'info' ? 'Create your account' : 'Review & Accept NDA'}
-          </p>
         </div>
 
         {/* Step indicator */}
-        <div className="px-6 pt-4 flex items-center gap-3">
-          <div className={`flex-1 h-1 rounded ${step === 'info' ? 'bg-orange-500' : 'bg-orange-500'}`} />
-          <div className={`flex-1 h-1 rounded ${step === 'nda' ? 'bg-orange-500' : 'bg-gray-700'}`} />
+        <div className="px-8 pt-4 flex items-center gap-2">
+          <div className="flex-1 h-0.5 rounded bg-primary" />
+          <div className={`flex-1 h-0.5 rounded ${step === 'nda' ? 'bg-primary' : 'bg-secondary'}`} />
         </div>
-        <div className="px-6 pt-1 pb-2 flex justify-between text-xs text-gray-500">
+        <div className="px-8 pt-1.5 pb-2 flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider">
           <span>Account Info</span>
           <span>NDA Agreement</span>
         </div>
 
         {error && (
-          <div className="mx-6 mt-2 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-400 text-sm">
+          <div className="mx-8 mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
             {error}
           </div>
         )}
 
         {step === 'info' ? (
-          <form onSubmit={handleInfoSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleInfoSubmit} className="p-8 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Legal First Name</label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="John"
-                />
+                <label className="block text-xs text-muted-foreground mb-1.5">Legal First Name</label>
+                <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required className={inputClass} placeholder="John" />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Legal Last Name</label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="Doe"
-                />
+                <label className="block text-xs text-muted-foreground mb-1.5">Legal Last Name</label>
+                <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required className={inputClass} placeholder="Doe" />
               </div>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Date of Birth</label>
-              <input
-                type="date"
-                value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                required
-                max={new Date().toISOString().split('T')[0]}
-                className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
+              <label className="block text-xs text-muted-foreground mb-1.5">Date of Birth</label>
+              <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} required max={new Date().toISOString().split('T')[0]} className={inputClass} />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="your_username"
-              />
+              <label className="block text-xs text-muted-foreground mb-1.5">Username</label>
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required className={inputClass} placeholder="your_username" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="you@example.com"
-              />
+              <label className="block text-xs text-muted-foreground mb-1.5">Email</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className={inputClass} placeholder="you@example.com" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="At least 6 characters"
-              />
+              <label className="block text-xs text-muted-foreground mb-1.5">Password</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className={inputClass} placeholder="At least 6 characters" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                placeholder="Re-enter password"
-              />
+              <label className="block text-xs text-muted-foreground mb-1.5">Confirm Password</label>
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={inputClass} placeholder="Re-enter password" />
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold transition"
-            >
+            <button type="submit" className="w-full py-3.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary-600 hover:to-accent hover:glow-primary hover:scale-[1.02] active:scale-[0.98] transition">
               Continue to NDA
             </button>
 
-            <p className="text-center text-gray-400 text-sm">
+            <p className="text-center text-muted-foreground text-sm">
               Already have an account?{' '}
-              <Link href="/login" className="text-orange-400 hover:text-orange-300">
-                Log in
-              </Link>
+              <Link href="/login" className="text-primary hover:text-primary/80 font-medium">Log in</Link>
             </p>
           </form>
         ) : (
-          <div className="p-6 space-y-4">
-            {/* NDA text */}
-            <div className="bg-gray-900 rounded-lg p-4 max-h-64 overflow-y-auto text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-mono">
+          <div className="p-8 space-y-4">
+            <div className="bg-secondary/50 border border-border rounded-xl p-4 max-h-64 overflow-y-auto text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap font-mono">
               {NDA_TEXT}
             </div>
 
-            {/* Accept checkbox */}
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={ndaAccepted}
                 onChange={(e) => setNdaAccepted(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded bg-gray-700 border-gray-600 text-orange-500 focus:ring-orange-500"
+                className="mt-0.5 w-4 h-4 rounded border-border bg-input/30 text-primary focus:ring-primary"
               />
-              <span className="text-sm text-gray-300">
-                I have read and agree to the terms of this Non-Disclosure Agreement. 
+              <span className="text-sm text-muted-foreground">
+                I have read and agree to the terms of this Non-Disclosure Agreement.
                 I understand that this is a beta testing platform using simulated currency.
               </span>
             </label>
@@ -284,16 +230,16 @@ export default function SignupPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => { setStep('info'); setError(''); }}
-                className="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition"
+                className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary text-foreground hover:bg-secondary/80 border border-border transition"
               >
                 Back
               </button>
               <button
                 onClick={handleSignup}
                 disabled={!ndaAccepted || loading}
-                className="flex-1 py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-semibold transition"
+                className="flex-1 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary-600 hover:to-accent hover:glow-primary hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 disabled:glow-none transition"
               >
-                {loading ? 'Creating Account...' : 'Sign Up'}
+                {loading ? 'Creating...' : 'Sign Up'}
               </button>
             </div>
           </div>

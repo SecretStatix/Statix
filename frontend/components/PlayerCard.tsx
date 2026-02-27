@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { PlayerData } from './PlayerGrid';
+import { cn } from '@/lib/utils';
 
 interface PlayerCardProps {
   player: PlayerData;
@@ -8,47 +10,49 @@ interface PlayerCardProps {
 }
 
 export function PlayerCard({ player, onTrade }: PlayerCardProps) {
+  const initials = player.name.split(' ').map(n => n[0]).join('');
+
   return (
-    <div className="bg-gray-800 rounded-xl overflow-hidden hover:ring-2 hover:ring-orange-500 transition-all">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-xl font-bold">
-              {player.name.split(' ').map(n => n[0]).join('')}
-            </div>
-            <div>
-              <h3 className="font-semibold">{player.name}</h3>
-              <p className="text-sm text-gray-400">{player.team} · {player.position}</p>
-            </div>
+    <div className="group bg-card rounded-2xl border border-white/[0.06] overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-black/30 hover:border-white/[0.1] shadow-lg shadow-black/10">
+      <Link href={`/player/${player.id}`} className="block p-6 md:p-8">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-xl bg-primary/15 flex items-center justify-center text-lg font-bold text-primary flex-shrink-0">
+            {initials}
           </div>
-          <span className="text-xs bg-gray-700 px-2 py-1 rounded font-mono">{player.symbol}</span>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-foreground truncate group-hover:text-primary transition-colors duration-200">
+              {player.name}
+            </h3>
+            <p className="text-sm text-gray-400 mt-0.5">{player.team} · {player.position}</p>
+            <span className="inline-block mt-2 px-2.5 py-0.5 rounded-md bg-success/10 text-xs text-success font-medium border border-success/20">
+              {player.symbol}
+            </span>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-3xl font-bold text-foreground">${player.price.toFixed(2)}</p>
+            <p className="text-xs text-gray-400 mt-0.5">per share</p>
+          </div>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-gray-400">Price</span>
-          <span className="text-xl font-bold">${player.price.toFixed(2)}</span>
+        <div className="mt-8 flex gap-4">
+          <div className="flex-1 rounded-xl px-4 py-3 bg-white/[0.03]">
+            <p className="text-xs text-gray-400">FPts/Game</p>
+            <p className="text-base font-semibold text-foreground mt-1">{player.avgFantasyPoints.toFixed(1)}</p>
+          </div>
+          <div className="flex-1 rounded-xl px-4 py-3 bg-white/[0.03]">
+            <p className="text-xs text-gray-400">Weekly</p>
+            <p className="text-base font-semibold text-foreground mt-1">{player.weeklyProjection.toFixed(1)}</p>
+          </div>
         </div>
+      </Link>
 
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Avg FPts/Game</span>
-          <span className="font-medium">{player.avgFantasyPoints.toFixed(1)}</span>
-        </div>
-
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Weekly Projection</span>
-          <span className="font-medium">{player.weeklyProjection.toFixed(1)}</span>
-        </div>
-      </div>
-
-      {/* Trade Button */}
-      <div className="p-4 border-t border-gray-700">
+      <div className="px-6 md:px-8 pb-6 md:pb-8">
         <button
-          onClick={onTrade}
-          className="w-full py-2 px-4 bg-gradient-to-r from-orange-500 to-pink-500 rounded-lg font-semibold hover:opacity-90 transition"
+          onClick={(e) => {
+            e.preventDefault();
+            onTrade();
+          }}
+          className="w-full h-12 rounded-xl text-base font-semibold bg-success text-white hover:bg-success/90 focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 focus:ring-offset-card transition-all duration-200 shadow-md shadow-success/20"
         >
           Trade
         </button>

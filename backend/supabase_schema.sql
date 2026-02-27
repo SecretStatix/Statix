@@ -1,4 +1,4 @@
--- Supabase Schema for Dividend Fantasy
+-- Supabase Schema for Statix
 -- Run this in Supabase SQL Editor when setting up
 
 -- Users (tracked by wallet address)

@@ -82,7 +82,7 @@ async def list_players():
             symbol=p.get("symbol", ""),
             nba_id=p.get("nba_id", 0),
             position=cached.get("position", "F") if cached else "F",
-            avg_fantasy_points=cached["avg_fantasy_points"] if cached else p.get("weekly_projection", 0) / 3.5,
+            avg_fantasy_points=cached.get("avg_fantasy_points", p.get("weekly_projection", 0) / 3.5) if cached else p.get("weekly_projection", 0) / 3.5,
             weekly_projection=p.get("weekly_projection", 0),
             season_projection=p.get("season_projection", 0),
             avg_stats=cached.get("avg_stats", {}) if cached else {},

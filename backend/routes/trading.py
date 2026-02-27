@@ -162,6 +162,34 @@ async def get_quote(req: QuoteRequest):
         raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
 
 
+@router.get("/transactions")
+async def get_player_transactions(player_index: int, limit: int = 10, days: int = 7):
+    """
+    Get top transactions for a player in the past N days.
+    Returns buys and sells, ordered by cost (largest first).
+    Uses Supabase transactions table when configured; falls back to in-memory store.
+    """
+    supabase = get_supabase()
+    if supabase:
+        from datetime import datetime, timedelta
+        since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+        res = (
+            supabase.table("transactions")
+            .select("wallet_address, player_index, side, shares, cost, tx_hash, created_at")
+            .eq("player_index", player_index)
+            .gte("created_at", since)
+            .order("cost", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return res.data or []
+    # In-memory fallback
+    store = get_store()
+    txs = [t for t in store.get("transactions", []) if t.get("player_index") == player_index]
+    txs.sort(key=lambda x: float(x.get("cost", 0)), reverse=True)
+    return txs[:limit]
+
+
 @router.post("/log-transaction")
 async def log_transaction(tx: TransactionLog):
     """
