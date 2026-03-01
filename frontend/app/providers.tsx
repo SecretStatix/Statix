@@ -23,7 +23,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       config={{
         appearance: {
           theme: 'dark',
-          accentColor: '#ea580c', // orange-600 to match existing theme
+          accentColor: '#4A8AF4',
         },
         embeddedWallets: {
           ethereum: {

@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
-import { TrendingUp, BarChart3, User, Info } from 'lucide-react';
+import { TrendingUp, BarChart3, User, Info, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PREVIEW, PREVIEW_ADDRESS } from '@/lib/preview';
 
 const NAV_LINKS = [
   { href: '/', label: 'Market', icon: TrendingUp },
@@ -21,8 +22,13 @@ export function Navbar() {
   const { ready, authenticated, login, logout: privyLogout } = usePrivy();
   const { wallets } = useWallets();
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || '';
   const fundedRef = useRef(false);
+
+  const [searchValue, setSearchValue] = useState(searchParams.get('q') || '');
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
   const activeWallet = embeddedWallet || wallets[0];
@@ -55,19 +61,49 @@ export function Navbar() {
     await signOut();
   };
 
+  const pushSearch = useCallback((value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set('q', value);
+    } else {
+      params.delete('q');
+    }
+    const target = pathname === '/' ? `/?${params.toString()}` : `/?${params.toString()}`;
+    router.push(target);
+  }, [router, pathname, searchParams]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchValue(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => pushSearch(val), 300);
+  };
+
   return (
     <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-card/90 backdrop-blur-sm">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm group-hover:bg-primary-600 transition-colors shadow-lg shadow-primary/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex h-14 items-center justify-between gap-4">
+          <div className="flex items-center gap-4 lg:gap-6">
+            <Link href="/" className="flex items-center gap-2 group shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs group-hover:bg-primary-600 transition-colors shadow-lg shadow-primary/20">
                 SX
               </div>
-              <span className="text-xl font-bold text-foreground hidden sm:inline tracking-tight">
+              <span className="text-lg font-bold text-foreground hidden sm:inline tracking-tight">
                 Statix
               </span>
             </Link>
+
+            {/* Search bar — hidden on mobile */}
+            <div className="hidden md:flex relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search players..."
+                value={searchValue}
+                onChange={handleSearchChange}
+                className="w-48 lg:w-64 h-8 bg-secondary border border-white/[0.06] rounded-lg pl-9 pr-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200"
+              />
+            </div>
 
             <div className="hidden md:flex items-center gap-1">
               {NAV_LINKS.map(({ href, label, icon: Icon }) => {
@@ -76,7 +112,7 @@ export function Navbar() {
                   <Link key={href} href={href}>
                     <button
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                        "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                         isActive
                           ? "bg-primary/10 text-primary"
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -92,7 +128,14 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
-            {ready && authenticated && activeWallet ? (
+            {PREVIEW ? (
+              <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5 border border-white/[0.06]">
+                <div className="w-2 h-2 rounded-full bg-success" />
+                <span className="text-sm text-muted-foreground font-mono">
+                  {truncateAddress(PREVIEW_ADDRESS)}
+                </span>
+              </div>
+            ) : ready && authenticated && activeWallet ? (
               <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5 border border-white/[0.06]">
                 <div className="w-2 h-2 rounded-full bg-success" />
                 <span className="text-sm text-muted-foreground font-mono">

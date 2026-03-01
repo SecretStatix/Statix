@@ -1,71 +1,106 @@
 'use client';
 
-import { useAccount } from 'wagmi';
-import { usePrivy } from '@privy-io/react-auth';
-import { PlayerGrid } from '@/components/PlayerGrid';
-import { Portfolio } from '@/components/Portfolio';
-import { DividendSummary } from '@/components/DividendSummary';
+import { useState, useEffect, Suspense } from 'react';
+import { getPlayers } from '@/lib/api';
+import { useAllPlayers } from '@/hooks/useContracts';
+import { formatUnits } from 'viem';
+import { PlayerGrid, PlayerData } from '@/components/PlayerGrid';
+import { FeaturedPlayer } from '@/components/FeaturedPlayer';
+import { HotPlayers } from '@/components/HotPlayers';
+import { ActivityFeed } from '@/components/ActivityFeed';
 
-export default function Home() {
-  const { isConnected } = useAccount();
-  const { login } = usePrivy();
+function HomeContent() {
+  const [players, setPlayers] = useState<PlayerData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const { data: onChainData } = useAllPlayers();
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const apiPlayers = await getPlayers();
+
+        const mapped: PlayerData[] = apiPlayers.map((p: any) => {
+          let price = p.price || 10;
+          if (onChainData) {
+            const [, , prices] = onChainData as [string[], string[], bigint[], bigint[]];
+            if (prices[p.index]) {
+              price = parseFloat(formatUnits(prices[p.index], 6));
+            }
+          }
+
+          return {
+            index: p.index,
+            id: p.id,
+            name: p.name,
+            team: p.team,
+            symbol: p.symbol,
+            position: p.position || 'F',
+            nbaId: p.nba_id,
+            price,
+            avgFantasyPoints: p.avg_fantasy_points ?? (p.weekly_projection ?? 0) / 3.5,
+            weeklyProjection: p.weekly_projection ?? 0,
+            seasonProjection: p.season_projection ?? 0,
+            totalShares: 0,
+          };
+        });
+
+        setPlayers(mapped);
+      } catch (err) {
+        console.error('Failed to load players:', err);
+        try {
+          const res = await fetch('/deployments.json');
+          const deployment = await res.json();
+          const mapped = deployment.players.map((p: any) => ({
+            index: p.index,
+            id: p.id,
+            name: p.name,
+            team: p.team || '',
+            symbol: p.symbol,
+            position: p.position || 'F',
+            nbaId: p.nba_id,
+            price: 10,
+            avgFantasyPoints: (p.weekly_projection ?? 0) / 3.5,
+            weeklyProjection: p.weekly_projection ?? 0,
+            seasonProjection: p.season_projection ?? 0,
+            totalShares: 0,
+          }));
+          setPlayers(mapped);
+        } catch {
+          console.error('No player data available');
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [onChainData]);
 
   return (
-    <div className="space-y-16">
-      {/* Centered page header */}
-      <section className="relative text-center pt-6 pb-10">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-primary/[0.08] rounded-full blur-3xl" />
+    <div className="space-y-6">
+      {/* Featured spotlight */}
+      <FeaturedPlayer players={players} loading={loading} />
+
+      {/* Hot players bar */}
+      <HotPlayers players={players} loading={loading} />
+
+      {/* Main content: grid + activity sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3">
+          <PlayerGrid players={players} loading={loading} />
         </div>
-        <div className="relative z-10 max-w-3xl mx-auto space-y-5">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-success/10 rounded-full text-xs font-medium text-success border border-success/20">
-            ATHLETE MARKET
-          </div>
-          <h1 className="text-6xl md:text-7xl font-bold tracking-tight text-foreground drop-shadow-sm">
-            Statix
-          </h1>
-          <p className="text-lg md:text-xl text-gray-400">
-            Trade NBA players like stocks. Earn weekly dividends based on performance.
-          </p>
+        <div className="lg:col-span-1">
+          <ActivityFeed />
         </div>
-      </section>
-
-      {/* Connect your wallet panel (when not connected) */}
-      {!isConnected && (
-        <section className="max-w-xl mx-auto">
-          <div className="bg-card border border-white/[0.06] rounded-2xl p-8 text-center">
-            <h2 className="text-xl font-bold text-foreground mb-2">Connect Your Wallet</h2>
-            <p className="text-gray-400 text-sm mb-6">
-              Connect your wallet to start trading player shares and earning dividends.
-            </p>
-            <div className="flex justify-center">
-              <button
-                onClick={login}
-                className="bg-primary hover:bg-primary-600 text-primary-foreground font-semibold px-6 py-3 rounded-xl transition-colors"
-              >
-                Connect Wallet
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Portfolio + Dividends (when connected) */}
-      {isConnected && (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Portfolio />
-          <DividendSummary />
-        </section>
-      )}
-
-      {/* Player Marketplace */}
-      <section id="players" className="space-y-6 pt-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-          <span className="inline-block w-1 h-8 bg-success rounded-full" />
-          Player Marketplace
-        </h2>
-        <PlayerGrid />
-      </section>
+      </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="text-center py-12 text-muted-foreground">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }

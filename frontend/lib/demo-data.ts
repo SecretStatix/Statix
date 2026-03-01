@@ -5,21 +5,21 @@
 // NEXT_PUBLIC_DEMO_MODE from .env.local.
 
 const DEMO_PLAYERS = [
-  { index: 0, id: "shai-gilgeous-alexander", name: "Shai Gilgeous-Alexander", team: "OKC", symbol: "SGA", position: "G", avg_fantasy_points: 54.0, weekly_projection: 189.0, season_projection: 4428 },
-  { index: 1, id: "giannis-antetokounmpo", name: "Giannis Antetokounmpo", team: "MIL", symbol: "ANTEG", position: "F", avg_fantasy_points: 57.6, weekly_projection: 201.7, season_projection: 4725 },
-  { index: 2, id: "nikola-jokic", name: "Nikola Jokic", team: "DEN", symbol: "JOKIN", position: "C", avg_fantasy_points: 64.0, weekly_projection: 224.1, season_projection: 5248 },
-  { index: 3, id: "luka-doncic", name: "Luka Doncic", team: "LAL", symbol: "DONCL", position: "G", avg_fantasy_points: 52.3, weekly_projection: 183.1, season_projection: 4289 },
-  { index: 4, id: "jayson-tatum", name: "Jayson Tatum", team: "BOS", symbol: "TATUJ", position: "F", avg_fantasy_points: 48.7, weekly_projection: 170.5, season_projection: 3993 },
-  { index: 5, id: "anthony-davis", name: "Anthony Davis", team: "LAL", symbol: "DAVIA", position: "F", avg_fantasy_points: 50.1, weekly_projection: 175.4, season_projection: 4108 },
-  { index: 6, id: "kevin-durant", name: "Kevin Durant", team: "PHX", symbol: "DURK", position: "F", avg_fantasy_points: 43.2, weekly_projection: 151.2, season_projection: 3542 },
-  { index: 7, id: "anthony-edwards", name: "Anthony Edwards", team: "MIN", symbol: "EDWAA", position: "G", avg_fantasy_points: 44.8, weekly_projection: 156.8, season_projection: 3674 },
-  { index: 8, id: "tyrese-haliburton", name: "Tyrese Haliburton", team: "IND", symbol: "HALIT", position: "G", avg_fantasy_points: 42.5, weekly_projection: 148.8, season_projection: 3485 },
-  { index: 9, id: "victor-wembanyama", name: "Victor Wembanyama", team: "SAS", symbol: "WEMBV", position: "C", avg_fantasy_points: 46.3, weekly_projection: 162.1, season_projection: 3797 },
-  { index: 10, id: "devin-booker", name: "Devin Booker", team: "PHX", symbol: "BOOKD", position: "G", avg_fantasy_points: 39.8, weekly_projection: 139.3, season_projection: 3264 },
-  { index: 11, id: "lamelo-ball", name: "LaMelo Ball", team: "CHA", symbol: "BALLL", position: "G", avg_fantasy_points: 41.2, weekly_projection: 144.2, season_projection: 3378 },
-  { index: 12, id: "ja-morant", name: "Ja Morant", team: "MEM", symbol: "MORJ", position: "G", avg_fantasy_points: 40.5, weekly_projection: 141.8, season_projection: 3321 },
-  { index: 13, id: "joel-embiid", name: "Joel Embiid", team: "PHI", symbol: "EMBIJ", position: "C", avg_fantasy_points: 51.4, weekly_projection: 179.9, season_projection: 4215 },
-  { index: 14, id: "donovan-mitchell", name: "Donovan Mitchell", team: "CLE", symbol: "MITCD", position: "G", avg_fantasy_points: 38.6, weekly_projection: 135.1, season_projection: 3165 },
+  { index: 0, id: "shai-gilgeous-alexander", name: "Shai Gilgeous-Alexander", team: "OKC", symbol: "SGA", position: "G", nba_id: 1628983, avg_fantasy_points: 54.0, weekly_projection: 189.0, season_projection: 4428 },
+  { index: 1, id: "giannis-antetokounmpo", name: "Giannis Antetokounmpo", team: "MIL", symbol: "ANTEG", position: "F", nba_id: 203507, avg_fantasy_points: 57.6, weekly_projection: 201.7, season_projection: 4725 },
+  { index: 2, id: "nikola-jokic", name: "Nikola Jokic", team: "DEN", symbol: "JOKIN", position: "C", nba_id: 203999, avg_fantasy_points: 64.0, weekly_projection: 224.1, season_projection: 5248 },
+  { index: 3, id: "luka-doncic", name: "Luka Doncic", team: "LAL", symbol: "DONCL", position: "G", nba_id: 1629029, avg_fantasy_points: 52.3, weekly_projection: 183.1, season_projection: 4289 },
+  { index: 4, id: "jayson-tatum", name: "Jayson Tatum", team: "BOS", symbol: "TATUJ", position: "F", nba_id: 1628369, avg_fantasy_points: 48.7, weekly_projection: 170.5, season_projection: 3993 },
+  { index: 5, id: "anthony-davis", name: "Anthony Davis", team: "LAL", symbol: "DAVIA", position: "F", nba_id: 203076, avg_fantasy_points: 50.1, weekly_projection: 175.4, season_projection: 4108 },
+  { index: 6, id: "kevin-durant", name: "Kevin Durant", team: "PHX", symbol: "DURK", position: "F", nba_id: 201142, avg_fantasy_points: 43.2, weekly_projection: 151.2, season_projection: 3542 },
+  { index: 7, id: "anthony-edwards", name: "Anthony Edwards", team: "MIN", symbol: "EDWAA", position: "G", nba_id: 1630162, avg_fantasy_points: 44.8, weekly_projection: 156.8, season_projection: 3674 },
+  { index: 8, id: "tyrese-haliburton", name: "Tyrese Haliburton", team: "IND", symbol: "HALIT", position: "G", nba_id: 1630169, avg_fantasy_points: 42.5, weekly_projection: 148.8, season_projection: 3485 },
+  { index: 9, id: "victor-wembanyama", name: "Victor Wembanyama", team: "SAS", symbol: "WEMBV", position: "C", nba_id: 1641705, avg_fantasy_points: 46.3, weekly_projection: 162.1, season_projection: 3797 },
+  { index: 10, id: "devin-booker", name: "Devin Booker", team: "PHX", symbol: "BOOKD", position: "G", nba_id: 1626164, avg_fantasy_points: 39.8, weekly_projection: 139.3, season_projection: 3264 },
+  { index: 11, id: "lamelo-ball", name: "LaMelo Ball", team: "CHA", symbol: "BALLL", position: "G", nba_id: 1630163, avg_fantasy_points: 41.2, weekly_projection: 144.2, season_projection: 3378 },
+  { index: 12, id: "ja-morant", name: "Ja Morant", team: "MEM", symbol: "MORJ", position: "G", nba_id: 1629630, avg_fantasy_points: 40.5, weekly_projection: 141.8, season_projection: 3321 },
+  { index: 13, id: "joel-embiid", name: "Joel Embiid", team: "PHI", symbol: "EMBIJ", position: "C", nba_id: 203954, avg_fantasy_points: 51.4, weekly_projection: 179.9, season_projection: 4215 },
+  { index: 14, id: "donovan-mitchell", name: "Donovan Mitchell", team: "CLE", symbol: "MITCD", position: "G", nba_id: 1628378, avg_fantasy_points: 38.6, weekly_projection: 135.1, season_projection: 3165 },
 ];
 
 const DEMO_PRICES: Record<string, number> = {
@@ -145,6 +145,36 @@ export function getDemoPlayerTransactions(playerIndex: number, limit = 10) {
     });
   }
   return out.sort((a, b) => b.cost - a.cost).slice(0, limit);
+}
+
+export function getDemoRecentTransactions(limit = 15) {
+  const sides = ["buy", "sell"] as const;
+  const wallets = [
+    "0x7a3b...4f2e", "0x9c1d...8e3f", "0x2f5a...1b7c", "0x6e8c...3d9a", "0x4b2e...7f1d",
+    "0x1a2c...5e6f", "0x3b4d...7a8b", "0x5c6e...9d0e", "0x7d8e...1f2a", "0x9e0f...3b4c",
+  ];
+  const out: { wallet_address: string; player_index: number; player_name: string; side: string; shares: number; cost: number; tx_hash: string; created_at: string }[] = [];
+  const now = new Date();
+  for (let i = 0; i < limit; i++) {
+    const player = DEMO_PLAYERS[Math.floor(Math.random() * DEMO_PLAYERS.length)];
+    const side = sides[Math.floor(Math.random() * 2)];
+    const shares = 1 + Math.floor(Math.random() * 30);
+    const price = DEMO_PRICES[player.id] || 10;
+    const cost = Math.round(shares * price * 100) / 100;
+    const d = new Date(now);
+    d.setMinutes(d.getMinutes() - i * 12 - Math.floor(Math.random() * 30));
+    out.push({
+      wallet_address: wallets[Math.floor(Math.random() * wallets.length)],
+      player_index: player.index,
+      player_name: player.name,
+      side,
+      shares,
+      cost,
+      tx_hash: `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(2, 6)}`,
+      created_at: d.toISOString(),
+    });
+  }
+  return out;
 }
 
 export function getDemoLeaderboard() {

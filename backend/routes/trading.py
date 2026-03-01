@@ -96,15 +96,19 @@ def _get_pool_state(player_index: int):
         w3 = Web3(Web3.HTTPProvider(rpc_url))
 
         if w3.is_connected():
-            abi = get_abi("DividendFantasy")
-            contract = w3.eth.contract(
-                address=Web3.to_checksum_address(deployment["contracts"]["DividendFantasy"]),
-                abi=abi,
+            factory_abi = get_abi("PoolFactory")
+            pool_abi = get_abi("PlayerPool")
+            factory = w3.eth.contract(
+                address=Web3.to_checksum_address(deployment["contracts"]["PoolFactory"]),
+                abi=factory_abi,
             )
-            player = contract.functions.players(player_index).call()
-            # players returns: (name, symbol, playerId, virtualShares, virtualCash, totalShares, projectedPoints, active)
-            virtual_shares = player[3] / 1e6
-            virtual_cash = player[4] / 1e6
+            pool_addr = factory.functions.pools(player_index).call()
+            pool = w3.eth.contract(
+                address=Web3.to_checksum_address(pool_addr),
+                abi=pool_abi,
+            )
+            virtual_shares = pool.functions.virtualShares().call() / 1e6
+            virtual_cash = pool.functions.virtualCash().call() / 1e6
             return virtual_shares, virtual_cash
     except Exception as e:
         logger.warning(f"Failed to read pool state from chain for player {player_index}: {e}")
@@ -215,6 +219,29 @@ async def get_player_transactions(player_index: int, limit: int = 10, days: int 
     store = get_store()
     txs = [t for t in store.get("transactions", []) if t.get("player_index") == player_index]
     txs.sort(key=lambda x: float(x.get("cost", 0)), reverse=True)
+    return txs[:limit]
+
+
+@router.get("/transactions/recent")
+async def get_recent_transactions(limit: int = Query(default=15, le=50)):
+    """
+    Get most recent transactions across all players.
+    Used by the activity feed on the homepage.
+    """
+    supabase = get_supabase()
+    if supabase:
+        res = (
+            supabase.table("transactions")
+            .select("wallet_address, player_index, player_name, side, shares, cost, tx_hash, created_at")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return res.data or []
+    # In-memory fallback
+    store = get_store()
+    txs = list(store.get("transactions", []))
+    txs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
     return txs[:limit]
 
 

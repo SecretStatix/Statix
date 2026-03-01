@@ -6,9 +6,10 @@
  *
  * Steps:
  *   1. Fetches actual NBA stats for the week from backend API
- *   2. Submits performance data on-chain (setWeeklyPerformanceBatch)
- *   3. Distributes dividends (distributeDividends)
- *   4. Advances to next week (advanceWeek)
+ *   2. Pauses trading via Router
+ *   3. Submits performance data on-chain via DividendHub
+ *   4. Distributes dividends via DividendHub
+ *   5. Advances to next week, unpauses trading
  */
 
 const hre = require("hardhat");
@@ -27,10 +28,14 @@ async function main() {
     fs.readFileSync(path.join(__dirname, "..", "deployments.json"), "utf8")
   );
 
-  const fantasyAddress = deployments.contracts.DividendFantasy;
-  const fantasy = await hre.ethers.getContractAt("DividendFantasy", fantasyAddress);
+  // New architecture: Router for pause/unpause, Hub for dividends
+  const routerAddress = deployments.contracts.StatixRouter;
+  const hubAddress = deployments.contracts.DividendHub;
 
-  const currentWeek = await fantasy.currentWeek();
+  const router = await hre.ethers.getContractAt("StatixRouter", routerAddress);
+  const hub = await hre.ethers.getContractAt("DividendHub", hubAddress);
+
+  const currentWeek = await hub.currentWeek();
   console.log(`Current week: ${currentWeek}`);
 
   const weekStart = process.env.WEEK_START;
@@ -64,28 +69,26 @@ async function main() {
     onChainData = data.on_chain_data;
   } catch (err) {
     console.error("Backend not available. Using mock data...");
-    // Fallback: mock data for testing
     const players = deployments.players || [];
     onChainData = {
       player_indices: players.map((p) => p.index),
       actual_points_scaled: players.map((p) =>
-        // Random actual between 80-120% of projection
         Math.round(p.weekly_projection * (0.8 + Math.random() * 0.4) * 1e6)
       ),
     };
     console.log(`   Using mock data for ${onChainData.player_indices.length} players`);
   }
 
-  // 1b. Pause trading during distribution
+  // 1b. Pause trading via Router
   console.log("\n1b. Pausing trading...");
-  const pauseTx = await fantasy.setTradingPaused(true);
+  const pauseTx = await router.setTradingPaused(true);
   await pauseTx.wait();
   console.log("   Trading paused.");
 
   try {
-    // 2. Submit performance on-chain
+    // 2. Submit performance on-chain via Hub
     console.log("\n2. Submitting performance data on-chain...");
-    const setBatchTx = await fantasy.setWeeklyPerformanceBatch(
+    const setBatchTx = await hub.setWeeklyPerformanceBatch(
       onChainData.player_indices,
       onChainData.actual_points_scaled.map((v) => BigInt(v))
     );
@@ -106,7 +109,6 @@ async function main() {
       }
     }
 
-    // Sort descending by outperformance, take top 30%
     outperformers.sort((a, b) => b.outperf - a.outperf);
     const top30Count = Math.max(1, Math.ceil(outperformers.length * 0.3));
     const eligible = outperformers.slice(0, top30Count);
@@ -114,48 +116,54 @@ async function main() {
     console.log(`   ${outperformers.length} outperformers total, top ${top30Count} eligible:`);
     eligible.forEach((e) => console.log(`     Player #${e.index}: +${(e.outperf * 100).toFixed(1)}%`));
 
-    const eligibleTx = await fantasy.setOutperformerEligible(eligible.map((e) => e.index));
+    const eligibleTx = await hub.setOutperformerEligible(eligible.map((e) => e.index));
     await eligibleTx.wait();
     console.log("   Eligible list submitted on-chain!");
 
-    // 3. Check if there are fees to distribute
-    const totalFees = await fantasy.totalWeeklyFees();
-    console.log(`\n3. Total weekly fees: ${hre.ethers.formatUnits(totalFees, 6)} USDC`);
+    // 3. Check Hub balance (accumulated fees from pools)
+    const dbucksAddress = deployments.contracts.DBucks;
+    const dbucks = await hre.ethers.getContractAt("DBucks", dbucksAddress);
+    const hubBalance = await dbucks.balanceOf(hubAddress);
+    console.log(`\n3. Hub balance (accumulated fees): ${hre.ethers.formatUnits(hubBalance, 6)} D-Bucks`);
 
-    if (totalFees === 0n) {
+    if (hubBalance === 0n) {
       console.log("   No fees to distribute. Users need to trade first!");
       console.log("   Skipping distribution and week advance. Unpausing trading.");
-      const unpauseTx = await fantasy.setTradingPaused(false);
+      const unpauseTx = await router.setTradingPaused(false);
       await unpauseTx.wait();
       console.log("   Trading unpaused.");
       return;
     }
 
-    // 4. Distribute dividends
+    // 4. Distribute dividends via Hub
     console.log("\n4. Distributing dividends...");
-    const distTx = await fantasy.distributeDividends();
+    const distTx = await hub.distributeDividends();
     await distTx.wait();
     console.log("   Dividends distributed!");
 
-    // 5. Advance week (auto-unpauses trading)
+    // 5. Advance week via Hub, unpause trading via Router
     console.log("\n5. Advancing to next week...");
-    const advanceTx = await fantasy.advanceWeek();
+    const advanceTx = await hub.advanceWeek();
     await advanceTx.wait();
-    const newWeek = await fantasy.currentWeek();
+    const newWeek = await hub.currentWeek();
     console.log(`   Now on week ${newWeek}`);
 
+    // Unpause trading
+    const unpauseTx = await router.setTradingPaused(false);
+    await unpauseTx.wait();
+    console.log("   Trading unpaused.");
+
     console.log("\nDone! Users can now claim their dividends for week " + currentWeek);
+    console.log(`  Claim via: hub.claimDividend(${currentWeek})`);
   } catch (error) {
-    // Unpause trading on any failure so users aren't stuck
     console.error("\nError during distribution:", error.message);
     console.log("Attempting to unpause trading...");
     try {
-      const unpauseTx = await fantasy.setTradingPaused(false);
+      const unpauseTx = await router.setTradingPaused(false);
       await unpauseTx.wait();
       console.log("Trading unpaused after error.");
     } catch (e) {
       console.error("CRITICAL: Failed to unpause trading! Manual intervention needed.");
-      console.error("Run: npx hardhat run --network baseSepolia -e 'const f = await ethers.getContractAt(\"DividendFantasy\", \"" + fantasyAddress + "\"); await (await f.setTradingPaused(false)).wait()'");
     }
     throw error;
   }

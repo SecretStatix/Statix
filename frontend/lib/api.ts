@@ -1,7 +1,7 @@
 // API client for Statix backend
 // Demo mode: when NEXT_PUBLIC_DEMO_MODE=true, returns mock data from lib/demo-data.ts
 
-import { getDemoPlayers, getDemoPlayer, getDemoPlayerGames, getDemoPlayerTransactions, getDemoLeaderboard } from './demo-data';
+import { getDemoPlayers, getDemoPlayer, getDemoPlayerGames, getDemoPlayerTransactions, getDemoRecentTransactions, getDemoLeaderboard } from './demo-data';
 
 const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'; // Remove this + 5 checks to disable demo
 
@@ -40,6 +40,12 @@ export async function getPlayerTransactions(playerIndex: number, limit = 10, day
   return fetchAPI(`/api/trading/transactions?player_index=${playerIndex}&limit=${limit}&days=${days}`);
 }
 
+// Recent transactions (activity feed)
+export async function getRecentTransactions(limit = 15) {
+  if (DEMO) return getDemoRecentTransactions(limit);
+  return fetchAPI(`/api/trading/transactions/recent?limit=${limit}`);
+}
+
 // Trading (contracts/quote: optional fallbacks; frontend uses on-chain reads via useContracts)
 export async function getContracts() {
   return fetchAPI("/api/trading/contracts");
@@ -58,7 +64,8 @@ export async function logTransaction(
   side: string,
   shares: number,
   cost: number,
-  txHash: string
+  txHash: string,
+  playerName?: string
 ) {
   if (DEMO) return { success: true };
   return fetchAPI("/api/trading/log-transaction", {
@@ -70,6 +77,7 @@ export async function logTransaction(
       shares,
       cost,
       tx_hash: txHash,
+      player_name: playerName,
     }),
   });
 }

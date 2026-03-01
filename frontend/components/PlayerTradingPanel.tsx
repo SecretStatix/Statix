@@ -14,6 +14,7 @@ import {
   useHoldings,
 } from '@/hooks/useContracts';
 import { logTransaction } from '@/lib/api';
+import { PREVIEW, PREVIEW_BALANCE, getPreviewHolding } from '@/lib/preview';
 
 interface PlayerTradingPanelProps {
   playerIndex: number;
@@ -45,7 +46,7 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
       const txHash = bought ? buyHash : sellHash;
       const info = tradeInfoRef.current;
       if (txHash && address && info) {
-        logTransaction(address, playerIndex, info.side, info.shares, info.total, txHash).catch(console.error);
+        logTransaction(address, playerIndex, info.side, info.shares, info.total, txHash, playerName).catch(console.error);
       }
     }
   }, [bought, sold, buyHash, sellHash, address, playerIndex]);
@@ -93,8 +94,8 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
   }
 
   const slippage = quote ? Math.abs((quote.newPrice - price) / price * 100) : 0;
-  const balance = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
-  const holdingAmount = myHoldings ? parseFloat(formatUnits(myHoldings as bigint, 6)) : 0;
+  const balance = PREVIEW ? PREVIEW_BALANCE : (dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0);
+  const holdingAmount = PREVIEW ? getPreviewHolding(playerIndex) : (myHoldings ? parseFloat(formatUnits(myHoldings as bigint, 6)) : 0);
   const needsApproval = mode === 'buy' && quote && allowance !== undefined &&
     (allowance as bigint) < BigInt(Math.ceil(quote.total * 1e6));
 
@@ -145,9 +146,9 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
         </button>
       </div>
 
-      {isConnected && (
+      {(isConnected || PREVIEW) && (
         <div className="flex justify-between text-xs text-gray-400 mb-3">
-          <span>Balance: <span className="font-medium text-foreground">${balance.toFixed(2)}</span></span>
+          <span>Balance: <span className="font-medium text-foreground">${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
           <span>Owned: <span className="font-medium text-foreground">{holdingAmount.toFixed(2)}</span></span>
         </div>
       )}
@@ -178,17 +179,17 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
         </div>
       )}
 
-      {isConnected ? (
+      {(isConnected || PREVIEW) ? (
         <button
-          onClick={handleTrade}
-          disabled={!quote || isPending || isSuccess}
+          onClick={PREVIEW ? undefined : handleTrade}
+          disabled={!quote || isPending || isSuccess || PREVIEW}
           className={`w-full h-12 rounded-xl text-base font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card mt-auto ${
             mode === 'buy'
               ? 'bg-success text-white hover:bg-success/90 focus:ring-success'
               : 'bg-destructive text-white hover:bg-destructive/90 focus:ring-destructive'
           }`}
         >
-          {isPending ? 'Confirming...' : isSuccess ? 'Done' : needsApproval ? 'Approve' : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'}`}
+          {PREVIEW ? `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'}` : isPending ? 'Confirming...' : isSuccess ? 'Done' : needsApproval ? 'Approve' : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'}`}
         </button>
       ) : (
         <p className="text-center text-sm text-gray-400 py-4">Connect wallet to trade</p>

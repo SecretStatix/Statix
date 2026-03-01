@@ -1,9 +1,4 @@
 'use client';
-/**
- * Player profile: header, chart (FPts or Price), stats, top transactions (past 7 days), recent games (last 5).
- * Data: getPlayer, getPlayerGames, getPlayerTransactions (lib/api — demo or backend).
- * Price: usePlayerPrice (on-chain) when available.
- */
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
@@ -22,6 +17,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { PlayerTradingPanel } from '@/components/PlayerTradingPanel';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 
 interface PlayerInfo {
   index: number;
@@ -65,7 +61,7 @@ export default function PlayerProfilePage() {
   const [gamesLoading, setGamesLoading] = useState(true);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [chartMode, setChartMode] = useState<'fpts' | 'price'>('fpts');
+  const [chartMode, setChartMode] = useState<'fpts' | 'price'>('price');
 
   const { data: onChainPrice } = usePlayerPrice(player?.index ?? 0);
 
@@ -87,7 +83,7 @@ export default function PlayerProfilePage() {
     async function loadGames() {
       if (!player) return;
       try {
-        const data = await getPlayerGames(playerId, 5);
+        const data = await getPlayerGames(playerId, 10);
         setGames(data.games || []);
       } catch {
         console.error('Failed to load game log');
@@ -113,36 +109,70 @@ export default function PlayerProfilePage() {
     loadTransactions();
   }, [player]);
 
-  // Must be called unconditionally (before early returns) to satisfy Rules of Hooks
   const currentPrice = onChainPrice
     ? parseFloat(formatUnits(onChainPrice as bigint, 6))
     : (player as any)?.price || 10;
+
+  // Price chart: uses on-chain price as final point, synthetic history
+  // Once deployed, this will reflect real blockchain price via usePlayerPrice
   const chartDataPrice = useMemo(() => {
-    if (games.length === 0) return [];
-    let p = currentPrice * 0.92;
-    const out: { date: string; price: number }[] = [];
-    let seed = 12345;
+    const points = Math.max(games.length, 10);
+    const data: { label: string; price: number }[] = [];
+    let p = currentPrice * 0.9;
+    let seed = 54321;
     const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-    for (let i = 0; i < games.length; i++) {
-      const g = games[i];
-      const date = g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date;
-      if (i === games.length - 1) {
-        out.push({ date, price: currentPrice });
+
+    for (let i = 0; i < points; i++) {
+      const drift = (currentPrice - p) * 0.1 + (rnd() - 0.47) * 0.2;
+      p = Math.max(currentPrice * 0.75, Math.min(currentPrice * 1.1, p + drift));
+
+      let label: string;
+      if (games[i]) {
+        const g = games[i];
+        label = g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date;
       } else {
-        const drift = (currentPrice - p) * 0.12 + (rnd() - 0.5) * 0.25;
-        p = Math.max(currentPrice * 0.7, Math.min(currentPrice * 1.15, p + drift));
-        out.push({ date, price: Math.round(p * 100) / 100 });
+        const d = new Date();
+        d.setDate(d.getDate() - (points - i) * 2);
+        label = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+      }
+
+      if (i === points - 1) {
+        data.push({ label, price: currentPrice });
+      } else {
+        data.push({ label, price: Math.round(p * 100) / 100 });
       }
     }
-    return out;
+    return data;
   }, [games, currentPrice]);
+
+  const chartDataFpts = games.map((g) => ({
+    label: g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date,
+    fpts: g.fantasy_points,
+    matchup: g.matchup,
+    result: g.result,
+  }));
+
+  const chartData = chartMode === 'fpts' ? chartDataFpts : chartDataPrice;
+
+  // % change from performance trend
+  let percentChange = 0;
+  if (chartDataFpts.length >= 4) {
+    const mid = Math.floor(chartDataFpts.length / 2);
+    const olderAvg = chartDataFpts.slice(0, mid).reduce((s, g) => s + g.fpts, 0) / mid;
+    const recentAvg = chartDataFpts.slice(mid).reduce((s, g) => s + g.fpts, 0) / (chartDataFpts.length - mid);
+    percentChange = olderAvg > 0 ? ((recentAvg - olderAvg) / olderAvg) * 100 : 0;
+  }
+  // For price mode, use price deviation from $10
+  const priceChange = ((currentPrice - 10) / 10) * 100;
+  const displayChange = chartMode === 'price' ? priceChange : percentChange;
+  const isPositive = displayChange >= 0;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-          <span className="text-sm text-gray-400">Loading player...</span>
+          <span className="text-sm text-muted-foreground">Loading player...</span>
         </div>
       </div>
     );
@@ -151,7 +181,7 @@ export default function PlayerProfilePage() {
   if (error || !player) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-6">
-        <p className="text-gray-400">{error || 'Player not found'}</p>
+        <p className="text-muted-foreground">{error || 'Player not found'}</p>
         <Link href="/" className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary-600 font-medium transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Back to Market
@@ -164,27 +194,7 @@ export default function PlayerProfilePage() {
   const weeklyProj = Number(player.weekly_projection) || avgFpts * 3.5;
   const seasonProj = Number(player.season_projection) || avgFpts * 82;
   const stats = player.avg_stats || {};
-  const initials = player.name.split(' ').map(n => n[0]).join('');
   const price = currentPrice;
-
-  // Chronological order: oldest first (left), newest last (right). Do not reverse.
-  const chartDataFpts = games.map((g) => ({
-    date: g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date,
-    fpts: g.fantasy_points,
-    matchup: g.matchup,
-    result: g.result,
-  }));
-
-  const chartData = chartMode === 'fpts' ? chartDataFpts : chartDataPrice;
-
-  // Compute % change from performance trend (recent vs older games)
-  let percentChange = 0;
-  if (chartDataFpts.length >= 4) {
-    const mid = Math.floor(chartDataFpts.length / 2);
-    const olderAvg = chartDataFpts.slice(0, mid).reduce((s, g) => s + g.fpts, 0) / mid;
-    const recentAvg = chartDataFpts.slice(mid).reduce((s, g) => s + g.fpts, 0) / (chartDataFpts.length - mid);
-    percentChange = olderAvg > 0 ? ((recentAvg - olderAvg) / olderAvg) * 100 : 0;
-  }
 
   const statEntries: { label: string; value: string; key: string }[] = [
     { label: 'PTS', value: (stats.PTS ?? 0).toFixed(1), key: 'pts' },
@@ -195,174 +205,141 @@ export default function PlayerProfilePage() {
     { label: 'TOV', value: (stats.TOV ?? 0).toFixed(1), key: 'tov' },
   ];
 
-  const isPositive = percentChange >= 0;
+  const chartColor = chartMode === 'price'
+    ? (isPositive ? '#22C55E' : '#EF4444')
+    : '#4A8AF4';
+  const dataKey = chartMode === 'fpts' ? 'fpts' : 'price';
+  const gradientId = chartMode === 'fpts' ? 'fptsGrad' : 'priceGrad';
 
   return (
-    <div className="space-y-8">
-      <Link href="/" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-foreground transition-colors duration-200">
+    <div className="space-y-6">
+      <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="w-4 h-4" />
         Back to Market
       </Link>
 
-      {/* Header: player name + price + % change */}
-      <div className="bg-card border border-white/[0.06] rounded-2xl p-6 md:p-8 transition-all duration-200 hover:border-white/[0.08]">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <div className="w-16 h-16 rounded-xl bg-primary/15 flex items-center justify-center text-2xl font-bold text-primary shrink-0">
-            {initials}
-          </div>
+      {/* Top section: player info + chart + trading panel — single card */}
+      <div className="bg-card border border-white/[0.06] rounded-xl overflow-hidden">
+        {/* Player header row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-5 pb-0">
+          <PlayerAvatar name={player.name} nbaId={player.nba_id} size="xl" />
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">{player.name}</h1>
-            <p className="text-gray-400 text-sm mt-0.5">{player.team} · {player.position}</p>
+            <p className="text-muted-foreground text-sm mt-0.5">{player.team} · {player.position}</p>
+            {/* Inline stats pills */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {statEntries.slice(0, 3).map(s => (
+                <span key={s.key} className="text-xs px-2.5 py-1 rounded-lg bg-white/[0.04] text-muted-foreground">
+                  <span className="font-semibold text-foreground">{s.value}</span> {s.label}
+                </span>
+              ))}
+              <span className="text-xs px-2.5 py-1 rounded-lg bg-primary/10 text-primary">
+                <span className="font-semibold">{avgFpts.toFixed(1)}</span> FPts
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="text-right">
               <p className="text-3xl md:text-4xl font-bold text-foreground">${price.toFixed(2)}</p>
-              <p className="text-xs text-gray-400 mt-1">per share</p>
-            </div>
-            {chartData.length >= 4 && (
-              <div className={`flex items-center gap-1 px-3 py-1.5 rounded-lg ${isPositive ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
-                {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                <span className="text-sm font-semibold">{isPositive ? '+' : ''}{percentChange.toFixed(1)}%</span>
+              <div className={`flex items-center justify-end gap-1 mt-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
+                {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                <span className="text-sm font-semibold">{isPositive ? '+' : ''}{displayChange.toFixed(1)}%</span>
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main area: chart (left) + trading panel (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        <div className="lg:col-span-2 bg-card border border-white/[0.06] rounded-2xl p-6 transition-all duration-200 hover:border-white/[0.08]">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex rounded-xl p-1 bg-white/[0.04] border border-white/[0.06]">
-              <button
-                onClick={() => setChartMode('fpts')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${chartMode === 'fpts' ? 'bg-primary text-primary-foreground' : 'text-gray-400 hover:text-foreground'}`}
-              >
-                Fantasy Points
-              </button>
+        {/* Chart */}
+        <div className="px-5 pt-4 pb-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex rounded-lg p-0.5 bg-white/[0.04] border border-white/[0.06]">
               <button
                 onClick={() => setChartMode('price')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${chartMode === 'price' ? 'bg-primary text-primary-foreground' : 'text-gray-400 hover:text-foreground'}`}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${chartMode === 'price' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               >
                 Price
               </button>
+              <button
+                onClick={() => setChartMode('fpts')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${chartMode === 'fpts' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                Fantasy Points
+              </button>
             </div>
-            <span className="text-xs text-gray-400">
-              {chartMode === 'fpts' ? `${games.length} games` : 'Simulated'}
+            <span className="text-xs text-muted-foreground">
+              {chartMode === 'fpts' ? `${games.length} games` : onChainPrice ? 'On-chain' : 'Simulated'}
             </span>
           </div>
 
-          {gamesLoading ? (
-            <div className="flex items-center justify-center h-72">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-                <span className="text-sm text-gray-400">Loading chart...</span>
-              </div>
+          {gamesLoading && chartMode === 'fpts' ? (
+            <div className="flex items-center justify-center h-56">
+              <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
             </div>
           ) : chartData.length === 0 ? (
-            <div className="flex items-center justify-center h-72 text-gray-400 text-sm">
-              {chartMode === 'fpts' ? 'No game data available' : 'No price data'}
+            <div className="flex items-center justify-center h-56 text-muted-foreground text-sm">
+              No data available
             </div>
-          ) : chartMode === 'fpts' ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-                <defs>
-                  <linearGradient id="fptsGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis
-                  dataKey="date"
-                  stroke="rgba(255,255,255,0.2)"
-                  tick={{ fill: 'rgb(156, 163, 175)', fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="rgba(255,255,255,0.2)"
-                  tick={{ fill: 'rgb(156, 163, 175)', fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={40}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#111827',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                  }}
-                  labelStyle={{ color: 'rgb(156, 163, 175)' }}
-                  itemStyle={{ color: '#3B82F6' }}
-                  formatter={(value: number | undefined) => [`${(value ?? 0).toFixed(1)} FPts`, 'Fantasy Points']}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="fpts"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  fill="url(#fptsGradient)"
-                  dot={false}
-                  activeDot={{ r: 4, fill: '#3B82F6', stroke: '#111827', strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
                 <defs>
-                  <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22C55E" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.2} />
+                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
                 <XAxis
-                  dataKey="date"
-                  stroke="rgba(255,255,255,0.2)"
-                  tick={{ fill: 'rgb(156, 163, 175)', fontSize: 11 }}
+                  dataKey="label"
+                  stroke="rgba(255,255,255,0.15)"
+                  tick={{ fill: 'rgb(139, 141, 149)', fontSize: 10 }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  stroke="rgba(255,255,255,0.2)"
-                  tick={{ fill: 'rgb(156, 163, 175)', fontSize: 11 }}
+                  stroke="rgba(255,255,255,0.15)"
+                  tick={{ fill: 'rgb(139, 141, 149)', fontSize: 10 }}
                   tickLine={false}
                   axisLine={false}
-                  width={45}
-                  tickFormatter={(v) => `$${v}`}
+                  width={38}
+                  tickFormatter={chartMode === 'price' ? (v) => `$${v}` : undefined}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#111827',
+                    backgroundColor: '#1C1D21',
                     border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '12px',
+                    borderRadius: '8px',
                     fontSize: '12px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    padding: '8px 12px',
                   }}
-                  labelStyle={{ color: 'rgb(156, 163, 175)' }}
-                  itemStyle={{ color: '#22C55E' }}
-                  formatter={(value: number | undefined) => [`$${(value ?? 0).toFixed(2)}`, 'Price']}
+                  labelStyle={{ color: 'rgb(139, 141, 149)', marginBottom: '4px' }}
+                  itemStyle={{ color: chartColor }}
+                  formatter={(value: number | undefined) =>
+                    chartMode === 'price'
+                      ? [`$${(value ?? 0).toFixed(2)}`, 'Price']
+                      : [`${(value ?? 0).toFixed(1)} FPts`, 'Fantasy Points']
+                  }
                 />
                 <Area
                   type="monotone"
-                  dataKey="price"
-                  stroke="#22C55E"
+                  dataKey={dataKey}
+                  stroke={chartColor}
                   strokeWidth={2}
-                  fill="url(#priceGradient)"
+                  fill={`url(#${gradientId})`}
                   dot={false}
-                  activeDot={{ r: 4, fill: '#22C55E', stroke: '#111827', strokeWidth: 2 }}
+                  activeDot={{ r: 4, fill: chartColor, stroke: '#1C1D21', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
+      </div>
 
-        <div className="lg:min-h-[360px]">
-          <div className="sticky top-24">
+      {/* Trading panel + stats — side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-1">
+          <div className="sticky top-20">
             <PlayerTradingPanel
               playerIndex={player.index}
               playerId={player.id}
@@ -371,149 +348,135 @@ export default function PlayerProfilePage() {
             />
           </div>
         </div>
-      </div>
 
-      {/* Stats section below */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-card border border-white/[0.06] rounded-2xl p-6 transition-all duration-200 hover:border-white/[0.08]">
-          <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Season Averages</h3>
-          <div className="grid grid-cols-3 gap-3">
-            {statEntries.map(s => (
-              <div key={s.key} className="rounded-xl p-4 bg-white/[0.03] text-center">
-                <p className="text-xl font-bold text-foreground">{s.value}</p>
-                <p className="text-xs text-gray-400 mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="lg:col-span-2 bg-card border border-white/[0.06] rounded-2xl p-6 transition-all duration-200 hover:border-white/[0.08]">
-          <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">Fantasy Projections</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-xl p-5 bg-primary/10">
-              <p className="text-2xl font-bold text-primary">{avgFpts.toFixed(1)}</p>
-              <p className="text-xs text-gray-400 mt-1">FPts/game</p>
-            </div>
-            <div className="rounded-xl p-5 bg-white/[0.03]">
-              <p className="text-2xl font-bold text-foreground">{weeklyProj.toFixed(1)}</p>
-              <p className="text-xs text-gray-400 mt-1">Weekly</p>
-            </div>
-            <div className="rounded-xl p-5 bg-white/[0.03]">
-              <p className="text-2xl font-bold text-foreground">{seasonProj.toFixed(0)}</p>
-              <p className="text-xs text-gray-400 mt-1">Season</p>
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-4 leading-relaxed">
-            PTS×1 + REB×1.2 + AST×1.5 + STL×3 + BLK×3 − TOV×1
-          </p>
-        </div>
-      </div>
-
-      {/* Top Transactions + Recent Games */}
-      {(transactions.length > 0 || games.length > 0) && (
-        <div className="bg-card border border-white/[0.06] rounded-2xl overflow-hidden transition-all duration-200 hover:border-white/[0.08]">
-          <div className="p-5 border-b border-white/[0.06]">
-            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">
-              Top Transactions & Recent Games
-            </h3>
-            <p className="text-xs text-gray-500 mt-1">
-              Last 7 days (top 10 by volume) · Last 5 games
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            {transactionsLoading && transactions.length === 0 ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-                  <span className="text-xs text-gray-400">Loading transactions...</span>
+        <div className="lg:col-span-2 space-y-5">
+          {/* Stats + projections in one card */}
+          <div className="bg-card border border-white/[0.06] rounded-xl p-5">
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Season Averages</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {statEntries.map(s => (
+                    <div key={s.key} className="rounded-lg p-3 bg-white/[0.03] text-center">
+                      <p className="text-lg font-bold text-foreground">{s.value}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ) : transactions.length > 0 ? (
-              <>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                      <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs">Wallet</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs">Side</th>
-                      <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs">Shares</th>
-                      <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs">Cost</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs">Date</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs">Tx</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map((tx, i) => (
-                      <tr key={i} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors duration-150">
-                        <td className="px-5 py-3 text-foreground/90 font-mono text-xs">
-                          {tx.wallet_address.length > 12 ? `${tx.wallet_address.slice(0, 6)}...${tx.wallet_address.slice(-4)}` : tx.wallet_address}
-                        </td>
-                        <td className="px-5 py-3">
-                          <span className={`text-xs font-semibold ${tx.side === 'buy' ? 'text-success' : 'text-destructive'}`}>
-                            {tx.side}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 text-right font-mono text-xs text-foreground">{tx.shares}</td>
-                        <td className="px-5 py-3 text-right font-mono text-xs font-medium text-primary">${Number(tx.cost).toFixed(2)}</td>
-                        <td className="px-5 py-3 text-gray-400 font-mono text-xs">
-                          {new Date(tx.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td className="px-5 py-3 text-gray-500 font-mono text-xs truncate max-w-[100px]">
-                          {tx.tx_hash}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {games.length > 0 && (
-                  <div className="px-5 py-3 border-t border-white/[0.06] bg-white/[0.02]">
-                    <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Recent Games (Last 5)</h4>
+              <div>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Fantasy Projections</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-lg p-3 bg-primary/8">
+                    <span className="text-xs text-muted-foreground">FPts/Game</span>
+                    <span className="text-lg font-bold text-primary">{avgFpts.toFixed(1)}</span>
                   </div>
-                )}
-              </>
-            ) : null}
-            {games.length > 0 && (
-              <>
+                  <div className="flex items-center justify-between rounded-lg p-3 bg-white/[0.03]">
+                    <span className="text-xs text-muted-foreground">Weekly</span>
+                    <span className="text-lg font-bold text-foreground">{weeklyProj.toFixed(1)}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg p-3 bg-white/[0.03]">
+                    <span className="text-xs text-muted-foreground">Season</span>
+                    <span className="text-lg font-bold text-foreground">{seasonProj.toFixed(0)}</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  PTS×1 + REB×1.2 + AST×1.5 + STL×3 + BLK×3 − TOV×1
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent games */}
+          {games.length > 0 && (
+            <div className="bg-card border border-white/[0.06] rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-white/[0.06]">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Games</h3>
+              </div>
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-                      <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs">Recent Games</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs">Matchup</th>
-                      <th className="text-center px-5 py-3 font-medium text-gray-400 text-xs">W/L</th>
-                      <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs">PTS</th>
-                      <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs">REB</th>
-                      <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs">AST</th>
-                      <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs">STL</th>
-                      <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs">BLK</th>
-                      <th className="text-right px-5 py-3 font-medium text-primary text-xs">FPts</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Date</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Matchup</th>
+                      <th className="text-center px-4 py-2.5 font-medium text-muted-foreground text-xs">W/L</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">PTS</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">REB</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">AST</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">STL</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">BLK</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-primary text-xs">FPts</th>
                     </tr>
                   </thead>
                   <tbody>
                     {games.map((game, i) => (
-                      <tr key={i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors duration-150">
-                        <td className="px-5 py-3 text-gray-400 font-mono text-xs">{game.date}</td>
-                        <td className="px-5 py-3 text-foreground/90 text-xs">{game.matchup}</td>
-                        <td className="px-5 py-3 text-center">
+                      <tr key={i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
+                        <td className="px-4 py-2.5 text-muted-foreground font-mono text-xs">{game.date}</td>
+                        <td className="px-4 py-2.5 text-foreground/90 text-xs">{game.matchup}</td>
+                        <td className="px-4 py-2.5 text-center">
                           <span className={`text-xs font-semibold ${game.result === 'W' ? 'text-success' : 'text-destructive'}`}>
                             {game.result}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-right font-mono text-xs text-foreground">{game.stats.PTS?.toFixed(0)}</td>
-                        <td className="px-5 py-3 text-right font-mono text-xs text-foreground">{game.stats.REB?.toFixed(0)}</td>
-                        <td className="px-5 py-3 text-right font-mono text-xs text-foreground">{game.stats.AST?.toFixed(0)}</td>
-                        <td className="px-5 py-3 text-right font-mono text-xs text-foreground">{game.stats.STL?.toFixed(0)}</td>
-                        <td className="px-5 py-3 text-right font-mono text-xs text-foreground">{game.stats.BLK?.toFixed(0)}</td>
-                        <td className="px-5 py-3 text-right font-mono text-xs font-semibold text-primary">
+                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.PTS?.toFixed(0)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.REB?.toFixed(0)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.AST?.toFixed(0)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.STL?.toFixed(0)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.BLK?.toFixed(0)}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-xs font-semibold text-primary">
                           {game.fantasy_points.toFixed(1)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
+
+          {/* Transactions */}
+          {transactions.length > 0 && (
+            <div className="bg-card border border-white/[0.06] rounded-xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-white/[0.06]">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Transactions</h3>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Top 10 by volume · Last 7 days</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Wallet</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Side</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">Shares</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">Cost</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((tx, i) => (
+                      <tr key={i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
+                        <td className="px-4 py-2.5 text-foreground/90 font-mono text-xs">
+                          {tx.wallet_address.length > 12 ? `${tx.wallet_address.slice(0, 6)}...${tx.wallet_address.slice(-4)}` : tx.wallet_address}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className={`text-xs font-semibold ${tx.side === 'buy' ? 'text-success' : 'text-destructive'}`}>
+                            {tx.side}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{tx.shares}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-xs font-medium text-primary">${Number(tx.cost).toFixed(2)}</td>
+                        <td className="px-4 py-2.5 text-muted-foreground font-mono text-xs">
+                          {new Date(tx.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

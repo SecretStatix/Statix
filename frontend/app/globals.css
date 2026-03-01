@@ -5,25 +5,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --background: #0B0F1A;
-  --foreground: #FFFFFF;
-  --card: #111827;
-  --card-foreground: #FFFFFF;
-  --primary: #3B82F6;
-  --primary-600: #2563EB;
-  --primary-700: #1D4ED8;
+  --background: #141518;
+  --foreground: #F0F0F2;
+  --card: #1C1D21;
+  --card-foreground: #F0F0F2;
+  --primary: #4A8AF4;
+  --primary-600: #3B7AE8;
+  --primary-700: #2D6AD4;
   --primary-foreground: #FFFFFF;
-  --secondary: #1F2937;
-  --secondary-foreground: #FFFFFF;
-  --muted: #1F2937;
-  --muted-foreground: #9CA3AF;
-  --accent: #3B82F6;
+  --secondary: #232428;
+  --secondary-foreground: #F0F0F2;
+  --muted: #232428;
+  --muted-foreground: #8B8D95;
+  --accent: #4A8AF4;
   --accent-foreground: #FFFFFF;
   --destructive: #EF4444;
   --success: #22C55E;
-  --border: #1F2937;
-  --input: #1F2937;
-  --ring: #3B82F6;
+  --border: #2A2B30;
+  --input: #232428;
+  --ring: #4A8AF4;
+  --highlight: #2A2B30;
 }
 
 body {
@@ -39,16 +40,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0F1A;
+  background: #141518;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1F2937;
+  background: #2A2B30;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #3A3B40;
 }
 
 /* Card hover utility (used by Portfolio, DividendSummary) */
@@ -59,7 +60,7 @@ body {
 .card-hover:hover {
   transform: scale(1.01);
   box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.2);
-  border-color: rgba(59, 130, 246, 0.25);
+  border-color: rgba(74, 138, 244, 0.25);
 }
 
 @keyframes fade-in {
