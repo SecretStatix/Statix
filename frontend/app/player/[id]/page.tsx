@@ -15,6 +15,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts';
 import { PlayerTradingPanel } from '@/components/PlayerTradingPanel';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -50,6 +51,8 @@ interface PlayerTransaction {
   created_at: string;
 }
 
+type TimeRange = '1W' | '1M' | '3M';
+
 export default function PlayerProfilePage() {
   const params = useParams();
   const playerId = params.id as string;
@@ -62,6 +65,7 @@ export default function PlayerProfilePage() {
   const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [error, setError] = useState('');
   const [chartMode, setChartMode] = useState<'fpts' | 'price'>('price');
+  const [timeRange, setTimeRange] = useState<TimeRange>('3M');
 
   const { data: onChainPrice } = usePlayerPrice(player?.index ?? 0);
 
@@ -83,7 +87,7 @@ export default function PlayerProfilePage() {
     async function loadGames() {
       if (!player) return;
       try {
-        const data = await getPlayerGames(playerId, 10);
+        const data = await getPlayerGames(playerId, 20);
         setGames(data.games || []);
       } catch {
         console.error('Failed to load game log');
@@ -113,44 +117,60 @@ export default function PlayerProfilePage() {
     ? parseFloat(formatUnits(onChainPrice as bigint, 6))
     : (player as any)?.price || 10;
 
-  // Price chart: uses on-chain price as final point, synthetic history
-  // Once deployed, this will reflect real blockchain price via usePlayerPrice
-  const chartDataPrice = useMemo(() => {
-    const points = Math.max(games.length, 10);
+  // Performance-based price chart: derives price from game fantasy points
+  const chartDataPriceAll = useMemo(() => {
+    if (games.length === 0) return [];
+
+    const avgFpts = games.reduce((s, g) => s + g.fantasy_points, 0) / games.length;
     const data: { label: string; price: number }[] = [];
-    let p = currentPrice * 0.9;
-    let seed = 54321;
-    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
 
-    for (let i = 0; i < points; i++) {
-      const drift = (currentPrice - p) * 0.1 + (rnd() - 0.47) * 0.2;
-      p = Math.max(currentPrice * 0.75, Math.min(currentPrice * 1.1, p + drift));
+    // Start at 85% of current price, nudge up/down based on performance
+    let p = currentPrice * 0.85;
+    const reversed = [...games].reverse(); // oldest first
 
-      let label: string;
-      if (games[i]) {
-        const g = games[i];
-        label = g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date;
-      } else {
-        const d = new Date();
-        d.setDate(d.getDate() - (points - i) * 2);
-        label = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-      }
+    for (let i = 0; i < reversed.length; i++) {
+      const g = reversed[i];
+      const diff = g.fantasy_points - avgFpts;
+      // Nudge proportional to how far above/below average
+      const nudge = (diff / Math.max(avgFpts, 1)) * currentPrice * 0.06;
+      p = p + nudge;
+      // Clamp to reasonable range
+      p = Math.max(currentPrice * 0.6, Math.min(currentPrice * 1.3, p));
 
-      if (i === points - 1) {
-        data.push({ label, price: currentPrice });
-      } else {
-        data.push({ label, price: Math.round(p * 100) / 100 });
-      }
+      const label = g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date;
+      data.push({ label, price: Math.round(p * 100) / 100 });
     }
+
+    // Ensure last point lands on currentPrice
+    if (data.length > 0) {
+      data[data.length - 1].price = currentPrice;
+    }
+
     return data;
   }, [games, currentPrice]);
 
-  const chartDataFpts = games.map((g) => ({
-    label: g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date,
-    fpts: g.fantasy_points,
-    matchup: g.matchup,
-    result: g.result,
-  }));
+  const chartDataFptsAll = games
+    .slice()
+    .reverse() // oldest first for left-to-right
+    .map((g) => ({
+      label: g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date,
+      fpts: g.fantasy_points,
+      matchup: g.matchup,
+      result: g.result,
+    }));
+
+  // Time range filtering: 1W = last 7 points, 1M = last 14, 3M = all
+  const timeRangeLimit = timeRange === '1W' ? 7 : timeRange === '1M' ? 14 : Infinity;
+
+  const chartDataPrice = useMemo(() => {
+    if (timeRangeLimit >= chartDataPriceAll.length) return chartDataPriceAll;
+    return chartDataPriceAll.slice(-timeRangeLimit);
+  }, [chartDataPriceAll, timeRangeLimit]);
+
+  const chartDataFpts = useMemo(() => {
+    if (timeRangeLimit >= chartDataFptsAll.length) return chartDataFptsAll;
+    return chartDataFptsAll.slice(-timeRangeLimit);
+  }, [chartDataFptsAll, timeRangeLimit]);
 
   const chartData = chartMode === 'fpts' ? chartDataFpts : chartDataPrice;
 
@@ -212,34 +232,42 @@ export default function PlayerProfilePage() {
   const gradientId = chartMode === 'fpts' ? 'fptsGrad' : 'priceGrad';
 
   return (
-    <div className="space-y-6">
-      <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+    <div className="relative space-y-6 pb-4">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-28 -left-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute top-48 -right-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" />
+      </div>
+
+      <Link
+        href="/"
+        className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
         <ArrowLeft className="w-4 h-4" />
         Back to Market
       </Link>
 
       {/* Top section: player info + chart + trading panel — single card */}
-      <div className="bg-card border border-white/[0.06] rounded-xl overflow-hidden">
+      <div className="relative overflow-hidden rounded-3xl border border-white/[0.09] bg-[radial-gradient(circle_at_top_right,rgba(74,138,244,0.16),transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.015))] shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-sm">
         {/* Player header row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-5 pb-0">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-6 pb-0">
           <PlayerAvatar name={player.name} nbaId={player.nba_id} size="xl" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">{player.name}</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">{player.team} · {player.position}</p>
+            <h1 className="text-2xl md:text-4xl font-bold text-foreground">{player.name}</h1>
+            <p className="text-muted-foreground text-sm mt-1">{player.team} · {player.position}</p>
             {/* Inline stats pills */}
-            <div className="flex flex-wrap gap-2 mt-3">
+            <div className="mt-4 flex flex-wrap gap-2">
               {statEntries.slice(0, 3).map(s => (
-                <span key={s.key} className="text-xs px-2.5 py-1 rounded-lg bg-white/[0.04] text-muted-foreground">
+                <span key={s.key} className="rounded-full border border-white/[0.12] bg-white/[0.03] px-3 py-1 text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">{s.value}</span> {s.label}
                 </span>
               ))}
-              <span className="text-xs px-2.5 py-1 rounded-lg bg-primary/10 text-primary">
+              <span className="rounded-full border border-primary/30 bg-primary/12 px-3 py-1 text-xs text-primary">
                 <span className="font-semibold">{avgFpts.toFixed(1)}</span> FPts
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <div className="text-right">
+            <div className="rounded-2xl border border-white/[0.12] bg-black/15 px-4 py-3 text-right backdrop-blur">
               <p className="text-3xl md:text-4xl font-bold text-foreground">${price.toFixed(2)}</p>
               <div className={`flex items-center justify-end gap-1 mt-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
                 {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
@@ -250,24 +278,38 @@ export default function PlayerProfilePage() {
         </div>
 
         {/* Chart */}
-        <div className="px-5 pt-4 pb-2">
+        <div className="mt-5 border-t border-white/[0.08] px-6 pb-4 pt-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex rounded-lg p-0.5 bg-white/[0.04] border border-white/[0.06]">
-              <button
-                onClick={() => setChartMode('price')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${chartMode === 'price' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                Price
-              </button>
-              <button
-                onClick={() => setChartMode('fpts')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${chartMode === 'fpts' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                Fantasy Points
-              </button>
+            <div className="flex items-center gap-3">
+              <div className="flex rounded-full border border-white/[0.1] bg-black/20 p-0.5 backdrop-blur">
+                <button
+                  onClick={() => setChartMode('price')}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${chartMode === 'price' ? 'bg-primary text-primary-foreground shadow-[0_4px_12px_rgba(74,138,244,0.35)]' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Price
+                </button>
+                <button
+                  onClick={() => setChartMode('fpts')}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${chartMode === 'fpts' ? 'bg-primary text-primary-foreground shadow-[0_4px_12px_rgba(74,138,244,0.35)]' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  Fantasy Points
+                </button>
+              </div>
+              {/* Time range tabs */}
+              <div className="flex rounded-full border border-white/[0.1] bg-black/20 p-0.5 backdrop-blur">
+                {(['1W', '1M', '3M'] as TimeRange[]).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setTimeRange(range)}
+                    className={`rounded-full px-2.5 py-1.5 text-xs font-medium transition-all ${timeRange === range ? 'bg-white/[0.12] text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
             </div>
             <span className="text-xs text-muted-foreground">
-              {chartMode === 'fpts' ? `${games.length} games` : onChainPrice ? 'On-chain' : 'Simulated'}
+              {chartMode === 'fpts' ? `${chartData.length} games` : onChainPrice ? 'On-chain' : 'Simulated'}
             </span>
           </div>
 
@@ -280,66 +322,81 @@ export default function PlayerProfilePage() {
               No data available
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-                <defs>
-                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.2} />
-                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  stroke="rgba(255,255,255,0.15)"
-                  tick={{ fill: 'rgb(139, 141, 149)', fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="rgba(255,255,255,0.15)"
-                  tick={{ fill: 'rgb(139, 141, 149)', fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={38}
-                  tickFormatter={chartMode === 'price' ? (v) => `$${v}` : undefined}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#1C1D21',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                    padding: '8px 12px',
-                  }}
-                  labelStyle={{ color: 'rgb(139, 141, 149)', marginBottom: '4px' }}
-                  itemStyle={{ color: chartColor }}
-                  formatter={(value: number | undefined) =>
-                    chartMode === 'price'
-                      ? [`$${(value ?? 0).toFixed(2)}`, 'Price']
-                      : [`${(value ?? 0).toFixed(1)} FPts`, 'Fantasy Points']
-                  }
-                />
-                <Area
-                  type="monotone"
-                  dataKey={dataKey}
-                  stroke={chartColor}
-                  strokeWidth={2}
-                  fill={`url(#${gradientId})`}
-                  dot={false}
-                  activeDot={{ r: 4, fill: chartColor, stroke: '#1C1D21', strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="rounded-2xl border border-white/[0.1] bg-black/20 px-2 py-2 backdrop-blur-sm">
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+                  <defs>
+                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={chartColor} stopOpacity={0.24} />
+                      <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="rgba(255,255,255,0.12)"
+                    tick={{ fill: 'rgb(139, 141, 149)', fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="rgba(255,255,255,0.12)"
+                    tick={{ fill: 'rgb(139, 141, 149)', fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={38}
+                    tickFormatter={chartMode === 'price' ? (v) => `$${v}` : undefined}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#17181c',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      boxShadow: '0 8px 20px rgba(0,0,0,0.45)',
+                      padding: '8px 12px',
+                    }}
+                    labelStyle={{ color: 'rgb(139, 141, 149)', marginBottom: '4px' }}
+                    itemStyle={{ color: chartColor }}
+                    formatter={(value: number | undefined) =>
+                      chartMode === 'price'
+                        ? [`$${(value ?? 0).toFixed(2)}`, 'Price']
+                        : [`${(value ?? 0).toFixed(1)} FPts`, 'Fantasy Points']
+                    }
+                  />
+                  {chartMode === 'price' && (
+                    <ReferenceLine
+                      y={currentPrice}
+                      stroke="rgba(255,255,255,0.2)"
+                      strokeDasharray="4 4"
+                      label={{
+                        value: `$${currentPrice.toFixed(2)}`,
+                        position: 'right',
+                        fill: 'rgb(139, 141, 149)',
+                        fontSize: 10,
+                      }}
+                    />
+                  )}
+                  <Area
+                    type="natural"
+                    dataKey={dataKey}
+                    stroke={chartColor}
+                    strokeWidth={2.4}
+                    fill={`url(#${gradientId})`}
+                    dot={false}
+                    activeDot={{ r: 4, fill: chartColor, stroke: '#17181c', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </div>
       </div>
 
       {/* Trading panel + stats — side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="lg:col-span-1">
-          <div className="sticky top-20">
+          <div className="sticky top-20 rounded-3xl border border-white/[0.08] bg-white/[0.015] p-1 backdrop-blur-sm">
             <PlayerTradingPanel
               playerIndex={player.index}
               playerId={player.id}
@@ -349,15 +406,15 @@ export default function PlayerProfilePage() {
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-5">
+        <div className="space-y-5 lg:col-span-2">
           {/* Stats + projections in one card */}
-          <div className="bg-card border border-white/[0.06] rounded-xl p-5">
+          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.015] p-5 backdrop-blur-sm">
             <div className="grid grid-cols-2 gap-5">
               <div>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Season Averages</h3>
                 <div className="grid grid-cols-3 gap-2">
                   {statEntries.map(s => (
-                    <div key={s.key} className="rounded-lg p-3 bg-white/[0.03] text-center">
+                    <div key={s.key} className="rounded-2xl border border-white/[0.09] bg-white/[0.02] p-3 text-center">
                       <p className="text-lg font-bold text-foreground">{s.value}</p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
                     </div>
@@ -367,15 +424,15 @@ export default function PlayerProfilePage() {
               <div>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Fantasy Projections</h3>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between rounded-lg p-3 bg-primary/8">
+                  <div className="flex items-center justify-between rounded-2xl border border-primary/25 bg-primary/10 p-3">
                     <span className="text-xs text-muted-foreground">FPts/Game</span>
                     <span className="text-lg font-bold text-primary">{avgFpts.toFixed(1)}</span>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg p-3 bg-white/[0.03]">
+                  <div className="flex items-center justify-between rounded-2xl border border-white/[0.09] bg-white/[0.02] p-3">
                     <span className="text-xs text-muted-foreground">Weekly</span>
                     <span className="text-lg font-bold text-foreground">{weeklyProj.toFixed(1)}</span>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg p-3 bg-white/[0.03]">
+                  <div className="flex items-center justify-between rounded-2xl border border-white/[0.09] bg-white/[0.02] p-3">
                     <span className="text-xs text-muted-foreground">Season</span>
                     <span className="text-lg font-bold text-foreground">{seasonProj.toFixed(0)}</span>
                   </div>
@@ -389,14 +446,14 @@ export default function PlayerProfilePage() {
 
           {/* Recent games */}
           {games.length > 0 && (
-            <div className="bg-card border border-white/[0.06] rounded-xl overflow-hidden">
-              <div className="px-5 py-3 border-b border-white/[0.06]">
+            <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.015] backdrop-blur-sm">
+              <div className="px-5 py-4">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Games</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+                    <tr className="border-y border-white/[0.08] bg-black/10">
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Date</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Matchup</th>
                       <th className="text-center px-4 py-2.5 font-medium text-muted-foreground text-xs">W/L</th>
@@ -410,7 +467,7 @@ export default function PlayerProfilePage() {
                   </thead>
                   <tbody>
                     {games.map((game, i) => (
-                      <tr key={i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
+                      <tr key={i} className="border-b border-white/[0.05] last:border-0 transition-colors hover:bg-white/[0.03]">
                         <td className="px-4 py-2.5 text-muted-foreground font-mono text-xs">{game.date}</td>
                         <td className="px-4 py-2.5 text-foreground/90 text-xs">{game.matchup}</td>
                         <td className="px-4 py-2.5 text-center">
@@ -436,15 +493,15 @@ export default function PlayerProfilePage() {
 
           {/* Transactions */}
           {transactions.length > 0 && (
-            <div className="bg-card border border-white/[0.06] rounded-xl overflow-hidden">
-              <div className="px-5 py-3 border-b border-white/[0.06]">
+            <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.015] backdrop-blur-sm">
+              <div className="px-5 py-4">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Transactions</h3>
                 <p className="text-[10px] text-muted-foreground mt-0.5">Top 10 by volume · Last 7 days</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+                    <tr className="border-y border-white/[0.08] bg-black/10">
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Wallet</th>
                       <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Side</th>
                       <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">Shares</th>
@@ -454,7 +511,7 @@ export default function PlayerProfilePage() {
                   </thead>
                   <tbody>
                     {transactions.map((tx, i) => (
-                      <tr key={i} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
+                      <tr key={i} className="border-b border-white/[0.05] last:border-0 transition-colors hover:bg-white/[0.03]">
                         <td className="px-4 py-2.5 text-foreground/90 font-mono text-xs">
                           {tx.wallet_address.length > 12 ? `${tx.wallet_address.slice(0, 6)}...${tx.wallet_address.slice(-4)}` : tx.wallet_address}
                         </td>

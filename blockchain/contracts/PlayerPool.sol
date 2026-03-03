@@ -14,14 +14,15 @@ import "./IPlayerPool.sol";
  *   - Only Router can call executeBuy/executeSell/emergency functions
  *   - Only DividendHub can call snapshot functions
  *   - Views are public
+ *
+ * Fee parameters are read from Router at trade time so the owner can
+ * update fees once on the Router and every pool picks them up immediately.
  */
 contract PlayerPool is IPlayerPool {
     using SafeERC20 for IERC20;
 
     // ============== CONSTANTS ==============
 
-    uint256 public constant FEE_BPS = 150;          // 1.5%
-    uint256 public constant DIVIDEND_FEE_BPS = 6700; // 67% of fee -> dividends
     uint256 public constant BPS = 10000;
 
     // ============== IMMUTABLES ==============
@@ -87,6 +88,16 @@ contract PlayerPool is IPlayerPool {
         active = true;
     }
 
+    // ============== FEE READS ==============
+
+    function _feeBps() internal view returns (uint256) {
+        return IFeeConfig(router).feeBps();
+    }
+
+    function _dividendFeeBps() internal view returns (uint256) {
+        return IFeeConfig(router).dividendFeeBps();
+    }
+
     // ============== SNAPSHOT (lazy) ==============
 
     function _snapshotHoldings(address _user, uint256 _currentWeek) internal {
@@ -124,8 +135,8 @@ contract PlayerPool is IPlayerPool {
     /**
      * @notice Execute a buy. Router has already transferred totalCost of DBucks to this pool.
      * @return totalCost The total cost including fee
-     * @return dividendFee 67% of fee -> Hub
-     * @return protocolFee 33% of fee -> Router
+     * @return dividendFee Share of fee sent to Hub
+     * @return protocolFee Share of fee sent back to Router
      */
     function executeBuy(
         address buyer,
@@ -134,12 +145,15 @@ contract PlayerPool is IPlayerPool {
     ) external override onlyRouter returns (uint256 totalCost, uint256 dividendFee, uint256 protocolFee) {
         require(active, "Player not active");
 
+        uint256 currentFeeBps = _feeBps();
+        uint256 currentDividendFeeBps = _dividendFeeBps();
+
         uint256 cost = getBuyCost(sharesOut);
-        uint256 fee = (cost * FEE_BPS) / BPS;
+        uint256 fee = (cost * currentFeeBps) / BPS;
         totalCost = cost + fee;
         require(totalCost <= maxCost, "Slippage exceeded");
 
-        dividendFee = (fee * DIVIDEND_FEE_BPS) / BPS;
+        dividendFee = (fee * currentDividendFeeBps) / BPS;
         protocolFee = fee - dividendFee;
 
         // Read currentWeek from hub for snapshot
@@ -166,8 +180,8 @@ contract PlayerPool is IPlayerPool {
     /**
      * @notice Execute a sell. Pool pays seller directly.
      * @return netRevenue Amount paid to seller
-     * @return dividendFee 67% of fee -> Hub
-     * @return protocolFee 33% of fee -> Router
+     * @return dividendFee Share of fee sent to Hub
+     * @return protocolFee Share of fee sent back to Router
      */
     function executeSell(
         address seller,
@@ -176,12 +190,15 @@ contract PlayerPool is IPlayerPool {
     ) external override onlyRouter returns (uint256 netRevenue, uint256 dividendFee, uint256 protocolFee) {
         require(holdings[seller] >= sharesIn, "Insufficient shares");
 
+        uint256 currentFeeBps = _feeBps();
+        uint256 currentDividendFeeBps = _dividendFeeBps();
+
         uint256 revenue = getSellRevenue(sharesIn);
-        uint256 fee = (revenue * FEE_BPS) / BPS;
+        uint256 fee = (revenue * currentFeeBps) / BPS;
         netRevenue = revenue - fee;
         require(netRevenue >= minRevenue, "Slippage exceeded");
 
-        dividendFee = (fee * DIVIDEND_FEE_BPS) / BPS;
+        dividendFee = (fee * currentDividendFeeBps) / BPS;
         protocolFee = fee - dividendFee;
 
         // Read currentWeek from hub for snapshot
@@ -272,9 +289,26 @@ contract PlayerPool is IPlayerPool {
     function setActive(bool _active) external override onlyRouter {
         active = _active;
     }
+
+    /**
+     * @notice Drain all payment tokens from this pool to a target address.
+     *         Only callable by Router during emergency drain.
+     */
+    function drain(address to) external override onlyRouter returns (uint256 amount) {
+        amount = paymentToken.balanceOf(address(this));
+        if (amount > 0) {
+            paymentToken.safeTransfer(to, amount);
+        }
+    }
 }
 
 // Minimal interface to read currentWeek from DividendHub
 interface IDividendHubWeek {
     function currentWeek() external view returns (uint256);
+}
+
+// Minimal interface to read fee config from StatixRouter
+interface IFeeConfig {
+    function feeBps() external view returns (uint256);
+    function dividendFeeBps() external view returns (uint256);
 }

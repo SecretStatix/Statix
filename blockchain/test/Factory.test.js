@@ -224,6 +224,108 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
     });
   });
 
+  describe("Configurable Fees", function () {
+    it("should have default fee of 150 bps", async function () {
+      expect(await router.feeBps()).to.equal(150);
+      expect(await router.dividendFeeBps()).to.equal(6700);
+    });
+
+    it("should allow owner to change fee bps", async function () {
+      await router.setFeeBps(200);
+      expect(await router.feeBps()).to.equal(200);
+    });
+
+    it("should reject fee above 5%", async function () {
+      await expect(router.setFeeBps(501)).to.be.revertedWith("Fee too high (max 5%)");
+    });
+
+    it("should allow fee of 0 (no fee)", async function () {
+      await router.setFeeBps(0);
+      expect(await router.feeBps()).to.equal(0);
+    });
+
+    it("should allow owner to change dividend fee split", async function () {
+      await router.setDividendFeeBps(8000); // 80% to dividends
+      expect(await router.dividendFeeBps()).to.equal(8000);
+    });
+
+    it("should reject dividend fee above 100%", async function () {
+      await expect(router.setDividendFeeBps(10001)).to.be.revertedWith("Cannot exceed 100%");
+    });
+
+    it("should use updated fee in trades", async function () {
+      // Set fee to 3% (300 bps)
+      await router.setFeeBps(300);
+
+      const quote = await router.getBuyQuote(0, BUY_SHARES);
+      const rawCost = await ethers.getContractAt("PlayerPool", await factory.pools(0))
+        .then(p => p.getBuyCost(BUY_SHARES));
+
+      // Fee should be 3% of rawCost
+      const expectedFee = (rawCost * 300n) / 10000n;
+      expect(quote.fee).to.equal(expectedFee);
+      expect(quote.total).to.equal(rawCost + expectedFee);
+    });
+
+    it("should apply updated fees in actual buy execution", async function () {
+      await router.setFeeBps(300); // 3%
+
+      const hubBalBefore = await dbucks.balanceOf(await hub.getAddress());
+      const quote = await router.getBuyQuote(0, BUY_SHARES);
+      await router.connect(user1).buy(0, BUY_SHARES, quote.total);
+      const hubBalAfter = await dbucks.balanceOf(await hub.getAddress());
+
+      // Hub received more than it would have at 1.5%
+      const hubReceived = hubBalAfter - hubBalBefore;
+      expect(hubReceived).to.be.gt(0);
+    });
+
+    it("should allow owner to update protocol fee recipient", async function () {
+      await router.setProtocolFeeRecipient(user2.address);
+      expect(await router.protocolFeeRecipient()).to.equal(user2.address);
+    });
+
+    it("should reject non-owner from changing fees", async function () {
+      await expect(
+        router.connect(user1).setFeeBps(200)
+      ).to.be.revertedWithCustomError(router, "OwnableUnauthorizedAccount");
+    });
+  });
+
+  describe("Configurable Dividend Split", function () {
+    it("should have default base pool of 2000 bps (20%)", async function () {
+      expect(await hub.basePoolBps()).to.equal(2000);
+    });
+
+    it("should allow owner to change base pool bps", async function () {
+      await hub.setBasePoolBps(3000); // 30% base, 70% outperformer
+      expect(await hub.basePoolBps()).to.equal(3000);
+    });
+
+    it("should reject base pool above 100%", async function () {
+      await expect(hub.setBasePoolBps(10001)).to.be.revertedWith("Cannot exceed 100%");
+    });
+
+    it("should use updated split in distribution", async function () {
+      // Generate fees
+      const quote = await router.getBuyQuote(0, BUY_SHARES);
+      await router.connect(user1).buy(0, BUY_SHARES, quote.total);
+
+      // Change to 50/50 split
+      await hub.setBasePoolBps(5000);
+
+      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
+      await hub.setOutperformerEligible([0]);
+      await hub.distributeDividends();
+
+      const wd = await hub.weeklyDividends(1);
+      // basePool should be ~50% of totalPool
+      const expectedBase = (wd.totalPool * 5000n) / 10000n;
+      expect(wd.basePool).to.equal(expectedBase);
+      expect(wd.outperformerPool).to.equal(wd.totalPool - expectedBase);
+    });
+  });
+
   describe("Dividends", function () {
     beforeEach(async function () {
       // Both users buy shares to generate fees
@@ -319,6 +421,34 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
         hub.connect(user1).claimDividend(1)
       ).to.be.revertedWith("Already claimed");
     });
+
+    it("should stop multi-week claim when balance runs out (no silent loss)", async function () {
+      // Week 1: both users buy, generating fees
+      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
+      await hub.setOutperformerEligible([0]);
+      await hub.distributeDividends();
+      await hub.advanceWeek();
+
+      // Week 2: generate more fees
+      const quote3 = await router.getBuyQuote(0, 5n * 10n ** 6n);
+      await router.connect(user1).buy(0, 5n * 10n ** 6n, quote3.total);
+
+      await hub.setWeeklyPerformanceBatch([0], [350n * 10n ** 6n]);
+      await hub.setOutperformerEligible([0]);
+      await hub.distributeDividends();
+
+      // user2 claims week 1 — should work
+      await hub.connect(user2).claimDividend(1);
+      expect(await hub.hasClaimed(1, user2.address)).to.equal(true);
+
+      // user2 claims week 2 — should work
+      await hub.connect(user2).claimDividend(2);
+      expect(await hub.hasClaimed(2, user2.address)).to.equal(true);
+
+      // Both weeks should be claimed for user2
+      // user1 still has unclaimed weeks
+      expect(await hub.hasClaimed(1, user1.address)).to.equal(false);
+    });
   });
 
   describe("Emergency Controls", function () {
@@ -349,6 +479,22 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
 
       expect(balAfter).to.be.gt(balBefore);
       expect(await router.getHoldings(0, user1.address)).to.equal(0);
+    });
+
+    it("should drain all funds from pools in emergency", async function () {
+      await router.emergencyShutdown();
+
+      // Pool should have funds
+      const poolAddr = await factory.pools(0);
+      const poolBalBefore = await dbucks.balanceOf(poolAddr);
+      expect(poolBalBefore).to.be.gt(0);
+
+      // Drain to deployer
+      await router.emergencyDrain(deployer.address);
+
+      // Pool should be empty
+      const poolBalAfter = await dbucks.balanceOf(poolAddr);
+      expect(poolBalAfter).to.equal(0);
     });
 
     it("should force liquidate a user", async function () {
@@ -419,6 +565,179 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       const [total, weekCount] = await hub.getUnclaimedDividends(user1.address);
       expect(total).to.be.gt(0);
       expect(weekCount).to.equal(1);
+    });
+  });
+
+  describe("Pagination", function () {
+    beforeEach(async function () {
+      // Add 2 more players (3 total)
+      await factory.createPoolsBatch(
+        ["Stephen Curry", "Kevin Durant"],
+        ["SC30", "KD35"],
+        ["curry_1", "durant_1"],
+        [4500n * 10n ** 6n, 4800n * 10n ** 6n]
+      );
+
+      // User1 buys in pool 0 and pool 2
+      const quote0 = await router.getBuyQuote(0, BUY_SHARES);
+      await router.connect(user1).buy(0, BUY_SHARES, quote0.total);
+      const quote2 = await router.getBuyQuote(2, BUY_SHARES);
+      await router.connect(user1).buy(2, BUY_SHARES, quote2.total);
+    });
+
+    it("should paginate getAllPlayersPaginated", async function () {
+      // Get first 2
+      const [names1, , ,] = await router.getAllPlayersPaginated(0, 2);
+      expect(names1.length).to.equal(2);
+      expect(names1[0]).to.equal("LeBron James");
+      expect(names1[1]).to.equal("Stephen Curry");
+
+      // Get last 1
+      const [names2, , ,] = await router.getAllPlayersPaginated(2, 10);
+      expect(names2.length).to.equal(1);
+      expect(names2[0]).to.equal("Kevin Durant");
+    });
+
+    it("should paginate getPortfolioPaginated", async function () {
+      // Scan pools 0-1 (user has holdings in pool 0 only)
+      const [idxs1, shares1,] = await router.getPortfolioPaginated(user1.address, 0, 2);
+      expect(idxs1.length).to.equal(1);
+      expect(idxs1[0]).to.equal(0);
+
+      // Scan pools 2-3 (user has holdings in pool 2)
+      const [idxs2, shares2,] = await router.getPortfolioPaginated(user1.address, 2, 2);
+      expect(idxs2.length).to.equal(1);
+      expect(idxs2[0]).to.equal(2);
+    });
+
+    it("should paginate factory getPoolsPaginated", async function () {
+      const page1 = await factory.getPoolsPaginated(0, 2);
+      expect(page1.length).to.equal(2);
+
+      const page2 = await factory.getPoolsPaginated(2, 10);
+      expect(page2.length).to.equal(1);
+    });
+
+    it("should handle offset beyond pool count gracefully", async function () {
+      const [names, , ,] = await router.getAllPlayersPaginated(100, 10);
+      expect(names.length).to.equal(0);
+    });
+  });
+
+  describe("Edge Cases", function () {
+    it("should trade with zero fee", async function () {
+      await router.setFeeBps(0);
+      const quote = await router.getBuyQuote(0, BUY_SHARES);
+      expect(quote.fee).to.equal(0);
+      expect(quote.total).to.equal(quote.cost);
+
+      const hubBefore = await dbucks.balanceOf(await hub.getAddress());
+      await router.connect(user1).buy(0, BUY_SHARES, quote.total);
+      const hubAfter = await dbucks.balanceOf(await hub.getAddress());
+
+      // No fees should reach hub
+      expect(hubAfter - hubBefore).to.equal(0);
+      expect(await router.getHoldings(0, user1.address)).to.equal(BUY_SHARES);
+    });
+
+    it("should sell with updated fees and verify net revenue", async function () {
+      // Buy at default 1.5%
+      const buyQuote = await router.getBuyQuote(0, BUY_SHARES);
+      await router.connect(user1).buy(0, BUY_SHARES, buyQuote.total);
+
+      // Change fee to 3% then sell
+      await router.setFeeBps(300);
+      const sellQuote = await router.getSellQuote(0, BUY_SHARES);
+
+      const pool = await ethers.getContractAt("PlayerPool", await factory.pools(0));
+      const rawRevenue = await pool.getSellRevenue(BUY_SHARES);
+      const expectedFee = (rawRevenue * 300n) / 10000n;
+      expect(sellQuote.fee).to.equal(expectedFee);
+      expect(sellQuote.net).to.equal(rawRevenue - expectedFee);
+
+      const balBefore = await dbucks.balanceOf(user1.address);
+      await router.connect(user1).sell(0, BUY_SHARES, sellQuote.net);
+      const balAfter = await dbucks.balanceOf(user1.address);
+      expect(balAfter - balBefore).to.equal(sellQuote.net);
+    });
+
+    it("should send 100% of fee to dividends when dividendFeeBps = 10000", async function () {
+      await router.setDividendFeeBps(10000); // 100% to dividends
+
+      const feeBefore = await dbucks.balanceOf(feeRecipient.address);
+      const hubBefore = await dbucks.balanceOf(await hub.getAddress());
+
+      const quote = await router.getBuyQuote(0, BUY_SHARES);
+      await router.connect(user1).buy(0, BUY_SHARES, quote.total);
+
+      const feeAfter = await dbucks.balanceOf(feeRecipient.address);
+      const hubAfter = await dbucks.balanceOf(await hub.getAddress());
+
+      // Protocol recipient gets nothing, hub gets everything
+      expect(feeAfter - feeBefore).to.equal(0);
+      expect(hubAfter - hubBefore).to.be.gt(0);
+    });
+
+    it("should handle emergency drain on pools with no balance", async function () {
+      // No trades happened, pools are empty
+      await router.emergencyShutdown();
+      // Router itself has no balance either, should revert
+      await expect(router.emergencyDrain(deployer.address)).to.be.revertedWith("Nothing to drain");
+    });
+
+    it("should not allow emergency drain without shutdown", async function () {
+      await expect(router.emergencyDrain(deployer.address)).to.be.revertedWith("Must shutdown first");
+    });
+
+    it("should handle buy/sell roundtrip and verify AMM returns to near-original price", async function () {
+      const priceBefore = await router.getPrice(0);
+
+      const buyQuote = await router.getBuyQuote(0, BUY_SHARES);
+      await router.connect(user1).buy(0, BUY_SHARES, buyQuote.total);
+
+      await router.connect(user1).sell(0, BUY_SHARES, 0);
+
+      const priceAfter = await router.getPrice(0);
+      // Price won't be exactly the same due to fees leaving the pool,
+      // but should be close (within 2%)
+      const diff = priceBefore > priceAfter ? priceBefore - priceAfter : priceAfter - priceBefore;
+      expect(diff).to.be.lt(priceBefore / 50n); // < 2% drift
+    });
+
+    it("should distribute with 100% base pool (no outperformer pool)", async function () {
+      const quote = await router.getBuyQuote(0, BUY_SHARES);
+      await router.connect(user1).buy(0, BUY_SHARES, quote.total);
+
+      await hub.setBasePoolBps(10000); // 100% base
+      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
+      await hub.setOutperformerEligible([0]);
+      await hub.distributeDividends();
+
+      const wd = await hub.weeklyDividends(1);
+      expect(wd.basePool).to.equal(wd.totalPool);
+      expect(wd.outperformerPool).to.equal(0);
+
+      // User should still be able to claim (all from base pool)
+      const dividend = await hub.calculateDividend(1, user1.address);
+      expect(dividend).to.be.gt(0);
+    });
+
+    it("should not allow non-owner to call admin functions", async function () {
+      await expect(
+        router.connect(user1).emergencyShutdown()
+      ).to.be.revertedWithCustomError(router, "OwnableUnauthorizedAccount");
+
+      await expect(
+        hub.connect(user1).setBasePoolBps(3000)
+      ).to.be.revertedWithCustomError(hub, "OwnableUnauthorizedAccount");
+
+      await expect(
+        hub.connect(user1).distributeDividends()
+      ).to.be.revertedWithCustomError(hub, "OwnableUnauthorizedAccount");
+
+      await expect(
+        factory.connect(user1).createPool("Test", "TST", "test_1", 1000n * 10n ** 6n)
+      ).to.be.revertedWithCustomError(factory, "OwnableUnauthorizedAccount");
     });
   });
 

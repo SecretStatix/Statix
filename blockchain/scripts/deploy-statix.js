@@ -4,8 +4,9 @@ const path = require("path");
 
 const PLAYERS = require("./players.json");
 
-// Faucet: 100,000 D-Bucks per address on testnet
-const FAUCET_LIMIT = 100000n * 10n ** 6n;
+// Faucet: 1,000 D-Bucks per address (testnet only, disabled on mainnet)
+// Owner can raise later via dbucks.setFaucetMode(true, newLimit)
+const FAUCET_LIMIT = 1000n * 10n ** 6n;
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -35,11 +36,12 @@ async function main() {
   console.log("   MockUSDC:", usdcAddress);
   await delay(5000);
 
-  // 2. Deploy DBucks
-  console.log("2. Deploying DBucks...");
+  // 2. Deploy DBucks (faucet enabled on testnet only)
+  const isTestnet = hre.network.name !== "base";
+  console.log(`2. Deploying DBucks... (faucet: ${isTestnet ? "ENABLED" : "DISABLED — mainnet"})`);
   gas = await getGasOverrides(deployer);
   const DBucks = await hre.ethers.getContractFactory("DBucks");
-  const dbucks = await DBucks.deploy(usdcAddress, true, FAUCET_LIMIT, gas);
+  const dbucks = await DBucks.deploy(usdcAddress, isTestnet, isTestnet ? FAUCET_LIMIT : 0n, gas);
   await dbucks.waitForDeployment();
   const dbucksAddress = await dbucks.getAddress();
   console.log("   DBucks:", dbucksAddress);
@@ -146,7 +148,7 @@ async function main() {
       StatixRouter: routerAddress,
       DividendHub: hubAddress,
     },
-    faucetMode: true,
+    faucetMode: isTestnet,
     faucetLimit: "100000",
     players: PLAYERS.map((p, idx) => ({
       index: idx,

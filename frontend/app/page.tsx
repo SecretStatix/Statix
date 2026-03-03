@@ -85,11 +85,11 @@ function HomeContent() {
       <HotPlayers players={players} loading={loading} />
 
       {/* Main content: grid + activity sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-9">
           <PlayerGrid players={players} loading={loading} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-3">
           <ActivityFeed />
         </div>
       </div>

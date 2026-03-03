@@ -118,7 +118,7 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
   const isSuccess = bought || sold;
 
   return (
-    <div className="bg-card border border-white/[0.06] rounded-2xl p-6 h-full flex flex-col">
+    <div className="flex h-full flex-col rounded-[1.35rem] border border-white/[0.09] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] p-6 shadow-[0_14px_34px_rgba(0,0,0,0.3)] backdrop-blur-sm">
       <h3 className="text-lg font-semibold text-foreground mb-4">Trade</h3>
 
       {isSuccess && (
@@ -127,19 +127,19 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
         </div>
       )}
 
-      <div className="flex bg-white/[0.04] rounded-xl p-1 gap-1 mb-4">
+      <div className="mb-4 flex gap-1 rounded-full border border-white/[0.1] bg-black/20 p-1">
         <button
           onClick={() => setMode('buy')}
-          className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-            mode === 'buy' ? 'bg-success/20 text-success border border-success/40' : 'text-gray-400 hover:text-foreground'
+          className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-all duration-200 ${
+            mode === 'buy' ? 'border border-success/40 bg-success/20 text-success' : 'text-gray-400 hover:text-foreground'
           }`}
         >
           Buy
         </button>
         <button
           onClick={() => setMode('sell')}
-          className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
-            mode === 'sell' ? 'bg-destructive/20 text-destructive border border-destructive/40' : 'text-gray-400 hover:text-foreground'
+          className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-all duration-200 ${
+            mode === 'sell' ? 'border border-destructive/40 bg-destructive/20 text-destructive' : 'text-gray-400 hover:text-foreground'
           }`}
         >
           Sell
@@ -159,13 +159,13 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0"
-          className="w-full h-12 bg-secondary border border-white/[0.08] rounded-xl px-4 text-base font-semibold text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-success/40 focus:border-success/50 transition-all duration-200 [color-scheme:dark]"
+          className="h-12 w-full rounded-2xl border border-white/[0.12] bg-black/20 px-4 text-base font-semibold text-foreground placeholder-muted-foreground transition-all duration-200 focus:border-success/50 focus:outline-none focus:ring-2 focus:ring-success/40 [color-scheme:dark]"
         />
         <p className="text-xs text-gray-400 mt-1.5">${price.toFixed(2)} per share</p>
       </div>
 
       {quote && (
-        <div className="rounded-xl p-4 bg-white/[0.03] space-y-2 mb-4">
+        <div className="mb-4 space-y-2 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4">
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">{mode === 'buy' ? 'Cost' : 'You receive'}</span>
             <span className="font-semibold text-foreground">${quote.total.toFixed(2)}</span>

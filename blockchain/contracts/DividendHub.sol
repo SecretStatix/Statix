@@ -13,6 +13,8 @@ import "./PoolFactory.sol";
  * @notice Centralized dividend management across all player pools.
  *         Accumulates fees from pools, manages weekly performance data,
  *         distributes dividends, and handles claims.
+ *
+ * Base/outperformer split is configurable via setBasePoolBps().
  */
 contract DividendHub is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -27,8 +29,8 @@ contract DividendHub is Ownable, ReentrancyGuard {
 
     struct WeeklyDividend {
         uint256 totalPool;
-        uint256 basePool;            // 20%
-        uint256 outperformerPool;    // 80%
+        uint256 basePool;            // basePoolBps% of total
+        uint256 outperformerPool;    // remainder
         uint256 totalPositiveOutperf;
         bool distributed;
     }
@@ -41,6 +43,9 @@ contract DividendHub is Ownable, ReentrancyGuard {
 
     uint256 public constant BPS = 10000;
 
+    // Configurable dividend split (default: 20% base, 80% outperformer)
+    uint256 public basePoolBps = 2000; // 20% of fees go to base pool (all holders)
+
     uint256 public currentWeek;
 
     // week => poolIdx => performance
@@ -49,7 +54,7 @@ contract DividendHub is Ownable, ReentrancyGuard {
     mapping(uint256 => WeeklyDividend) public weeklyDividends;
     // week => user => claimed
     mapping(uint256 => mapping(address => bool)) public hasClaimed;
-    // week => poolIdx => eligible for 80% pool
+    // week => poolIdx => eligible for outperformer pool
     mapping(uint256 => mapping(uint256 => bool)) public outperformerEligible;
     // week => poolIdx => totalShares at distribution time
     mapping(uint256 => mapping(uint256 => uint256)) public weekEndTotalShares;
@@ -60,6 +65,7 @@ contract DividendHub is Ownable, ReentrancyGuard {
     event DividendClaimed(uint256 indexed week, address indexed user, uint256 amount);
     event WeekAdvanced(uint256 newWeek);
     event TradingPaused(bool paused);
+    event BasePoolBpsUpdated(uint256 oldBps, uint256 newBps);
 
     // ============== CONSTRUCTOR ==============
 
@@ -72,6 +78,19 @@ contract DividendHub is Ownable, ReentrancyGuard {
         factory = PoolFactory(_factory);
         router = _router;
         currentWeek = 1;
+    }
+
+    // ============== CONFIG ==============
+
+    /**
+     * @notice Update the base pool percentage. Remainder goes to outperformer pool.
+     * @param _basePoolBps New base pool share in basis points (e.g. 2000 = 20%). Max 10000.
+     */
+    function setBasePoolBps(uint256 _basePoolBps) external onlyOwner {
+        require(_basePoolBps <= BPS, "Cannot exceed 100%");
+        uint256 old = basePoolBps;
+        basePoolBps = _basePoolBps;
+        emit BasePoolBpsUpdated(old, _basePoolBps);
     }
 
     // ============== ADMIN: PERFORMANCE ==============
@@ -120,8 +139,8 @@ contract DividendHub is Ownable, ReentrancyGuard {
         require(totalFees > 0, "No fees");
 
         wd.totalPool = totalFees;
-        wd.basePool = (totalFees * 2000) / BPS;  // 20%
-        wd.outperformerPool = totalFees - wd.basePool; // 80%
+        wd.basePool = (totalFees * basePoolBps) / BPS;
+        wd.outperformerPool = totalFees - wd.basePool;
 
         uint256 totalPositive = 0;
         uint256 count = factory.poolCount();
@@ -240,25 +259,34 @@ contract DividendHub is Ownable, ReentrancyGuard {
         emit DividendClaimed(_week, msg.sender, dividend);
     }
 
+    /**
+     * @notice Claim dividends for multiple weeks. Stops when Hub balance runs out
+     *         so unclaimed weeks remain claimable later (no silent fund loss).
+     */
     function claimMultipleWeeks(uint256[] calldata _weeks) external nonReentrant {
         uint256 total = 0;
+
         for (uint256 i = 0; i < _weeks.length; i++) {
             uint256 w = _weeks[i];
-            if (weeklyDividends[w].distributed && !hasClaimed[w][msg.sender]) {
-                uint256 d = calculateDividend(w, msg.sender);
-                if (d > 0) {
-                    hasClaimed[w][msg.sender] = true;
-                    total += d;
-                }
+            if (!weeklyDividends[w].distributed || hasClaimed[w][msg.sender]) continue;
+
+            uint256 d = calculateDividend(w, msg.sender);
+            if (d == 0) continue;
+
+            // Check if Hub can afford this week's payout
+            uint256 balance = paymentToken.balanceOf(address(this));
+            if (balance < d + total) {
+                // Can't afford this week — stop here, leave it claimable for later
+                break;
             }
+
+            hasClaimed[w][msg.sender] = true;
+            total += d;
+
+            emit DividendClaimed(w, msg.sender, d);
         }
+
         require(total > 0, "No dividends");
-
-        uint256 balance = paymentToken.balanceOf(address(this));
-        if (total > balance) {
-            total = balance;
-        }
-
         paymentToken.safeTransfer(msg.sender, total);
     }
 

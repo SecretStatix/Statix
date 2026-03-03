@@ -145,4 +145,19 @@ contract PoolFactory is Ownable {
         }
         return result;
     }
+
+    /**
+     * @notice Paginated pool list — returns pools[_offset .. _offset+_limit).
+     */
+    function getPoolsPaginated(uint256 _offset, uint256 _limit) external view returns (address[] memory) {
+        uint256 end = _offset + _limit;
+        if (end > poolCount) end = poolCount;
+        uint256 size = end > _offset ? end - _offset : 0;
+
+        address[] memory result = new address[](size);
+        for (uint256 i = 0; i < size; i++) {
+            result[i] = pools[_offset + i];
+        }
+        return result;
+    }
 }

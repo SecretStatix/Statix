@@ -13,6 +13,7 @@ import "./PoolFactory.sol";
  * @notice Single entry point for all user trades. Users approve Router once for DBucks.
  *         Routes buy/sell calls to individual PlayerPool contracts.
  *         Holds global controls: kill switch, trading pause, blacklist, allowlist.
+ *         Stores configurable fee parameters that pools read at trade time.
  */
 contract StatixRouter is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -22,6 +23,10 @@ contract StatixRouter is Ownable, ReentrancyGuard {
     IERC20 public paymentToken;     // DBucks
     PoolFactory public factory;
     address public protocolFeeRecipient;
+
+    // Configurable fee parameters (readable by pools)
+    uint256 public feeBps = 150;            // 1.5% total fee (max 500 = 5%)
+    uint256 public dividendFeeBps = 6700;   // 67% of fee to dividends (max 10000 = 100%)
 
     // Global controls
     bool public killed;
@@ -43,6 +48,9 @@ contract StatixRouter is Ownable, ReentrancyGuard {
     event AddressBlacklisted(address indexed user, bool banned);
     event AllowlistEnabled(bool enabled);
     event AllowlistUpdated(address indexed user, bool allowed);
+    event FeeBpsUpdated(uint256 oldBps, uint256 newBps);
+    event DividendFeeBpsUpdated(uint256 oldBps, uint256 newBps);
+    event ProtocolFeeRecipientUpdated(address oldRecipient, address newRecipient);
 
     // ============== CONSTRUCTOR ==============
 
@@ -54,6 +62,40 @@ contract StatixRouter is Ownable, ReentrancyGuard {
         paymentToken = IERC20(_paymentToken);
         factory = PoolFactory(_factory);
         protocolFeeRecipient = _protocolFeeRecipient;
+    }
+
+    // ============== FEE CONFIGURATION ==============
+
+    /**
+     * @notice Update the total fee percentage charged on trades.
+     * @param _feeBps New fee in basis points (e.g. 150 = 1.5%). Max 500 (5%).
+     */
+    function setFeeBps(uint256 _feeBps) external onlyOwner {
+        require(_feeBps <= 500, "Fee too high (max 5%)");
+        uint256 old = feeBps;
+        feeBps = _feeBps;
+        emit FeeBpsUpdated(old, _feeBps);
+    }
+
+    /**
+     * @notice Update the share of fees that go to the dividend pool (vs protocol).
+     * @param _dividendFeeBps Portion in basis points (e.g. 6700 = 67%). Max 10000 (100%).
+     */
+    function setDividendFeeBps(uint256 _dividendFeeBps) external onlyOwner {
+        require(_dividendFeeBps <= 10000, "Cannot exceed 100%");
+        uint256 old = dividendFeeBps;
+        dividendFeeBps = _dividendFeeBps;
+        emit DividendFeeBpsUpdated(old, _dividendFeeBps);
+    }
+
+    /**
+     * @notice Update the protocol fee recipient address.
+     */
+    function setProtocolFeeRecipient(address _recipient) external onlyOwner {
+        require(_recipient != address(0), "Zero address");
+        address old = protocolFeeRecipient;
+        protocolFeeRecipient = _recipient;
+        emit ProtocolFeeRecipientUpdated(old, _recipient);
     }
 
     // ============== TRADING ==============
@@ -77,7 +119,7 @@ contract StatixRouter is Ownable, ReentrancyGuard {
 
         // Calculate cost first so we know how much to transfer
         uint256 rawCost = pool.getBuyCost(_sharesOut);
-        uint256 fee = (rawCost * 150) / 10000; // FEE_BPS
+        uint256 fee = (rawCost * feeBps) / 10000;
         uint256 totalCost = rawCost + fee;
         require(totalCost <= _maxCost, "Slippage exceeded");
 
@@ -158,29 +200,34 @@ contract StatixRouter is Ownable, ReentrancyGuard {
         emit EmergencyExit(msg.sender, totalRefund);
     }
 
+    /**
+     * @notice Drain all funds from all pools and the router itself to a safe address.
+     *         Only available after emergency shutdown.
+     */
     function emergencyDrain(address _to) external onlyOwner {
         require(killed, "Must shutdown first");
         require(_to != address(0), "Invalid address");
+
+        uint256 totalDrained = 0;
 
         // Drain from all pools
         uint256 count = factory.poolCount();
         for (uint256 i = 0; i < count; i++) {
             address poolAddr = factory.pools(i);
             if (poolAddr == address(0)) continue;
-            uint256 poolBal = paymentToken.balanceOf(poolAddr);
-            if (poolBal > 0) {
-                // Force liquidate with zero holdings just triggers a transfer
-                // Instead, we use resetPool to zero out, then the funds are stuck
-                // Better: have pools support a drain function
-                // For now, emergencyDrain drains router's own balance
-            }
+            uint256 drained = IPlayerPool(poolAddr).drain(address(this));
+            totalDrained += drained;
         }
 
-        // Drain router's balance
-        uint256 bal = paymentToken.balanceOf(address(this));
-        require(bal > 0, "Nothing to drain");
-        paymentToken.safeTransfer(_to, bal);
-        emit EmergencyDrain(_to, bal);
+        // Drain router's own balance (including what just arrived from pools)
+        uint256 routerBal = paymentToken.balanceOf(address(this));
+        if (routerBal > 0) {
+            paymentToken.safeTransfer(_to, routerBal);
+            totalDrained = routerBal; // total sent to _to
+        }
+
+        require(totalDrained > 0, "Nothing to drain");
+        emit EmergencyDrain(_to, totalDrained);
     }
 
     function forceLiquidate(address _user, uint256 _poolIndex) external onlyOwner {
@@ -256,7 +303,7 @@ contract StatixRouter is Ownable, ReentrancyGuard {
         IPlayerPool pool = IPlayerPool(poolAddr);
 
         cost = pool.getBuyCost(_sharesOut);
-        fee = (cost * 150) / 10000;
+        fee = (cost * feeBps) / 10000;
         total = cost + fee;
         uint256 newShares = pool.virtualShares() - _sharesOut;
         uint256 newCash = pool.virtualCash() + cost;
@@ -271,7 +318,7 @@ contract StatixRouter is Ownable, ReentrancyGuard {
         IPlayerPool pool = IPlayerPool(poolAddr);
 
         revenue = pool.getSellRevenue(_sharesIn);
-        fee = (revenue * 150) / 10000;
+        fee = (revenue * feeBps) / 10000;
         net = revenue - fee;
         uint256 newShares = pool.virtualShares() + _sharesIn;
         uint256 newCash = pool.virtualCash() - revenue;
@@ -319,6 +366,46 @@ contract StatixRouter is Ownable, ReentrancyGuard {
         }
     }
 
+    /**
+     * @notice Paginated portfolio — scan pools[_offset .. _offset+_limit) for user holdings.
+     */
+    function getPortfolioPaginated(address _user, uint256 _offset, uint256 _limit) external view returns (
+        uint256[] memory poolIdxs,
+        uint256[] memory sharesArr,
+        uint256[] memory valuesArr
+    ) {
+        uint256 count = factory.poolCount();
+        uint256 end = _offset + _limit;
+        if (end > count) end = count;
+
+        // First pass: count holdings in range
+        uint256 held = 0;
+        for (uint256 i = _offset; i < end; i++) {
+            address poolAddr = factory.pools(i);
+            if (poolAddr != address(0) && IPlayerPool(poolAddr).holdings(_user) > 0) {
+                held++;
+            }
+        }
+
+        poolIdxs = new uint256[](held);
+        sharesArr = new uint256[](held);
+        valuesArr = new uint256[](held);
+
+        uint256 j = 0;
+        for (uint256 i = _offset; i < end; i++) {
+            address poolAddr = factory.pools(i);
+            if (poolAddr == address(0)) continue;
+            IPlayerPool pool = IPlayerPool(poolAddr);
+            uint256 h = pool.holdings(_user);
+            if (h > 0) {
+                poolIdxs[j] = i;
+                sharesArr[j] = h;
+                valuesArr[j] = (h * pool.getPrice()) / 1e6;
+                j++;
+            }
+        }
+    }
+
     function getAllPlayers() external view returns (
         string[] memory names,
         string[] memory symbols,
@@ -333,6 +420,36 @@ contract StatixRouter is Ownable, ReentrancyGuard {
 
         for (uint256 i = 0; i < count; i++) {
             address poolAddr = factory.pools(i);
+            if (poolAddr == address(0)) continue;
+            IPlayerPool pool = IPlayerPool(poolAddr);
+            names[i] = pool.name();
+            symbols[i] = pool.symbol();
+            prices[i] = pool.getPrice();
+            totalSharesArr[i] = pool.totalShares();
+        }
+    }
+
+    /**
+     * @notice Paginated player list — returns players[_offset .. _offset+_limit).
+     */
+    function getAllPlayersPaginated(uint256 _offset, uint256 _limit) external view returns (
+        string[] memory names,
+        string[] memory symbols,
+        uint256[] memory prices,
+        uint256[] memory totalSharesArr
+    ) {
+        uint256 count = factory.poolCount();
+        uint256 end = _offset + _limit;
+        if (end > count) end = count;
+        uint256 size = end > _offset ? end - _offset : 0;
+
+        names = new string[](size);
+        symbols = new string[](size);
+        prices = new uint256[](size);
+        totalSharesArr = new uint256[](size);
+
+        for (uint256 i = 0; i < size; i++) {
+            address poolAddr = factory.pools(_offset + i);
             if (poolAddr == address(0)) continue;
             IPlayerPool pool = IPlayerPool(poolAddr);
             names[i] = pool.name();

@@ -20,6 +20,7 @@ interface IPlayerPool {
     function forceLiquidate(address user) external returns (uint256 shares, uint256 refund);
     function resetPool(uint256 newShares, uint256 newCash) external;
     function setActive(bool active) external;
+    function drain(address to) external returns (uint256 amount);
 
     // --- Views ---
     function getPrice() external view returns (uint256);
