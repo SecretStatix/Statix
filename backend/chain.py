@@ -55,8 +55,8 @@ def get_contract_info():
         return None
 
     try:
-        fantasy_abi = get_abi("DividendFantasy")
-        usdc_abi = get_abi("MockUSDC")
+        router_abi = get_abi("StatixRouter")
+        hub_abi = get_abi("DividendHub")
         dbucks_abi = get_abi("DBucks")
     except FileNotFoundError:
         return None
@@ -66,13 +66,19 @@ def get_contract_info():
         "network": deployment.get("network"),
         "chainId": deployment.get("chainId"),
         "contracts": {
-            "DividendFantasy": {
-                "address": contracts.get("DividendFantasy"),
-                "abi": fantasy_abi,
+            "StatixRouter": {
+                "address": contracts.get("StatixRouter"),
+                "abi": router_abi,
+            },
+            "DividendHub": {
+                "address": contracts.get("DividendHub"),
+                "abi": hub_abi,
+            },
+            "PoolFactory": {
+                "address": contracts.get("PoolFactory"),
             },
             "MockUSDC": {
                 "address": contracts.get("MockUSDC"),
-                "abi": usdc_abi,
             },
             "DBucks": {
                 "address": contracts.get("DBucks"),

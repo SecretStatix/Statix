@@ -1,9 +1,12 @@
-'use client';
-
 import './globals.css';
 import { Providers } from './providers';
 import { AuthProvider } from '@/lib/AuthContext';
 import { NavbarWrapper } from '@/components/NavbarWrapper';
+
+export const metadata = {
+  title: 'Statix | Athlete Stock Market',
+  description: 'Trade NBA players like stocks. Earn weekly dividends based on performance.',
+};
 
 export default function RootLayout({
   children,
@@ -12,11 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-900 text-white min-h-screen">
+      <body className="bg-background text-foreground min-h-screen antialiased">
         <AuthProvider>
           <Providers>
             <NavbarWrapper />
-            <main className="container mx-auto px-4 py-8">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               {children}
             </main>
           </Providers>

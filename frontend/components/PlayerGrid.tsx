@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PlayerCard } from './PlayerCard';
 import { TradeModal } from './TradeModal';
-import { getPlayers } from '@/lib/api';
-import { useAllPlayers } from '@/hooks/useContracts';
-import { formatUnits } from 'viem';
 
 export interface PlayerData {
   index: number;
@@ -14,6 +12,7 @@ export interface PlayerData {
   team: string;
   symbol: string;
   position: string;
+  nbaId?: number;
   price: number;
   avgFantasyPoints: number;
   weeklyProjection: number;
@@ -21,110 +20,118 @@ export interface PlayerData {
   totalShares: number;
 }
 
-export function PlayerGrid() {
-  const [players, setPlayers] = useState<PlayerData[]>([]);
-  const [loading, setLoading] = useState(true);
+type FilterTab = 'trending' | 'movers' | 'guards' | 'forwards' | 'centers' | 'all';
+
+const TABS: { key: FilterTab; label: string }[] = [
+  { key: 'trending', label: 'Trending' },
+  { key: 'movers', label: 'Top Movers' },
+  { key: 'guards', label: 'Guards' },
+  { key: 'forwards', label: 'Forwards' },
+  { key: 'centers', label: 'Centers' },
+  { key: 'all', label: 'All' },
+];
+
+interface PlayerGridProps {
+  players: PlayerData[];
+  loading: boolean;
+}
+
+export function PlayerGrid({ players, loading }: PlayerGridProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerData | null>(null);
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<FilterTab>('trending');
 
-  // Try to get on-chain prices
-  const { data: onChainData } = useAllPlayers();
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const apiPlayers = await getPlayers();
-
-        const mapped: PlayerData[] = apiPlayers.map((p: any, i: number) => {
-          // Use on-chain price if available, else default $10
-          let price = 10;
-          if (onChainData) {
-            const [, , prices] = onChainData as [string[], string[], bigint[], bigint[]];
-            if (prices[p.index]) {
-              price = parseFloat(formatUnits(prices[p.index], 6));
-            }
-          }
-
-          return {
-            index: p.index,
-            id: p.id,
-            name: p.name,
-            team: p.team,
-            symbol: p.symbol,
-            position: p.position || 'F',
-            price,
-            avgFantasyPoints: p.avg_fantasy_points,
-            weeklyProjection: p.weekly_projection,
-            seasonProjection: p.season_projection,
-            totalShares: 0,
-          };
-        });
-
-        setPlayers(mapped);
-      } catch (err) {
-        console.error('Failed to load players:', err);
-        // Fallback: use deployments.json directly
-        try {
-          const res = await fetch('/deployments.json');
-          const deployment = await res.json();
-          const mapped = deployment.players.map((p: any) => ({
-            index: p.index,
-            id: p.id,
-            name: p.name,
-            team: p.team || '',
-            symbol: p.symbol,
-            position: 'F',
-            price: 10,
-            avgFantasyPoints: p.weekly_projection / 3.5,
-            weeklyProjection: p.weekly_projection,
-            seasonProjection: p.season_projection,
-            totalShares: 0,
-          }));
-          setPlayers(mapped);
-        } catch {
-          console.error('No player data available');
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [onChainData]);
+  const searchParams = useSearchParams();
+  const search = searchParams.get('q') || '';
 
   const handleTrade = (player: PlayerData) => {
     setSelectedPlayer(player);
     setTradeModalOpen(true);
   };
 
-  const filtered = players.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.team.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    let list = [...players];
+
+    // Search filter from navbar
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.team.toLowerCase().includes(q)
+      );
+    }
+
+    // Position filters
+    if (activeTab === 'guards') {
+      list = list.filter(p => p.position === 'G');
+    } else if (activeTab === 'forwards') {
+      list = list.filter(p => p.position === 'F');
+    } else if (activeTab === 'centers') {
+      list = list.filter(p => p.position === 'C');
+    }
+
+    // Sorting
+    if (activeTab === 'trending') {
+      list.sort((a, b) => b.avgFantasyPoints - a.avgFantasyPoints);
+    } else if (activeTab === 'movers') {
+      list.sort((a, b) => Math.abs(b.price - 10) - Math.abs(a.price - 10));
+    } else if (activeTab === 'all') {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      // Position tabs: sort by avgFantasyPoints within the position
+      list.sort((a, b) => b.avgFantasyPoints - a.avgFantasyPoints);
+    }
+
+    return list;
+  }, [players, search, activeTab]);
 
   if (loading) {
     return (
-      <div className="text-center py-12 text-gray-400">
-        Loading players...
+      <div className="space-y-4">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {TABS.map(t => (
+            <div key={t.key} className="h-8 w-20 bg-secondary/50 rounded-lg animate-pulse shrink-0" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="bg-card border border-border rounded-xl p-4 space-y-3 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-secondary/70" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-secondary/70 rounded w-3/4" />
+                  <div className="h-3 bg-secondary/70 rounded w-1/2" />
+                </div>
+                <div className="h-6 w-14 bg-secondary/70 rounded" />
+              </div>
+              <div className="h-9 bg-secondary/70 rounded-lg" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search players..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md bg-gray-800 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-        />
-        <span className="ml-4 text-gray-400 text-sm">{filtered.length} players</span>
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+        {TABS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+              activeTab === key
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+        <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">{filtered.length} players</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
         {filtered.map((player) => (
           <PlayerCard
             key={player.id}
@@ -133,6 +140,12 @@ export function PlayerGrid() {
           />
         ))}
       </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border border-white/[0.06]">
+          No players match your search.
+        </div>
+      )}
 
       {selectedPlayer && (
         <TradeModal

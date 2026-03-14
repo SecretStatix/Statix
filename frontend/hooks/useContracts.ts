@@ -2,15 +2,15 @@
 
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import { DividendFantasyABI, DBucksABI, CONTRACTS } from "@/lib/abis";
+import { StatixRouterABI, DividendHubABI, DBucksABI, CONTRACTS } from "@/lib/abis";
 
 const USDC_DECIMALS = 6;
 
 // Read player price
 export function usePlayerPrice(playerIndex: number) {
   return useReadContract({
-    address: CONTRACTS.DividendFantasy as `0x${string}`,
-    abi: DividendFantasyABI,
+    address: CONTRACTS.StatixRouter as `0x${string}`,
+    abi: StatixRouterABI,
     functionName: "getPrice",
     args: [BigInt(playerIndex)],
   });
@@ -19,8 +19,8 @@ export function usePlayerPrice(playerIndex: number) {
 // Read all players
 export function useAllPlayers() {
   return useReadContract({
-    address: CONTRACTS.DividendFantasy as `0x${string}`,
-    abi: DividendFantasyABI,
+    address: CONTRACTS.StatixRouter as `0x${string}`,
+    abi: StatixRouterABI,
     functionName: "getAllPlayers",
   });
 }
@@ -28,9 +28,9 @@ export function useAllPlayers() {
 // Read user holdings for a player
 export function useHoldings(playerIndex: number, userAddress?: string) {
   return useReadContract({
-    address: CONTRACTS.DividendFantasy as `0x${string}`,
-    abi: DividendFantasyABI,
-    functionName: "holdings",
+    address: CONTRACTS.StatixRouter as `0x${string}`,
+    abi: StatixRouterABI,
+    functionName: "getHoldings",
     args: [BigInt(playerIndex), userAddress as `0x${string}`],
     query: { enabled: !!userAddress },
   });
@@ -39,8 +39,8 @@ export function useHoldings(playerIndex: number, userAddress?: string) {
 // Read user portfolio
 export function usePortfolio(userAddress?: string) {
   return useReadContract({
-    address: CONTRACTS.DividendFantasy as `0x${string}`,
-    abi: DividendFantasyABI,
+    address: CONTRACTS.StatixRouter as `0x${string}`,
+    abi: StatixRouterABI,
     functionName: "getPortfolio",
     args: [userAddress as `0x${string}`],
     query: { enabled: !!userAddress },
@@ -51,8 +51,8 @@ export function usePortfolio(userAddress?: string) {
 export function useBuyQuote(playerIndex: number, shares: number) {
   const sharesScaled = parseUnits(shares.toString(), USDC_DECIMALS);
   return useReadContract({
-    address: CONTRACTS.DividendFantasy as `0x${string}`,
-    abi: DividendFantasyABI,
+    address: CONTRACTS.StatixRouter as `0x${string}`,
+    abi: StatixRouterABI,
     functionName: "getBuyQuote",
     args: [BigInt(playerIndex), sharesScaled],
     query: { enabled: shares > 0 },
@@ -63,8 +63,8 @@ export function useBuyQuote(playerIndex: number, shares: number) {
 export function useSellQuote(playerIndex: number, shares: number) {
   const sharesScaled = parseUnits(shares.toString(), USDC_DECIMALS);
   return useReadContract({
-    address: CONTRACTS.DividendFantasy as `0x${string}`,
-    abi: DividendFantasyABI,
+    address: CONTRACTS.StatixRouter as `0x${string}`,
+    abi: StatixRouterABI,
     functionName: "getSellQuote",
     args: [BigInt(playerIndex), sharesScaled],
     query: { enabled: shares > 0 },
@@ -82,29 +82,29 @@ export function useDBucksBalance(userAddress?: string) {
   });
 }
 
-// Read D-Bucks allowance (for DividendFantasy contract)
+// Read D-Bucks allowance (for StatixRouter — users approve Router once)
 export function useDBucksAllowance(userAddress?: string) {
   return useReadContract({
     address: CONTRACTS.DBucks as `0x${string}`,
     abi: DBucksABI,
     functionName: "allowance",
-    args: [userAddress as `0x${string}`, CONTRACTS.DividendFantasy as `0x${string}`],
+    args: [userAddress as `0x${string}`, CONTRACTS.StatixRouter as `0x${string}`],
     query: { enabled: !!userAddress },
   });
 }
 
-// Read unclaimed dividends
+// Read unclaimed dividends (from DividendHub)
 export function useUnclaimedDividends(userAddress?: string) {
   return useReadContract({
-    address: CONTRACTS.DividendFantasy as `0x${string}`,
-    abi: DividendFantasyABI,
+    address: CONTRACTS.DividendHub as `0x${string}`,
+    abi: DividendHubABI,
     functionName: "getUnclaimedDividends",
     args: [userAddress as `0x${string}`],
     query: { enabled: !!userAddress },
   });
 }
 
-// Write: Approve D-Bucks spending (for DividendFantasy contract)
+// Write: Approve D-Bucks spending (for StatixRouter — one-time approval)
 export function useApproveDBucks() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
@@ -115,7 +115,7 @@ export function useApproveDBucks() {
       abi: DBucksABI,
       functionName: "approve",
       args: [
-        CONTRACTS.DividendFantasy as `0x${string}`,
+        CONTRACTS.StatixRouter as `0x${string}`,
         parseUnits(amount.toString(), USDC_DECIMALS),
       ],
     });
@@ -124,15 +124,15 @@ export function useApproveDBucks() {
   return { approve, hash, isPending, isConfirming, isSuccess };
 }
 
-// Write: Buy shares
+// Write: Buy shares (via StatixRouter)
 export function useBuyShares() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const buy = (playerIndex: number, shares: number, maxCost: number) => {
     writeContract({
-      address: CONTRACTS.DividendFantasy as `0x${string}`,
-      abi: DividendFantasyABI,
+      address: CONTRACTS.StatixRouter as `0x${string}`,
+      abi: StatixRouterABI,
       functionName: "buy",
       args: [
         BigInt(playerIndex),
@@ -145,15 +145,15 @@ export function useBuyShares() {
   return { buy, hash, isPending, isConfirming, isSuccess };
 }
 
-// Write: Sell shares
+// Write: Sell shares (via StatixRouter)
 export function useSellShares() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const sell = (playerIndex: number, shares: number, minRevenue: number) => {
     writeContract({
-      address: CONTRACTS.DividendFantasy as `0x${string}`,
-      abi: DividendFantasyABI,
+      address: CONTRACTS.StatixRouter as `0x${string}`,
+      abi: StatixRouterABI,
       functionName: "sell",
       args: [
         BigInt(playerIndex),
@@ -183,24 +183,24 @@ export function useFaucetDBucks() {
   return { faucet, hash, isPending, isConfirming, isSuccess };
 }
 
-// Read current week
+// Read current week (from DividendHub)
 export function useCurrentWeek() {
   return useReadContract({
-    address: CONTRACTS.DividendFantasy as `0x${string}`,
-    abi: DividendFantasyABI,
+    address: CONTRACTS.DividendHub as `0x${string}`,
+    abi: DividendHubABI,
     functionName: "currentWeek",
   });
 }
 
-// Write: Claim dividends for multiple weeks
+// Write: Claim dividends for multiple weeks (via DividendHub)
 export function useClaimMultipleWeeks() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
   const claimAll = (weeks: number[]) => {
     writeContract({
-      address: CONTRACTS.DividendFantasy as `0x${string}`,
-      abi: DividendFantasyABI,
+      address: CONTRACTS.DividendHub as `0x${string}`,
+      abi: DividendHubABI,
       functionName: "claimMultipleWeeks",
       args: [weeks.map((w) => BigInt(w))],
     });

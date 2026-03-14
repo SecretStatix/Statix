@@ -12,7 +12,7 @@ from db import get_supabase, get_store
 router = APIRouter()
 
 
-# Dividend config (mirrors on-chain constants)
+# Dividend config (mirrors on-chain constants) FIXME: make a source of truth
 DIVIDEND_CONFIG = {
     "fee_rate": 0.015,          # 1.5% per trade
     "dividend_pool_pct": 0.67,   # 67% of fees to dividends

@@ -40,17 +40,13 @@ export default function ResetPasswordPage() {
       setError('Password must be at least 6 characters.');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
     setLoading(true);
-
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
-    });
+    const { error: updateError } = await supabase.auth.updateUser({ password });
 
     if (updateError) {
       setError(updateError.message);
@@ -62,19 +58,20 @@ export default function ResetPasswordPage() {
     setLoading(false);
   };
 
+  const inputClass = "w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-primary transition [color-scheme:dark]";
+
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-gray-800 rounded-xl max-w-md w-full p-8 text-center">
-          <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-2xl font-bold mb-4">Password Updated</h2>
-          <p className="text-gray-400 mb-6">
-            Your password has been reset successfully.
-          </p>
-          <button
-            onClick={() => router.push('/')}
-            className="px-6 py-3 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold transition"
-          >
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+          <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-foreground mb-3">Password Updated</h2>
+          <p className="text-muted-foreground text-sm mb-6">Your password has been reset successfully.</p>
+          <button onClick={() => router.push('/')} className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary-600 hover:to-accent hover:glow-primary transition">
             Go to App
           </button>
         </div>
@@ -84,17 +81,17 @@ export default function ResetPasswordPage() {
 
   if (!sessionReady) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-        <div className="bg-gray-800 rounded-xl max-w-md w-full p-8 text-center">
-          <div className="text-5xl mb-4">🔑</div>
-          <h2 className="text-2xl font-bold mb-4">Verifying Link...</h2>
-          <p className="text-gray-400 mb-6">
-            If nothing happens, your reset link may have expired.
-          </p>
-          <Link
-            href="/forgot-password"
-            className="text-orange-400 hover:text-orange-300 font-medium"
-          >
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+          <div className="flex items-center justify-center gap-3 text-muted-foreground mb-4">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-foreground mb-3">Verifying Link...</h2>
+          <p className="text-muted-foreground text-sm mb-6">If nothing happens, your reset link may have expired.</p>
+          <Link href="/forgot-password" className="text-sm text-primary hover:text-primary/80 font-medium">
             Request a new link
           </Link>
         </div>
@@ -103,49 +100,35 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="bg-gray-800 rounded-xl max-w-md w-full">
-        <div className="p-6 border-b border-gray-700 text-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-pink-500 text-transparent bg-clip-text">
-            Dividend Fantasy
-          </h1>
-          <p className="text-gray-400 mt-2">Set your new password</p>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+        <div className="p-8 border-b border-border text-center">
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
+            <span className="text-white font-bold text-lg">SX</span>
+          </div>
+          <h1 className="text-xl font-semibold text-foreground">Set your new Statix password</h1>
         </div>
 
         {error && (
-          <div className="mx-6 mt-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-400 text-sm">
+          <div className="mx-6 mt-6 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-8 space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">New Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="At least 6 characters"
-            />
+            <label className="block text-sm font-medium text-foreground mb-1.5">New Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className={inputClass} placeholder="At least 6 characters" />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Confirm New Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full bg-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Re-enter your password"
-            />
+            <label className="block text-sm font-medium text-foreground mb-1.5">Confirm New Password</label>
+            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className={inputClass} placeholder="Re-enter your password" />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 rounded-lg font-semibold transition"
+            className="w-full py-3.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary-600 hover:to-accent hover:glow-primary hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 transition"
           >
             {loading ? 'Updating...' : 'Update Password'}
           </button>

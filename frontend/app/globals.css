@@ -2,36 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 17, 24, 39;
-  --background-end-rgb: 17, 24, 39;
+  --background: #141518;
+  --foreground: #F0F0F2;
+  --card: #1C1D21;
+  --card-foreground: #F0F0F2;
+  --primary: #4A8AF4;
+  --primary-600: #3B7AE8;
+  --primary-700: #2D6AD4;
+  --primary-foreground: #FFFFFF;
+  --secondary: #232428;
+  --secondary-foreground: #F0F0F2;
+  --muted: #232428;
+  --muted-foreground: #8B8D95;
+  --accent: #4A8AF4;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --success: #22C55E;
+  --border: #2A2B30;
+  --input: #232428;
+  --ring: #4A8AF4;
+  --highlight: #2A2B30;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: #141518;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;
+  background: #2A2B30;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: #3A3B40;
+}
+
+/* Card hover utility (used by Portfolio, DividendSummary) */
+.card-hover {
+  transition: all 200ms ease;
+}
+
+.card-hover:hover {
+  transform: scale(1.01);
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.2);
+  border-color: rgba(74, 138, 244, 0.25);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
 }

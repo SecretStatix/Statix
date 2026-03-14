@@ -86,6 +86,10 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
     bool public killed;  // Permanent shutdown — disables everything except emergency exit
     mapping(address => bool) public blacklisted; // Banned addresses
 
+    // Allowlist — when enabled, only approved wallets can buy
+    bool public allowlistEnabled;
+    mapping(address => bool) public allowlisted;
+
     // Dividends
     uint256 public currentWeek;
     mapping(uint256 => mapping(uint256 => WeeklyPerformance)) public weeklyPerformance; // week => playerIdx => perf
@@ -108,6 +112,8 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
     event AddressBlacklisted(address indexed user, bool banned);
     event ForceLiquidation(address indexed user, uint256 indexed playerIndex, uint256 shares, uint256 refund);
     event PlayerPoolReset(uint256 indexed playerIndex, uint256 newShares, uint256 newCash);
+    event AllowlistEnabled(bool enabled);
+    event AllowlistUpdated(address indexed user, bool allowed);
 
     // ============== CONSTRUCTOR ==============
 
@@ -231,6 +237,7 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
         require(!killed, "Contract shut down");
         require(!tradingPaused, "Trading paused");
         require(!blacklisted[msg.sender], "Address banned");
+        require(!allowlistEnabled || allowlisted[msg.sender], "Not on allowlist");
         require(_playerIdx < playerCount, "Invalid player");
         Player storage p = players[_playerIdx];
         require(p.active, "Player not active");
@@ -543,6 +550,7 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
      * @dev Nuclear option — use when contract needs to be fully abandoned
      */
     function emergencyDrain(address _to) external onlyOwner {
+        require(killed, "Must shutdown first");
         require(_to != address(0), "Invalid address");
         uint256 bal = paymentToken.balanceOf(address(this));
         require(bal > 0, "Nothing to drain");
@@ -633,6 +641,35 @@ contract DividendFantasy is Ownable, ReentrancyGuard {
         currentWeek++;
         tradingPaused = false;
         emit WeekAdvanced(currentWeek);
+    }
+
+    // ============== ALLOWLIST ==============
+
+    /**
+     * @notice Toggle allowlist on/off (owner only)
+     * @param _enabled True to restrict buys to allowlisted addresses
+     */
+    function setAllowlistEnabled(bool _enabled) external onlyOwner {
+        allowlistEnabled = _enabled;
+        emit AllowlistEnabled(_enabled);
+    }
+
+    /**
+     * @notice Add or remove a single address from the allowlist
+     */
+    function setAllowlist(address _user, bool _allowed) external onlyOwner {
+        allowlisted[_user] = _allowed;
+        emit AllowlistUpdated(_user, _allowed);
+    }
+
+    /**
+     * @notice Batch add/remove addresses from the allowlist
+     */
+    function setAllowlistBatch(address[] calldata _users, bool _allowed) external onlyOwner {
+        for (uint256 i = 0; i < _users.length; i++) {
+            allowlisted[_users[i]] = _allowed;
+            emit AllowlistUpdated(_users[i], _allowed);
+        }
     }
 
     // ============== VIEW FUNCTIONS ==============

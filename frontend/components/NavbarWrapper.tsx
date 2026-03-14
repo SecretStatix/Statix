@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { Navbar } from './Navbar';
 
@@ -12,5 +13,9 @@ export function NavbarWrapper() {
     return null;
   }
 
-  return <Navbar />;
+  return (
+    <Suspense fallback={<nav className="sticky top-0 z-50 h-14 border-b border-white/[0.06] bg-card/90 backdrop-blur-sm" />}>
+      <Navbar />
+    </Suspense>
+  );
 }

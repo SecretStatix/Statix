@@ -2,7 +2,7 @@
 Player routes - real NBA data + on-chain price data.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
 import json
@@ -82,7 +82,7 @@ async def list_players():
             symbol=p.get("symbol", ""),
             nba_id=p.get("nba_id", 0),
             position=cached.get("position", "F") if cached else "F",
-            avg_fantasy_points=cached["avg_fantasy_points"] if cached else p.get("weekly_projection", 0) / 3.5,
+            avg_fantasy_points=cached.get("avg_fantasy_points", p.get("weekly_projection", 0) / 3.5) if cached else p.get("weekly_projection", 0) / 3.5,
             weekly_projection=p.get("weekly_projection", 0),
             season_projection=p.get("season_projection", 0),
             avg_stats=cached.get("avg_stats", {}) if cached else {},
@@ -102,7 +102,7 @@ async def get_player(player_id: str):
 
 
 @router.get("/{player_id}/games")
-async def get_player_games(player_id: str, last_n: int = 10):
+async def get_player_games(player_id: str, last_n: int = Query(default=10, le=82)):
     """Get a player's recent game log."""
     players = _get_players()
     target = None
@@ -121,5 +121,5 @@ async def get_player_games(player_id: str, last_n: int = 10):
     try:
         games = fetch_player_game_log(nba_id, last_n_games=last_n)
         return {"player_id": player_id, "games": games}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to fetch game log")

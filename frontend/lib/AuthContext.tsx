@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { useRouter, usePathname } from 'next/navigation';
+import { PREVIEW } from './preview';
 
 interface AuthContextType {
   user: User | null;
@@ -29,10 +30,20 @@ const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isApproved, setIsApproved] = useState(false);
+  const [loading, setLoading] = useState(PREVIEW ? false : true);
+  const [isApproved, setIsApproved] = useState(PREVIEW ? true : false);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Preview mode: skip all auth, render children immediately
+  if (PREVIEW) {
+    const previewUser = { id: 'preview', email: 'preview@statix.gg', app_metadata: {}, user_metadata: { username: 'PreviewUser' }, aud: '', created_at: '' } as User;
+    return (
+      <AuthContext.Provider value={{ user: previewUser, session: null, loading: false, isApproved: true, signOut: async () => {} }}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }
 
   async function checkApproval(userId: string) {
     const { data } = await supabase
@@ -100,8 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-400 text-lg">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground text-lg">Loading...</div>
       </div>
     );
   }

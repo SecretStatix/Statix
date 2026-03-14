@@ -1,5 +1,6 @@
 """
-Dividend Fantasy - FastAPI Backend
+Statix - FastAPI Backend
+NBA athlete stock market with weekly dividends.
 """
 
 import os
@@ -15,12 +16,12 @@ from routes.dividends import router as dividends_router
 from routes.admin import router as admin_router
 
 app = FastAPI(
-    title="Dividend Fantasy API",
-    description="NBA Player Stock Market with Weekly Dividends",
+    title="Statix API",
+    description="NBA Athlete Stock Market with Weekly Dividends",
     version="2.0.0",
 )
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://claude-foundation.vercel.app").split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,7 +39,7 @@ app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
 
 @app.get("/")
 async def root():
-    return {"name": "Dividend Fantasy API", "version": "2.0.0", "status": "running"}
+    return {"name": "Statix API", "version": "2.0.0", "status": "running"}
 
 
 @app.get("/health")

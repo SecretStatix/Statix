@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
+import { X } from 'lucide-react';
 import { PlayerData } from './PlayerGrid';
 import {
   useBuyQuote,
@@ -13,9 +14,9 @@ import {
   useDBucksBalance,
   useDBucksAllowance,
   useHoldings,
-  formatUSDC,
 } from '@/hooks/useContracts';
 import { logTransaction } from '@/lib/api';
+import { PREVIEW, PREVIEW_BALANCE, getPreviewHolding } from '@/lib/preview';
 
 interface TradeModalProps {
   isOpen: boolean;
@@ -29,22 +30,18 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
   const [amount, setAmount] = useState('');
   const shares = parseFloat(amount) || 0;
 
-  // On-chain reads
   const { data: buyQuoteData } = useBuyQuote(player.index, mode === 'buy' ? shares : 0);
   const { data: sellQuoteData } = useSellQuote(player.index, mode === 'sell' ? shares : 0);
   const { data: dbucksBalance } = useDBucksBalance(address);
   const { data: allowance } = useDBucksAllowance(address);
   const { data: myHoldings } = useHoldings(player.index, address);
 
-  // On-chain writes
-  const { approve, isPending: approving, isSuccess: approved } = useApproveDBucks();
-  const { buy, hash: buyHash, isPending: buying, isSuccess: bought } = useBuyShares();
-  const { sell, hash: sellHash, isPending: selling, isSuccess: sold } = useSellShares();
+  const { approve, isPending: approving, isConfirming: approvingConfirming, isSuccess: approved } = useApproveDBucks();
+  const { buy, hash: buyHash, isPending: buying, isConfirming: buyingConfirming, isSuccess: bought } = useBuyShares();
+  const { sell, hash: sellHash, isPending: selling, isConfirming: sellingConfirming, isSuccess: sold } = useSellShares();
 
-  // Refs to capture trade-time values (avoids stale closure in success effect)
   const tradeInfoRef = useRef<{ side: 'buy' | 'sell'; shares: number; total: number } | null>(null);
 
-  // Reset on close
   useEffect(() => {
     if (!isOpen) {
       setAmount('');
@@ -53,20 +50,12 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
     }
   }, [isOpen]);
 
-  // Log transaction to Supabase and close on success
   useEffect(() => {
     if (bought || sold) {
       const txHash = bought ? buyHash : sellHash;
       const info = tradeInfoRef.current;
       if (txHash && address && info) {
-        logTransaction(
-          address,
-          player.index,
-          info.side,
-          info.shares,
-          info.total,
-          txHash
-        ).catch(console.error);
+        logTransaction(address, player.index, info.side, info.shares, info.total, txHash).catch(console.error);
       }
       setTimeout(() => onClose(), 2000);
     }
@@ -74,7 +63,7 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
 
   if (!isOpen) return null;
 
-  // Parse quote
+  // FIXME: under no scenario should there be a fallback towards frontend data, when blockchain doesn't respond.
   let quote: { cost: number; fee: number; total: number; newPrice: number } | null = null;
 
   if (mode === 'buy' && buyQuoteData && shares > 0) {
@@ -95,7 +84,6 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
     };
   }
 
-  // Fallback client-side quote when chain not connected
   if (!quote && shares > 0) {
     const virtualShares = 1000;
     const virtualCash = player.price * virtualShares;
@@ -119,66 +107,59 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
   }
 
   const slippage = quote ? Math.abs((quote.newPrice - player.price) / player.price * 100) : 0;
-  const balance = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
-  const holdingAmount = myHoldings ? parseFloat(formatUnits(myHoldings as bigint, 6)) : 0;
+  const balance = PREVIEW ? PREVIEW_BALANCE : (dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0);
+  const holdingAmount = PREVIEW ? getPreviewHolding(player.index) : (myHoldings ? parseFloat(formatUnits(myHoldings as bigint, 6)) : 0);
   const needsApproval = mode === 'buy' && quote && allowance !== undefined &&
     (allowance as bigint) < BigInt(Math.ceil(quote.total * 1e6));
 
   const handleTrade = () => {
     if (!quote || !shares) return;
-
-    // Capture trade info in ref before initiating (avoids stale closure)
     tradeInfoRef.current = { side: mode, shares, total: quote.total };
 
     if (mode === 'buy') {
       if (needsApproval) {
-        approve(quote.total * 1.1); // 10% buffer
+        approve(quote.total * 1.1);
       } else {
-        buy(player.index, shares, quote.total * 1.05); // 5% slippage tolerance
+        buy(player.index, shares, quote.total * 1.05);
       }
     } else {
-      sell(player.index, shares, quote.total * 0.95); // 5% slippage tolerance
+      sell(player.index, shares, quote.total * 0.95);
     }
   };
 
-  const isPending = approving || buying || selling;
+  const isPending = approving || approvingConfirming || buying || buyingConfirming || selling || sellingConfirming;
   const isSuccess = bought || sold;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-xl max-w-md w-full">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Trade {player.name}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 max-w-md w-full" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <h2 className="font-semibold text-foreground">Trade {player.name}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Success message */}
         {isSuccess && (
-          <div className="p-4 bg-green-900/30 text-green-400 text-center font-semibold">
-            Transaction confirmed!
+          <div className="mx-5 mt-4 p-3 bg-success/10 border border-success/30 rounded-xl text-success text-sm font-medium text-center">
+            Done! Your trade is complete.
           </div>
         )}
 
-        {/* Mode Toggle */}
-        <div className="p-4">
-          <div className="flex bg-gray-700 rounded-lg p-1">
+        <div className="p-5">
+          <div className="flex bg-white/[0.04] rounded-xl p-1 gap-1">
             <button
               onClick={() => setMode('buy')}
-              className={`flex-1 py-2 rounded-md font-medium transition ${
-                mode === 'buy' ? 'bg-green-600 text-white' : 'text-gray-400'
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition ${
+                mode === 'buy' ? 'bg-success/20 text-success shadow-sm border border-success/40' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Buy
             </button>
             <button
               onClick={() => setMode('sell')}
-              className={`flex-1 py-2 rounded-md font-medium transition ${
-                mode === 'sell' ? 'bg-red-600 text-white' : 'text-gray-400'
+              className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition ${
+                mode === 'sell' ? 'bg-destructive/20 text-destructive shadow-sm border border-destructive/40' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Sell
@@ -186,75 +167,71 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
           </div>
         </div>
 
-        {/* Balances */}
-        {isConnected && (
-          <div className="px-4 pb-2 flex justify-between text-sm text-gray-400">
-            <span>D-Bucks: ${balance.toFixed(2)}</span>
-            <span>Holdings: {holdingAmount.toFixed(2)} shares</span>
+        {(isConnected || PREVIEW) && (
+          <div className="px-5 pb-2 flex justify-between text-xs text-muted-foreground">
+            <span>Balance: <span className="font-medium text-foreground">${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+            <span>You own: <span className="font-medium text-foreground">{holdingAmount.toFixed(2)} shares</span></span>
           </div>
         )}
 
-        {/* Amount Input */}
-        <div className="px-4 pb-4">
-          <label className="block text-sm text-gray-400 mb-2">Amount (Shares)</label>
+        <div className="px-5 pb-4">
+          <label className="block text-xs text-muted-foreground mb-1.5">Number of shares</label>
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-            className="w-full bg-gray-700 rounded-lg px-4 py-3 text-xl font-mono focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="0"
+            className="w-full bg-secondary border border-border rounded-xl px-4 py-3 text-lg font-semibold text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-success/40 focus:border-success/50 transition [color-scheme:dark]"
           />
-          <p className="text-sm text-gray-400 mt-2">
-            Current Price: ${player.price.toFixed(2)}/share
+          <p className="text-xs text-muted-foreground mt-1.5">
+            ${player.price.toFixed(2)} per share
           </p>
         </div>
 
-        {/* Quote */}
         {quote && (
-          <div className="px-4 pb-4 space-y-2">
-            <div className="bg-gray-700 rounded-lg p-4 space-y-2">
+          <div className="px-5 pb-4">
+            <div className="bg-secondary/50 rounded-xl p-4 space-y-2 border border-border">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">{mode === 'buy' ? 'Cost' : 'Revenue'}</span>
-                <span>${quote.cost.toFixed(2)}</span>
+                <span className="text-muted-foreground">{mode === 'buy' ? 'Cost' : 'You receive'}</span>
+                <span className="font-semibold text-foreground">${quote.total.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Fee (1.5%)</span>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Fee (1.5%)</span>
                 <span>${quote.fee.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Price Impact</span>
-                <span className={slippage > 5 ? 'text-red-400' : ''}>{slippage.toFixed(2)}%</span>
-              </div>
-              <div className="border-t border-gray-600 pt-2 flex justify-between font-semibold">
-                <span>{mode === 'buy' ? 'Total Cost' : 'You Receive'}</span>
-                <span>${quote.total.toFixed(2)}</span>
-              </div>
+              {slippage > 1 && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Price impact</span>
+                  <span className={slippage > 5 ? 'text-destructive font-medium' : 'text-amber-500'}>{slippage.toFixed(2)}%</span>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Action Button */}
-        <div className="p-4 border-t border-gray-700">
-          {isConnected ? (
+        <div className="p-5 pt-0">
+          {(isConnected || PREVIEW) ? (
             <button
-              onClick={handleTrade}
-              disabled={!quote || isPending || isSuccess}
-              className={`w-full py-3 rounded-lg font-semibold transition ${
+              onClick={PREVIEW ? undefined : handleTrade}
+              disabled={!quote || isPending || isSuccess || PREVIEW}
+              className={`w-full h-12 rounded-xl text-base font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card ${
                 mode === 'buy'
-                  ? 'bg-green-600 hover:bg-green-700 disabled:bg-gray-600'
-                  : 'bg-red-600 hover:bg-red-700 disabled:bg-gray-600'
-              } disabled:cursor-not-allowed`}
+                  ? 'bg-success text-white hover:bg-success/90 focus:ring-success'
+                  : 'bg-destructive text-white hover:bg-destructive/90 focus:ring-destructive'
+              }`}
             >
-              {isPending
+              {PREVIEW
+                ? `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} shares`
+                : isPending
                 ? 'Confirming...'
                 : isSuccess
                 ? 'Done!'
                 : needsApproval
                 ? 'Approve D-Bucks'
-                : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} Shares`}
+                : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} shares`}
             </button>
           ) : (
-            <p className="text-center text-gray-400">Connect your wallet to trade</p>
+            <p className="text-center text-sm text-muted-foreground py-2">Connect your wallet to trade</p>
           )}
         </div>
       </div>

@@ -1,83 +1,106 @@
 'use client';
 
-import { useAccount } from 'wagmi';
-import { PlayerGrid } from '@/components/PlayerGrid';
-import { Portfolio } from '@/components/Portfolio';
-import { DividendSummary } from '@/components/DividendSummary';
+import { useState, useEffect, Suspense } from 'react';
+import { getPlayers } from '@/lib/api';
+import { useAllPlayers } from '@/hooks/useContracts';
+import { formatUnits } from 'viem';
+import { PlayerGrid, PlayerData } from '@/components/PlayerGrid';
+import { FeaturedPlayer } from '@/components/FeaturedPlayer';
+import { HotPlayers } from '@/components/HotPlayers';
+import { ActivityFeed } from '@/components/ActivityFeed';
 
-export default function Home() {
-  const { isConnected } = useAccount();
+function HomeContent() {
+  const [players, setPlayers] = useState<PlayerData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const { data: onChainData } = useAllPlayers();
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const apiPlayers = await getPlayers();
+
+        const mapped: PlayerData[] = apiPlayers.map((p: any) => {
+          let price = p.price || 10;
+          if (onChainData) {
+            const [, , prices] = onChainData as [string[], string[], bigint[], bigint[]];
+            if (prices[p.index]) {
+              price = parseFloat(formatUnits(prices[p.index], 6));
+            }
+          }
+
+          return {
+            index: p.index,
+            id: p.id,
+            name: p.name,
+            team: p.team,
+            symbol: p.symbol,
+            position: p.position || 'F',
+            nbaId: p.nba_id,
+            price,
+            avgFantasyPoints: p.avg_fantasy_points ?? (p.weekly_projection ?? 0) / 3.5,
+            weeklyProjection: p.weekly_projection ?? 0,
+            seasonProjection: p.season_projection ?? 0,
+            totalShares: 0,
+          };
+        });
+
+        setPlayers(mapped);
+      } catch (err) {
+        console.error('Failed to load players:', err);
+        try {
+          const res = await fetch('/deployments.json');
+          const deployment = await res.json();
+          const mapped = deployment.players.map((p: any) => ({
+            index: p.index,
+            id: p.id,
+            name: p.name,
+            team: p.team || '',
+            symbol: p.symbol,
+            position: p.position || 'F',
+            nbaId: p.nba_id,
+            price: 10,
+            avgFantasyPoints: (p.weekly_projection ?? 0) / 3.5,
+            weeklyProjection: p.weekly_projection ?? 0,
+            seasonProjection: p.season_projection ?? 0,
+            totalShares: 0,
+          }));
+          setPlayers(mapped);
+        } catch {
+          console.error('No player data available');
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [onChainData]);
 
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
-      <section className="text-center py-12">
-        <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-pink-500 text-transparent bg-clip-text">
-          Dividend Fantasy
-        </h1>
-        <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-          Trade NBA players like stocks. Earn weekly dividends based on performance.
-        </p>
-      </section>
+    <div className="space-y-6">
+      {/* Featured spotlight */}
+      <FeaturedPlayer players={players} loading={loading} />
 
-      {isConnected ? (
-        <>
-          {/* Portfolio Summary */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Your Portfolio</h2>
-            <Portfolio />
-          </section>
+      {/* Hot players bar */}
+      <HotPlayers players={players} loading={loading} />
 
-          {/* Dividend Summary */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Dividends</h2>
-            <DividendSummary />
-          </section>
-        </>
-      ) : (
-        <section className="text-center py-8">
-          <div className="bg-gray-800 rounded-xl p-8 max-w-md mx-auto">
-            <h2 className="text-xl font-semibold mb-4">Connect Your Wallet</h2>
-            <p className="text-gray-400 mb-4">
-              Connect your wallet to start trading player shares and earning dividends.
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* Player Marketplace */}
-      <section>
-        <h2 className="text-2xl font-bold mb-4">Player Marketplace</h2>
-        <PlayerGrid />
-      </section>
-
-      {/* How It Works */}
-      <section className="py-12">
-        <h2 className="text-2xl font-bold mb-8 text-center">How It Works</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-gray-800 rounded-xl p-6">
-            <div className="text-4xl mb-4">🏀</div>
-            <h3 className="text-lg font-semibold mb-2">1. Buy Player Shares</h3>
-            <p className="text-gray-400">
-              Trade NBA player tokens using our AMM. Prices move based on supply and demand.
-            </p>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6">
-            <div className="text-4xl mb-4">📈</div>
-            <h3 className="text-lg font-semibold mb-2">2. Players Perform</h3>
-            <p className="text-gray-400">
-              When players beat their fantasy projections, shareholders earn dividends.
-            </p>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6">
-            <div className="text-4xl mb-4">💰</div>
-            <h3 className="text-lg font-semibold mb-2">3. Claim Dividends</h3>
-            <p className="text-gray-400">
-              Claim your weekly dividends. The better your picks, the more you earn.
-            </p>
-          </div>
+      {/* Main content: grid + activity sidebar */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-9">
+          <PlayerGrid players={players} loading={loading} />
         </div>
-      </section>
+        <div className="lg:col-span-3">
+          <ActivityFeed />
+        </div>
+      </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="text-center py-12 text-muted-foreground">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
