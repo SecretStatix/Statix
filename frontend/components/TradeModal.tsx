@@ -63,6 +63,7 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
 
   if (!isOpen) return null;
 
+  // FIXME: under no scenario should there be a fallback towards frontend data, when blockchain doesn't respond.
   let quote: { cost: number; fee: number; total: number; newPrice: number } | null = null;
 
   if (mode === 'buy' && buyQuoteData && shares > 0) {
