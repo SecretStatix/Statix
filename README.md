@@ -1,138 +1,48 @@
-# Dividend Fantasy
+# Statix
 
-NBA player stock market with weekly dividends based on fantasy performance.
+> **NOTE:** This README needs a full rewrite. See `HANDOFF.md` and `blockchain/ADMIN_GUIDE.md` for current documentation.
 
-## Architecture
+NBA player trading platform with weekly dividends based on real fantasy performance. Built on Base (Ethereum L2).
+
+## Quick Reference
 
 ```
-dividend_fantasy/
-├── contracts/          # Solidity smart contracts (Hardhat)
-│   ├── PlayerToken.sol       # ERC20 token for each player
-│   ├── PlayerAMM.sol         # Constant product AMM
-│   ├── DividendDistributor.sol # Weekly dividend distribution
-│   └── MockUSDC.sol          # Test USDC token
+MVP/
+├── blockchain/         # Solidity smart contracts (Hardhat)
+│   ├── contracts/
+│   │   ├── PlayerPool.sol      # Per-player AMM pool (constant product)
+│   │   ├── PoolFactory.sol     # Deploys and registers player pools
+│   │   ├── StatixRouter.sol    # Single entry point for all trades
+│   │   ├── DividendHub.sol     # Weekly dividend distribution + claims
+│   │   ├── DBucks.sol          # USDC-backed payment token with faucet
+│   │   ├── MockUSDC.sol        # Test USDC (6 decimals)
+│   │   └── IPlayerPool.sol     # Pool interface
+│   ├── scripts/
+│   │   ├── deploy-statix.js    # Deploy all contracts to Base Sepolia
+│   │   ├── distribute-dividends.js  # Weekly admin: performance + dividends
+│   │   └── generate-players.js # Build players.json from NBA API cache
+│   └── test/
+│       └── Factory.test.js     # Main test suite
 │
 ├── backend/            # Python FastAPI
 │   ├── main.py               # API entry point
-│   ├── players.py            # Player data endpoints
-│   ├── dividends.py          # Dividend calculation
-│   └── blockchain.py         # Contract interactions
+│   ├── routes/               # /api/players, /api/trading, /api/dividends, /api/admin
+│   ├── nba_stats.py          # NBA API integration + caching
+│   ├── chain.py              # Blockchain contract reads
+│   └── db.py                 # Supabase client
 │
-├── frontend/           # Next.js + React
-│   ├── app/                  # Next.js app router
-│   └── components/           # React components
+├── frontend/           # Next.js 14 + TypeScript + Tailwind
+│   ├── app/                  # App router pages (login, signup, portfolio, etc.)
+│   ├── components/           # PlayerGrid, TradeModal, Portfolio, etc.
+│   ├── hooks/useContracts.ts # Wagmi hooks for on-chain reads/writes
+│   └── lib/                  # API client, auth, ABIs, demo data
 │
-├── dividend_math.py    # Core math functions
-└── math_explained.md   # Math documentation
+└── simulations/        # Standalone AMM/dividend model simulations
 ```
-
-## How It Works
-
-### 1. AMM Trading
-- Each player has a token (ERC20) and an AMM pool
-- Constant product formula: `shares × cash = k`
-- Trading fee: 1.5% (split between dividend pool and protocol)
-
-### 2. Fee Split
-```
-Trading Fee (1.5%)
-├── 67% → Dividend Pool
-└── 33% → Protocol Revenue
-```
-
-### 3. Dividend Distribution
-```
-Dividend Pool
-├── 20% → Base Dividend (ALL shareholders)
-└── 80% → Outperformer Dividend (only outperforming players)
-```
-
-### 4. Outperformance Calculation
-```
-outperformance = (actual_points - projected_points) / projected_points
-```
-
-Players who beat their fantasy projection share the outperformer pool proportionally.
 
 ## Setup
 
-### Contracts
-
-```bash
-cd contracts
-npm install
-npx hardhat compile
-
-# Deploy to local network
-npx hardhat node
-npx hardhat run scripts/deploy.js --network localhost
-
-# Deploy to Base Sepolia
-npx hardhat run scripts/deploy.js --network baseSepolia
-```
-
-### Backend
-
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Run server
-uvicorn main:app --reload
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Environment Variables
-
-### Contracts (.env)
-```
-PRIVATE_KEY=your_wallet_private_key
-BASE_SEPOLIA_RPC=https://sepolia.base.org
-BASESCAN_API_KEY=your_basescan_api_key
-```
-
-### Backend (.env)
-```
-BASE_SEPOLIA_RPC=https://sepolia.base.org
-PRIVATE_KEY=your_private_key
-DATABASE_URL=sqlite:///./dividend_fantasy.db
-```
-
-### Frontend (.env.local)
-```
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
-```
-
-## API Endpoints
-
-### Players
-- `GET /players` - List all players
-- `GET /players/{id}` - Get player details
-- `GET /players/{id}/performance` - Get performance history
-
-### Dividends
-- `GET /dividends/week/{week}` - Get weekly dividend pool
-- `GET /dividends/user/{address}` - Get user's dividend history
-- `POST /dividends/calculate` - Calculate dividend distribution
-
-### Blockchain
-- `GET /blockchain/status` - Check connection
-- `GET /blockchain/player/{id}/market` - Get AMM market data
-- `GET /blockchain/player/{id}/buy-quote` - Get buy quote
-- `GET /blockchain/player/{id}/sell-quote` - Get sell quote
-
-## Smart Contract Addresses (Base Sepolia)
-
-After deployment, addresses will be saved to `contracts/deployed-addresses.json`.
+See `HANDOFF.md` for full run/wire/deploy instructions.
 
 ## License
 
