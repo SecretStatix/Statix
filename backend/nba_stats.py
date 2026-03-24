@@ -5,6 +5,8 @@ Uses nba_api library to pull from stats.nba.com
 
 import json
 import os
+import re
+import unicodedata
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from nba_api.stats.static import players as nba_players
@@ -211,8 +213,15 @@ def get_weekly_actuals(
 
 
 def generate_player_id(name: str) -> str:
-    """Generate a clean ID from player name."""
-    return name.lower().replace(" ", "_").replace(".", "").replace("'", "")
+    """Generate a clean ID from player name.
+
+    Normalizes unicode (ć→c, ņ→n, etc.), strips non-alphanumeric chars,
+    collapses underscores. Must match generate-players.js logic exactly.
+    """
+    nfkd = unicodedata.normalize("NFKD", name)
+    ascii_name = nfkd.encode("ascii", "ignore").decode("ascii")
+    cleaned = re.sub(r"[^a-z0-9]+", "_", ascii_name.lower())
+    return cleaned.strip("_")
 
 
 if __name__ == "__main__":

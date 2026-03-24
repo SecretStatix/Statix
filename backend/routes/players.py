@@ -8,7 +8,7 @@ from typing import List, Optional
 import json
 from pathlib import Path
 
-from nba_stats import fetch_top_players, calculate_fantasy_points, fetch_player_game_log
+from nba_stats import fetch_top_players, calculate_fantasy_points, fetch_player_game_log, generate_player_id
 from chain import get_deployment
 
 router = APIRouter()
@@ -43,7 +43,7 @@ def _get_players() -> list:
     return [
         {
             "index": i,
-            "id": p["name"].lower().replace(" ", "_").replace(".", "").replace("'", ""),
+            "id": generate_player_id(p["name"]),
             "name": p["name"],
             "team": p["team"],
             "symbol": "",
