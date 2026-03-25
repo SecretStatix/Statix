@@ -1,6 +1,9 @@
 """
-NBA Stats Integration - Fetches real player data for Dividend Fantasy
-Uses nba_api library to pull from stats.nba.com
+NBA Stats Integration - Fetches real player data for Statix.
+Uses nba_api library to pull from stats.nba.com.
+
+Primary flow: fetch stats for the 50 curated players in players.json
+by their nba_id, using each player's game log to compute season averages.
 """
 
 import json
@@ -8,16 +11,15 @@ import os
 import re
 import unicodedata
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List, Dict, Optional
 from nba_api.stats.static import players as nba_players
 from nba_api.stats.endpoints import (
-    leagueleaders,
     playergamelog,
     commonplayerinfo,
 )
 import time
 
-# Fantasy point scoring weights
 SCORING = {
     "PTS": 1.0,
     "REB": 1.2,
@@ -28,6 +30,9 @@ SCORING = {
 }
 
 CACHE_FILE = os.path.join(os.path.dirname(__file__), "player_cache.json")
+PLAYERS_JSON = os.path.join(
+    os.path.dirname(__file__), "..", "blockchain", "scripts", "players.json"
+)
 
 
 def calculate_fantasy_points(stats: dict) -> float:
@@ -49,70 +54,109 @@ def _current_nba_season() -> str:
     return f"{year}-{str(year + 1)[-2:]}"
 
 
-def fetch_top_players(season: str = None, top_n: int = 50) -> List[dict]:
+def _load_curated_players() -> List[dict]:
+    """Load the curated 50-player list from players.json."""
+    if os.path.exists(PLAYERS_JSON):
+        with open(PLAYERS_JSON) as f:
+            return json.load(f)
+    return []
+
+
+def fetch_player_season_stats(nba_id: int, season: str = None) -> Optional[dict]:
+    """Fetch season averages for a specific player from their game log."""
+    if season is None:
+        season = _current_nba_season()
+
+    try:
+        log = playergamelog.PlayerGameLog(player_id=nba_id, season=season)
+        time.sleep(0.6)
+        df = log.get_data_frames()[0]
+    except Exception:
+        return None
+
+    if df.empty:
+        return None
+
+    avg_stats = {
+        "PTS": round(float(df["PTS"].mean()), 1),
+        "REB": round(float(df["REB"].mean()), 1),
+        "AST": round(float(df["AST"].mean()), 1),
+        "STL": round(float(df["STL"].mean()), 1),
+        "BLK": round(float(df["BLK"].mean()), 1),
+        "TOV": round(float(df["TOV"].mean()), 1),
+    }
+    avg_fpts = calculate_fantasy_points(avg_stats)
+
+    return {
+        "nba_id": nba_id,
+        "games_played": len(df),
+        "avg_stats": avg_stats,
+        "avg_fantasy_points": round(avg_fpts, 2),
+        "weekly_projection": round(avg_fpts * 3.5, 2),
+        "season_projection": round(avg_fpts * 82, 2),
+    }
+
+
+def fetch_curated_players(season: str = None) -> List[dict]:
     """
-    Fetch top N NBA players by fantasy points (PTS-based ranking as proxy).
-    Returns list of player dicts with id, name, team, position, season averages.
+    Fetch stats for all 50 curated players by their nba_id.
+    Reads the player list from players.json, fetches each player's
+    game log, computes season averages, and caches the result.
     """
-    # Check cache first (valid for 24 hours)
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f:
             cache = json.load(f)
             cache_time = datetime.fromisoformat(cache.get("timestamp", "2000-01-01"))
             if datetime.now() - cache_time < timedelta(hours=24):
                 print(f"Using cached player data ({len(cache['players'])} players)")
-                return cache["players"][:top_n]
+                return cache["players"]
+
+    curated = _load_curated_players()
+    if not curated:
+        print("WARNING: players.json not found, falling back to empty list")
+        return []
 
     if season is None:
         season = _current_nba_season()
 
-    print(f"Fetching top {top_n} players from NBA API (season {season})...")
+    print(f"Fetching stats for {len(curated)} curated players (season {season})...")
 
-    # Get league leaders by PTS to find top players
-    leaders = leagueleaders.LeagueLeaders(
-        season=season,
-        stat_category_abbreviation="PTS",
-        per_mode48="PerGame",
-    )
-    time.sleep(0.6)  # Rate limit
-
-    df = leaders.get_data_frames()[0]
     players_list = []
+    for i, p in enumerate(curated):
+        nba_id = p.get("nba_id")
+        if not nba_id:
+            continue
 
-    for _, row in df.head(top_n).iterrows():
-        player_id = row["PLAYER_ID"]
-        name = row["PLAYER"]
-        team = row["TEAM"]
+        print(f"  [{i+1}/{len(curated)}] {p['name']}...", end=" ", flush=True)
+        stats = fetch_player_season_stats(nba_id, season)
 
-        # Calculate fantasy points from per-game averages
-        avg_stats = {
-            "PTS": row.get("PTS", 0),
-            "REB": row.get("REB", 0),
-            "AST": row.get("AST", 0),
-            "STL": row.get("STL", 0),
-            "BLK": row.get("BLK", 0),
-            "TOV": row.get("TOV", 0),
-        }
-        avg_fpts = calculate_fantasy_points(avg_stats)
-        gp = int(row.get("GP", 0))
+        if stats:
+            players_list.append({
+                "nba_id": nba_id,
+                "name": p["name"],
+                "team": p.get("team", ""),
+                "position": p.get("position", "F"),
+                "games_played": stats["games_played"],
+                "avg_stats": stats["avg_stats"],
+                "avg_fantasy_points": stats["avg_fantasy_points"],
+                "weekly_projection": stats["weekly_projection"],
+                "season_projection": stats["season_projection"],
+            })
+            print(f"OK ({stats['games_played']} GP, {stats['avg_fantasy_points']} FPts/G)")
+        else:
+            players_list.append({
+                "nba_id": nba_id,
+                "name": p["name"],
+                "team": p.get("team", ""),
+                "position": p.get("position", "F"),
+                "games_played": 0,
+                "avg_stats": {},
+                "avg_fantasy_points": 0,
+                "weekly_projection": 0,
+                "season_projection": 0,
+            })
+            print("NO DATA (player may not have played this season)")
 
-        # Weekly projection = avg fantasy points per game * ~3.5 games/week
-        weekly_projection = round(avg_fpts * 3.5, 2)
-        season_projection = round(avg_fpts * 82, 2)
-
-        players_list.append({
-            "nba_id": int(player_id),
-            "name": name,
-            "team": team,
-            "position": _get_position(player_id),
-            "games_played": gp,
-            "avg_stats": {k: round(float(v), 1) for k, v in avg_stats.items()},
-            "avg_fantasy_points": round(avg_fpts, 2),
-            "weekly_projection": weekly_projection,
-            "season_projection": season_projection,
-        })
-
-    # Cache results
     with open(CACHE_FILE, "w") as f:
         json.dump({
             "timestamp": datetime.now().isoformat(),
@@ -120,19 +164,14 @@ def fetch_top_players(season: str = None, top_n: int = 50) -> List[dict]:
             "players": players_list,
         }, f, indent=2)
 
-    print(f"Fetched and cached {len(players_list)} players")
+    fetched = len([p for p in players_list if p["games_played"] > 0])
+    print(f"Cached {len(players_list)} players ({fetched} with stats)")
     return players_list
 
 
-_position_cache: Dict[int, str] = {}
-
-
-def _get_position(player_id: int) -> str:
-    """Get player position from static data (cached lookup)."""
-    if not _position_cache:
-        for p in nba_players.get_players():
-            _position_cache[p["id"]] = p.get("position", "F")
-    return _position_cache.get(player_id, "F")
+def fetch_top_players(season: str = None, top_n: int = 50) -> List[dict]:
+    """Fetch stats for curated players. Wrapper for backward compatibility."""
+    return fetch_curated_players(season)[:top_n]
 
 
 def fetch_player_game_log(
@@ -225,10 +264,11 @@ def generate_player_id(name: str) -> str:
 
 
 if __name__ == "__main__":
-    # Test: fetch top 50 players
-    players = fetch_top_players(top_n=50)
-    print(f"\nTop 50 NBA Players by Fantasy Points:\n")
-    for i, p in enumerate(players, 1):
-        print(f"{i:2d}. {p['name']:<25s} {p['team']:<5s} "
-              f"FPts/G: {p['avg_fantasy_points']:6.1f}  "
-              f"Weekly Proj: {p['weekly_projection']:6.1f}")
+    players = fetch_curated_players()
+    print(f"\nStatix — {len(players)} Curated Players:\n")
+    for i, p in enumerate(players):
+        gp = p.get("games_played", 0)
+        fpts = p.get("avg_fantasy_points", 0)
+        print(f"{i:2d}. {p['name']:<30s} {p.get('team',''):<5s} "
+              f"GP:{gp:3d}  FPts/G:{fpts:6.1f}  "
+              f"Weekly:{p.get('weekly_projection',0):6.1f}")

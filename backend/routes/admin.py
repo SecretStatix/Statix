@@ -9,7 +9,7 @@ from typing import List, Optional
 import hmac
 import os
 
-from nba_stats import fetch_top_players, get_weekly_actuals, calculate_fantasy_points
+from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points
 from chain import get_deployment
 from db import get_supabase, get_store
 
@@ -136,12 +136,13 @@ async def set_performance_manual(data: ManualPerformance, _=Depends(verify_admin
 
 @router.get("/refresh-players")
 async def refresh_players(_=Depends(verify_admin)):
-    """Force refresh player data from NBA API."""
+    """Force refresh player data from NBA API for all 50 curated players."""
 
     import os
     cache_path = os.path.join(os.path.dirname(__file__), "..", "player_cache.json")
     if os.path.exists(cache_path):
         os.remove(cache_path)
 
-    players = fetch_top_players(top_n=50)
-    return {"players_fetched": len(players)}
+    players = fetch_curated_players()
+    fetched = len([p for p in players if p.get("games_played", 0) > 0])
+    return {"players_total": len(players), "players_with_stats": fetched}
