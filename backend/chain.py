@@ -11,7 +11,6 @@ _deployment = None
 _deployment_mtime = 0
 _abi_cache = {}
 
-
 def get_deployment():
     """Load deployment addresses. Reloads if file has changed on disk."""
     global _deployment, _deployment_mtime
@@ -30,7 +29,6 @@ def get_deployment():
     _deployment_mtime = current_mtime
     return _deployment
 
-
 def get_abi(contract_name: str) -> list:
     """Load contract ABI from bundled abis/ directory."""
     if contract_name in _abi_cache:
@@ -46,7 +44,6 @@ def get_abi(contract_name: str) -> list:
 
     _abi_cache[contract_name] = abi
     return abi
-
 
 def get_contract_info():
     """Get all contract addresses and ABIs for the frontend."""

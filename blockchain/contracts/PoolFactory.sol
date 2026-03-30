@@ -27,19 +27,16 @@ contract PoolFactory is Ownable {
     uint256 public defaultInitialCash = 10000e6;    // $10,000 -> $10/share
 
     // ============== EVENTS ==============
-
     event PoolCreated(uint256 indexed index, address pool, string name, string symbol, string playerId);
     event RouterSet(address router);
     event HubSet(address hub);
 
     // ============== CONSTRUCTOR ==============
-
     constructor(address _paymentToken) Ownable(msg.sender) {
         paymentToken = _paymentToken;
     }
 
     // ============== SETUP ==============
-
     function setRouter(address _router) external onlyOwner {
         require(_router != address(0), "Zero address");
         router = _router;

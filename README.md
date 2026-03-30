@@ -83,6 +83,22 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
+#### Backend With Docker
+
+```bash
+# Build the runtime image
+docker build -t statix-backend ./backend
+
+# Run the API locally on http://localhost:8000
+docker run --rm -p 8000:8000 --env-file backend/.env statix-backend
+
+# Build and run the test image
+docker build --target test -t statix-backend-test ./backend
+docker run --rm statix-backend-test
+```
+
+If you have not created `backend/.env` yet, copy `backend/.env.example` first and fill in the values you need.
+
 ### Frontend
 
 ```bash

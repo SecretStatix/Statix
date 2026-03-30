@@ -43,6 +43,11 @@ contract PlayerPool is IPlayerPool {
     uint256 public override totalShares;
     bool public override active;
 
+    // LP tracking: initial reserves get "house" liquidity (non-withdrawable).
+    // Additional deposits mint LP tokens the owner can burn to withdraw.
+    uint256 public override totalLiquidity;
+    uint256 public override lpLiquidity;
+
     // Holdings: user => shares (scaled 1e6)
     mapping(address => uint256) public override holdings;
 
@@ -85,6 +90,7 @@ contract PlayerPool is IPlayerPool {
         projectedPoints = _projectedPoints;
         virtualShares = _initialShares;
         virtualCash = _initialCash;
+        totalLiquidity = _initialCash;
         active = true;
     }
 
@@ -113,7 +119,6 @@ contract PlayerPool is IPlayerPool {
     }
 
     // ============== VIEWS ==============
-
     function getPrice() public view override returns (uint256) {
         return (virtualCash * 1e6) / virtualShares;
     }
@@ -131,7 +136,6 @@ contract PlayerPool is IPlayerPool {
     }
 
     // ============== TRADING (Router only) ==============
-
     /**
      * @notice Execute a buy. Router has already transferred totalCost of DBucks to this pool.
      * @return totalCost The total cost including fee
@@ -223,6 +227,49 @@ contract PlayerPool is IPlayerPool {
         if (protocolFee > 0) {
             paymentToken.safeTransfer(router, protocolFee);
         }
+    }
+
+    // ============== LIQUIDITY (Router only) ==============
+
+    /**
+     * @notice Add liquidity: deposit cash and increase both reserves proportionally.
+     *         Price stays the same. Router must transfer cashAmount to this pool first.
+     * @return lpTokensMinted LP tokens credited to the owner
+     */
+    function addLiquidity(uint256 cashAmount) external override onlyRouter returns (uint256 lpTokensMinted) {
+        require(cashAmount > 0, "Zero amount");
+
+        uint256 sharesToAdd = (cashAmount * virtualShares) / virtualCash;
+        lpTokensMinted = (cashAmount * totalLiquidity) / virtualCash;
+
+        virtualCash += cashAmount;
+        virtualShares += sharesToAdd;
+        totalLiquidity += lpTokensMinted;
+        lpLiquidity += lpTokensMinted;
+    }
+
+    /**
+     * @notice Remove liquidity: burn LP tokens, withdraw proportional cash.
+     *         Corresponding virtual shares are also removed to keep the price unchanged.
+     * @return cashOut DBucks sent back to router
+     */
+    function removeLiquidity(uint256 lpTokens) external override onlyRouter returns (uint256 cashOut) {
+        require(lpTokens > 0 && lpTokens <= lpLiquidity, "Invalid LP amount");
+
+        cashOut = (lpTokens * virtualCash) / totalLiquidity;
+        uint256 sharesToRemove = (lpTokens * virtualShares) / totalLiquidity;
+
+        require(virtualCash - cashOut > 0 && virtualShares - sharesToRemove > 0, "Would drain pool");
+
+        uint256 bal = paymentToken.balanceOf(address(this));
+        require(cashOut <= bal, "Insufficient real balance");
+
+        virtualCash -= cashOut;
+        virtualShares -= sharesToRemove;
+        totalLiquidity -= lpTokens;
+        lpLiquidity -= lpTokens;
+
+        paymentToken.safeTransfer(router, cashOut);
     }
 
     // ============== SNAPSHOTS (Hub only) ==============

@@ -129,14 +129,13 @@ def create_fee_flow_chart():
     ax.annotate('', xy=(7.5, 2.3), xytext=(6, 2.9), arrowprops=arrow_props)
 
     plt.tight_layout()
-
+    
     # Save to bytes
     buf = BytesIO()
     plt.savefig(buf, format='png', dpi=150, facecolor='#111827', bbox_inches='tight')
     plt.close()
     buf.seek(0)
     return buf
-
 
 def create_revenue_chart():
     """Create revenue projection chart"""
@@ -171,7 +170,6 @@ def create_revenue_chart():
     buf.seek(0)
     return buf
 
-
 def create_unit_economics_chart():
     """Create unit economics pie chart"""
     fig, ax = plt.subplots(figsize=(5, 5))
@@ -204,7 +202,6 @@ def create_unit_economics_chart():
 
 def build_deck():
     pdf = PitchDeck()
-
     # ==================== SLIDE 1: Title ====================
     pdf.add_slide()
 

@@ -116,7 +116,6 @@ def _get_pool_state(player_index: int):
     # Fallback to initial values
     return 1000.0, 10000.0
 
-
 @router.post("/quote", response_model=QuoteResponse)
 async def get_quote(req: QuoteRequest):
     """

@@ -15,6 +15,10 @@ interface IPlayerPool {
     function snapshotTotalShares() external returns (uint256);
     function snapshotUserHoldings(uint256 week, address user) external;
 
+    // --- Liquidity (called by Router) ---
+    function addLiquidity(uint256 cashAmount) external returns (uint256 lpTokensMinted);
+    function removeLiquidity(uint256 lpTokens) external returns (uint256 cashOut);
+
     // --- Emergency (called by Router) ---
     function emergencyExitUser(address user) external returns (uint256 refund);
     function forceLiquidate(address user) external returns (uint256 shares, uint256 refund);
@@ -31,6 +35,8 @@ interface IPlayerPool {
     function virtualShares() external view returns (uint256);
     function virtualCash() external view returns (uint256);
     function active() external view returns (bool);
+    function totalLiquidity() external view returns (uint256);
+    function lpLiquidity() external view returns (uint256);
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
     function playerId() external view returns (string memory);

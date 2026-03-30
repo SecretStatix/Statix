@@ -27,10 +27,8 @@ class PlayerResponse(BaseModel):
     season_projection: float
     avg_stats: dict
 
-
 class PlayerDetailResponse(PlayerResponse):
     recent_games: Optional[list] = None
-
 
 def _get_players() -> list:
     """Get player list from deployments.json (on-chain source of truth)."""

@@ -8,6 +8,10 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./IPlayerPool.sol";
 import "./PoolFactory.sol";
 
+
+// FIXME: weeklong projected fantasy is wrong. 
+// FIXME: 
+
 /**
  * @title DividendHub
  * @notice Centralized dividend management across all player pools.
@@ -20,7 +24,6 @@ contract DividendHub is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // ============== STRUCTS ==============
-
     struct WeeklyPerformance {
         uint256 actualPoints;    // Actual fantasy points (scaled 1e6)
         uint256 projectedPoints; // Weekly projection (scaled 1e6)
@@ -94,7 +97,6 @@ contract DividendHub is Ownable, ReentrancyGuard {
     }
 
     // ============== ADMIN: PERFORMANCE ==============
-
     function setWeeklyPerformanceBatch(
         uint256[] calldata _poolIdxs,
         uint256[] calldata _actualPoints
