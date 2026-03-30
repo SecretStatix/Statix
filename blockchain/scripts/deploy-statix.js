@@ -89,7 +89,7 @@ async function main() {
 
   // 7. Create player pools in batches of 10
   console.log(`\n7. Creating ${PLAYERS.length} player pools in batches...\n`);
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = 5;
 
   for (let i = 0; i < PLAYERS.length; i += BATCH_SIZE) {
     const batch = PLAYERS.slice(i, i + BATCH_SIZE);
