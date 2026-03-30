@@ -10,7 +10,7 @@ import "./PoolFactory.sol";
 
 
 // FIXME: weeklong projected fantasy is wrong. 
-// FIXME: 
+// FIXME: OffChain: sort the 50 pools by outeperformance, pick the top 120.
 
 /**
  * @title DividendHub

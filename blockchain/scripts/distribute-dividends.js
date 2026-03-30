@@ -95,8 +95,9 @@ async function main() {
     await setBatchTx.wait();
     console.log("   Performance set!");
 
-    // 2b. Calculate top 30% outperformers off-chain and submit eligible list
-    console.log("\n2b. Selecting top 30% outperformers...");
+    // 2b. Pick the top 10 outperformers by outperformance ratio
+    const TOP_N = 10;
+    console.log(`\n2b. Selecting top ${TOP_N} outperformers...`);
     const outperformers = [];
     for (let i = 0; i < onChainData.player_indices.length; i++) {
       const idx = onChainData.player_indices[i];
@@ -110,10 +111,9 @@ async function main() {
     }
 
     outperformers.sort((a, b) => b.outperf - a.outperf);
-    const top30Count = Math.max(1, Math.ceil(outperformers.length * 0.3));
-    const eligible = outperformers.slice(0, top30Count);
+    const eligible = outperformers.slice(0, TOP_N);
 
-    console.log(`   ${outperformers.length} outperformers total, top ${top30Count} eligible:`);
+    console.log(`   ${outperformers.length} outperformers total, top ${eligible.length} eligible:`);
     eligible.forEach((e) => console.log(`     Player #${e.index}: +${(e.outperf * 100).toFixed(1)}%`));
 
     const eligibleTx = await hub.setOutperformerEligible(eligible.map((e) => e.index));
