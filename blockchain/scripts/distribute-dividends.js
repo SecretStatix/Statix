@@ -5,13 +5,13 @@
  *   WEEK_START=2025-02-10 WEEK_END=2025-02-16 npx hardhat run scripts/distribute-dividends.js --network base-sepolia
  *
  * Steps:
- *   1. Fetches actual NBA stats for the week from backend API
+ *   1. Fetches actual NBA stats from backend API (aborts if unavailable)
  *   2. Pauses trading via Router
  *   3. Submits performance data on-chain via DividendHub
- *   4. Distributes dividends via DividendHub
- *   5. Advances to next week, unpauses trading
+ *   4. Checks Hub balance
+ *   5. Distributes dividends via DividendHub
+ *   6. Advances to next week, unpauses trading
  */
-
 const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
@@ -46,8 +46,8 @@ async function main() {
     console.error("Example: WEEK_START=2025-02-10 WEEK_END=2025-02-16 npm run distribute");
     process.exit(1);
   }
-
-  // 1. Fetch stats from backend
+  
+  // 1. Fetch stats from backend (before any on-chain state changes)
   console.log(`\n1. Fetching NBA stats for ${weekStart} to ${weekEnd}...`);
 
   let onChainData;
@@ -64,30 +64,31 @@ async function main() {
         week_end: weekEnd,
       }),
     });
+    if (!res.ok) {
+      throw new Error(`Backend returned ${res.status}: ${await res.text()}`);
+    }
     const data = await res.json();
+    if (!data.on_chain_data || !data.on_chain_data.player_indices?.length) {
+      throw new Error("Backend returned empty on_chain_data");
+    }
     console.log(`   Players updated: ${data.players_updated}, Errors: ${data.errors}`);
     onChainData = data.on_chain_data;
   } catch (err) {
-    console.error("Backend not available. Using mock data...");
-    const players = deployments.players || [];
-    onChainData = {
-      player_indices: players.map((p) => p.index),
-      actual_points_scaled: players.map((p) =>
-        Math.round(p.weekly_projection * (0.8 + Math.random() * 0.4) * 1e6)
-      ),
-    };
-    console.log(`   Using mock data for ${onChainData.player_indices.length} players`);
+    console.error(`\nFATAL: Could not fetch stats from backend — aborting.`);
+    console.error(`   ${err.message}`);
+    console.error(`   No on-chain state was modified. Safe to retry.`);
+    process.exit(1);
   }
 
-  // 1b. Pause trading via Router
-  console.log("\n1b. Pausing trading...");
+  // 2. Pause trading via Router (only after data is confirmed)
+  console.log("\n2. Pausing trading...");
   const pauseTx = await router.setTradingPaused(true);
   await pauseTx.wait();
   console.log("   Trading paused.");
 
   try {
-    // 2. Submit performance on-chain via Hub
-    console.log("\n2. Submitting performance data on-chain...");
+    // 3. Submit performance on-chain via Hub
+    console.log("\n3. Submitting performance data on-chain...");
     const setBatchTx = await hub.setWeeklyPerformanceBatch(
       onChainData.player_indices,
       onChainData.actual_points_scaled.map((v) => BigInt(v))
@@ -95,9 +96,9 @@ async function main() {
     await setBatchTx.wait();
     console.log("   Performance set!");
 
-    // 2b. Pick the top 10 outperformers by outperformance ratio
+    // 3b. Pick the top 10 outperformers by outperformance ratio
     const TOP_N = 10;
-    console.log(`\n2b. Selecting top ${TOP_N} outperformers...`);
+    console.log(`\n3b. Selecting top ${TOP_N} outperformers...`);
     const outperformers = [];
     for (let i = 0; i < onChainData.player_indices.length; i++) {
       const idx = onChainData.player_indices[i];
@@ -120,11 +121,11 @@ async function main() {
     await eligibleTx.wait();
     console.log("   Eligible list submitted on-chain!");
 
-    // 3. Check Hub balance (accumulated fees from pools)
+    // 4. Check Hub balance (accumulated fees from pools)
     const dbucksAddress = deployments.contracts.DBucks;
     const dbucks = await hre.ethers.getContractAt("DBucks", dbucksAddress);
     const hubBalance = await dbucks.balanceOf(hubAddress);
-    console.log(`\n3. Hub balance (accumulated fees): ${hre.ethers.formatUnits(hubBalance, 6)} D-Bucks`);
+    console.log(`\n4. Hub balance (accumulated fees): ${hre.ethers.formatUnits(hubBalance, 6)} D-Bucks`);
 
     if (hubBalance === 0n) {
       console.log("   No fees to distribute. Users need to trade first!");
@@ -135,14 +136,14 @@ async function main() {
       return;
     }
 
-    // 4. Distribute dividends via Hub
-    console.log("\n4. Distributing dividends...");
+    // 5. Distribute dividends via Hub
+    console.log("\n5. Distributing dividends...");
     const distTx = await hub.distributeDividends();
     await distTx.wait();
     console.log("   Dividends distributed!");
 
-    // 5. Advance week via Hub, unpause trading via Router
-    console.log("\n5. Advancing to next week...");
+    // 6. Advance week via Hub, unpause trading via Router
+    console.log("\n6. Advancing to next week...");
     const advanceTx = await hub.advanceWeek();
     await advanceTx.wait();
     const newWeek = await hub.currentWeek();
