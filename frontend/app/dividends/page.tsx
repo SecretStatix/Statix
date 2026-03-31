@@ -2,7 +2,6 @@
 
 import { useAccount } from 'wagmi';
 import { DividendSummary } from '@/components/DividendSummary';
-import { PREVIEW } from '@/lib/preview';
 
 export default function DividendsPage() {
   const { isConnected } = useAccount();
@@ -10,7 +9,7 @@ export default function DividendsPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Dividends</h1>
-      {isConnected || PREVIEW ? (
+      {isConnected ? (
         <DividendSummary />
       ) : (
         <div className="bg-card rounded-xl p-8 text-center">

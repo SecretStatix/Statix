@@ -8,7 +8,6 @@ import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
 import { TrendingUp, BarChart3, User, Info, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PREVIEW, PREVIEW_ADDRESS } from '@/lib/preview';
 
 const NAV_LINKS = [
   { href: '/', label: 'Market', icon: TrendingUp },
@@ -128,14 +127,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
-            {PREVIEW ? (
-              <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5 border border-white/[0.06]">
-                <div className="w-2 h-2 rounded-full bg-success" />
-                <span className="text-sm text-muted-foreground font-mono">
-                  {truncateAddress(PREVIEW_ADDRESS)}
-                </span>
-              </div>
-            ) : ready && authenticated && activeWallet ? (
+            {ready && authenticated && activeWallet ? (
               <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5 border border-white/[0.06]">
                 <div className="w-2 h-2 rounded-full bg-success" />
                 <span className="text-sm text-muted-foreground font-mono">

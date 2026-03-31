@@ -123,7 +123,7 @@ export default function PlayerProfilePage() {
 
     const avgFpts = games.reduce((s, g) => s + g.fantasy_points, 0) / games.length;
     const data: { label: string; price: number }[] = [];
-
+    
     // Start at 85% of current price, nudge up/down based on performance
     let p = currentPrice * 0.85;
     const reversed = [...games].reverse(); // oldest first
@@ -392,7 +392,7 @@ export default function PlayerProfilePage() {
           )}
         </div>
       </div>
-
+      
       {/* Trading panel + stats — side by side */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="lg:col-span-1">
