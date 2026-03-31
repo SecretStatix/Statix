@@ -43,10 +43,42 @@ async function main() {
 
   if (!weekStart || !weekEnd) {
     console.error("Set WEEK_START and WEEK_END env vars (YYYY-MM-DD format)");
-    console.error("Example: WEEK_START=2025-02-10 WEEK_END=2025-02-16 npm run distribute");
+    console.error(`Example: WEEK_START=2025-02-10 WEEK_END=2025-02-16 npm run distribute:local`);
+    console.error(`\nCurrent week on-chain: ${currentWeek}`);
     process.exit(1);
   }
-  
+
+  const startDate = new Date(weekStart + "T00:00:00Z");
+  const endDate = new Date(weekEnd + "T00:00:00Z");
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  if (isNaN(startDate) || isNaN(endDate)) {
+    console.error("Invalid date format. Use YYYY-MM-DD.");
+    process.exit(1);
+  }
+
+  if (startDate.getUTCDay() !== 1) {
+    console.error(`WEEK_START (${weekStart}) is not a Monday (day=${startDate.getUTCDay()}).`);
+    process.exit(1);
+  }
+
+  if (endDate.getUTCDay() !== 0) {
+    console.error(`WEEK_END (${weekEnd}) is not a Sunday (day=${endDate.getUTCDay()}).`);
+    process.exit(1);
+  }
+
+  const diffDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+  if (diffDays !== 6) {
+    console.error(`WEEK_START to WEEK_END must be exactly 6 days apart (Mon–Sun), got ${diffDays}.`);
+    process.exit(1);
+  }
+
+  if (endDate >= today) {
+    console.error(`WEEK_END (${weekEnd}) has not passed yet. Wait until the week is over to distribute.`);
+    process.exit(1);
+  }
+
   // 1. Fetch stats from backend (before any on-chain state changes)
   console.log(`\n1. Fetching NBA stats for ${weekStart} to ${weekEnd}...`);
 
