@@ -50,7 +50,6 @@ def get_contract_info():
     deployment = get_deployment()
     if not deployment:
         return None
-
     try:
         router_abi = get_abi("StatixRouter")
         hub_abi = get_abi("DividendHub")

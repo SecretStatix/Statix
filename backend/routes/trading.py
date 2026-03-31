@@ -2,11 +2,9 @@
 Trading routes - provides quotes and contract info for frontend trading.
 Actual buy/sell transactions happen directly on-chain via the frontend.
 The backend provides estimated quotes and logs transactions to Supabase.
-
 NOTE: Backend quotes are approximations based on pool state read from chain.
 The on-chain getBuyQuote/getSellQuote are the authoritative source of truth.
 """
-
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, field_validator
 from typing import Optional

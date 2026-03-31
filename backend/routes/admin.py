@@ -44,7 +44,6 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
     Pull real NBA stats for the week and calculate fantasy points.
     Returns data ready to be submitted on-chain.
     """
-
     deployment = get_deployment()
     if not deployment:
         raise HTTPException(status_code=503, detail="Not deployed")

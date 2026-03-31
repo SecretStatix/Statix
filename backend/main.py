@@ -47,6 +47,38 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/health/db")
+async def health_db():
+    """Check Supabase connectivity and table access."""
+    from db import get_supabase
+
+    sb = get_supabase()
+    if sb is None:
+        return {
+            "status": "degraded",
+            "supabase": False,
+            "detail": "Supabase not configured — using in-memory fallback",
+        }
+
+    checks = {}
+    tables = ["users", "transactions", "dividend_claims"]
+
+    for table in tables:
+        try:
+            res = sb.table(table).select("*", count="exact").limit(0).execute()
+            checks[table] = {"ok": True, "row_count": res.count}
+        except Exception as e:
+            checks[table] = {"ok": False, "error": str(e)}
+
+    all_ok = all(c["ok"] for c in checks.values())
+
+    return {
+        "status": "healthy" if all_ok else "degraded",
+        "supabase": True,
+        "tables": checks,
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

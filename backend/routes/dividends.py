@@ -1,16 +1,13 @@
 """
 Dividend routes - weekly dividend info, user history, claim status.
 """
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-
 from chain import get_deployment
 from db import get_supabase, get_store
 
 router = APIRouter()
-
 
 # Dividend config (mirrors on-chain constants) FIXME: make a source of truth
 DIVIDEND_CONFIG = {
@@ -69,7 +66,6 @@ async def get_user_dividends(wallet_address: str):
         "claims": [],
         "message": "Connect Supabase for persistent history",
     }
-
 
 @router.get("/leaderboard")
 async def get_dividend_leaderboard():
