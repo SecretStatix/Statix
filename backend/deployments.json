@@ -1,12 +1,13 @@
 {
-  "network": "localhost",
-  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "network": "base-sepolia",
+  "chainId": 84532,
+  "deployer": "0x639Daa0d790Ff595A2203db01552A28b2339a3f4",
   "contracts": {
-    "MockUSDC": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "DBucks": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    "PoolFactory": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-    "StatixRouter": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-    "DividendHub": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+    "MockUSDC": "0xe3b30046bb2e4b8e45e648445013f41ac4AcaE28",
+    "DBucks": "0x6948CE1D562eF78f5F5a652C4b810a59ACbC7B72",
+    "PoolFactory": "0x0FFf49a5dF1cA51C80CE7E8688e6B44AcB871156",
+    "StatixRouter": "0x5a7a4930692420Cd4366F7F97c9B05EF9dB3522f",
+    "DividendHub": "0x56710d5138131Ab6dc63f2f86Ec42B011f0A8441"
   },
   "faucetMode": true,
   "faucetLimit": "100000",
@@ -512,5 +513,5 @@
       "season_projection": 2426.38
     }
   ],
-  "deployedAt": "2026-03-31T16:44:53.236Z"
+  "deployedAt": "2026-03-31T20:11:16.237Z"
 }
