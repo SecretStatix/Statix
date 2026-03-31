@@ -1,8 +1,11 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const hasValidKey = PRIVATE_KEY && PRIVATE_KEY.length === 64 || (PRIVATE_KEY && PRIVATE_KEY.startsWith("0x") && PRIVATE_KEY.length === 66);
+const PRIVATE_KEY = process.env.PRIVATE_KEY?.trim();
+const hasValidKey =
+  !!PRIVATE_KEY &&
+  (PRIVATE_KEY.length === 64 ||
+    (PRIVATE_KEY.startsWith("0x") && PRIVATE_KEY.length === 66));
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {

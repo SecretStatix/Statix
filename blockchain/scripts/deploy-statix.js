@@ -20,6 +20,13 @@ async function getGasOverrides(deployer) {
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
+  if (!deployer) {
+    console.error(
+      "No deployer account. Set PRIVATE_KEY in blockchain/.env (64 hex chars, or 0x + 64 hex chars).\n" +
+        "Required for --network base-sepolia / base (remote networks have no default unlocked accounts)."
+    );
+    process.exit(1);
+  }
   const deployerAddress = await deployer.getAddress();
   console.log("Deployer:", deployerAddress);
 
