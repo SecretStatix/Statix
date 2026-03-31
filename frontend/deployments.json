@@ -3,404 +3,365 @@
   "chainId": 84532,
   "deployer": "0x639Daa0d790Ff595A2203db01552A28b2339a3f4",
   "contracts": {
-    "MockUSDC": "0xe3b30046bb2e4b8e45e648445013f41ac4AcaE28",
-    "DBucks": "0x6948CE1D562eF78f5F5a652C4b810a59ACbC7B72",
-    "PoolFactory": "0x0FFf49a5dF1cA51C80CE7E8688e6B44AcB871156",
-    "StatixRouter": "0x5a7a4930692420Cd4366F7F97c9B05EF9dB3522f",
-    "DividendHub": "0x56710d5138131Ab6dc63f2f86Ec42B011f0A8441"
+    "MockUSDC": "0x30F45296Ded40Aa4d5558D31b0d5a8fB84903249",
+    "DBucks": "0xd0766cF2b8ba7BaD2A4833bA91904F0b214D1Cd8",
+    "PoolFactory": "0x312A1df0b80203468CB1d7FBEfD231e1BA271867",
+    "StatixRouter": "0xACF5992411c861Ee927771Fa2540a11544d893CA",
+    "DividendHub": "0x0698B427B1FaA41DCf712D6C222897B304c9d144"
   },
   "faucetMode": true,
   "faucetLimit": "100000",
   "players": [
     {
       "index": 0,
-      "id": "shai_gilgeous_alexander",
-      "name": "Shai Gilgeous-Alexander",
-      "symbol": "GILGS",
-      "nba_id": 1628983,
-      "team": "OKC",
-      "weekly_projection": 189,
-      "season_projection": 4428
+      "id": "nikola_jokic",
+      "name": "Nikola Jokic",
+      "symbol": "JOKIN",
+      "nba_id": 203999,
+      "team": "DEN",
+      "weekly_projection": null
     },
     {
       "index": 1,
+      "id": "luka_doncic",
+      "name": "Luka Doncic",
+      "symbol": "DONCL",
+      "nba_id": 1629029,
+      "team": "LAL",
+      "weekly_projection": null
+    },
+    {
+      "index": 2,
+      "id": "shai_gilgeous_alexander",
+      "name": "Shai Gilgeous-Alexander",
+      "symbol": "GILS",
+      "nba_id": 1628983,
+      "team": "OKC",
+      "weekly_projection": null
+    },
+    {
+      "index": 3,
       "id": "giannis_antetokounmpo",
       "name": "Giannis Antetokounmpo",
       "symbol": "ANTEG",
       "nba_id": 203507,
       "team": "MIL",
-      "weekly_projection": 201.71,
-      "season_projection": 4725.66
+      "weekly_projection": null
     },
     {
-      "index": 2,
-      "id": "nikola_joki_",
-      "name": "Nikola Jokić",
-      "symbol": "JOKIN",
-      "nba_id": 203999,
-      "team": "DEN",
-      "weekly_projection": 224.14,
-      "season_projection": 5251.28
+      "index": 4,
+      "id": "victor_wembanyama",
+      "name": "Victor Wembanyama",
+      "symbol": "WEMBV",
+      "nba_id": 1641705,
+      "team": "SAS",
+      "weekly_projection": null
     },
     {
-      "index": 3,
+      "index": 5,
       "id": "anthony_edwards",
       "name": "Anthony Edwards",
       "symbol": "EDWAA",
       "nba_id": 1630162,
       "team": "MIN",
-      "weekly_projection": 151.86,
-      "season_projection": 3557.98
-    },
-    {
-      "index": 4,
-      "id": "jayson_tatum",
-      "name": "Jayson Tatum",
-      "symbol": "TATUJ",
-      "nba_id": 1628369,
-      "team": "BOS",
-      "weekly_projection": 168.49,
-      "season_projection": 3947.48
-    },
-    {
-      "index": 5,
-      "id": "kevin_durant",
-      "name": "Kevin Durant",
-      "symbol": "DURAK",
-      "nba_id": 201142,
-      "team": "PHX",
-      "weekly_projection": 150.5,
-      "season_projection": 3526
+      "weekly_projection": null
     },
     {
       "index": 6,
-      "id": "cade_cunningham",
-      "name": "Cade Cunningham",
-      "symbol": "CUNNC",
-      "nba_id": 1630595,
-      "team": "DET",
-      "weekly_projection": 168.25,
-      "season_projection": 3941.74
-    },
-    {
-      "index": 7,
-      "id": "jalen_brunson",
-      "name": "Jalen Brunson",
-      "symbol": "BRUNJ",
-      "nba_id": 1628973,
-      "team": "NYK",
-      "weekly_projection": 143.25,
-      "season_projection": 3356.26
-    },
-    {
-      "index": 8,
-      "id": "devin_booker",
-      "name": "Devin Booker",
-      "symbol": "BOOKD",
-      "nba_id": 1626164,
-      "team": "PHX",
-      "weekly_projection": 145.5,
-      "season_projection": 3408.74
-    },
-    {
-      "index": 9,
-      "id": "damian_lillard",
-      "name": "Damian Lillard",
-      "symbol": "LILLD",
-      "nba_id": 203081,
-      "team": "MIL",
-      "weekly_projection": 149.06,
-      "season_projection": 3492.38
-    },
-    {
-      "index": 10,
-      "id": "stephen_curry",
-      "name": "Stephen Curry",
-      "symbol": "CURRS",
-      "nba_id": 201939,
-      "team": "GSW",
-      "weekly_projection": 141.33,
-      "season_projection": 3311.16
-    },
-    {
-      "index": 11,
-      "id": "karl_anthony_towns",
-      "name": "Karl-Anthony Towns",
-      "symbol": "TOWNK",
-      "nba_id": 1626157,
-      "team": "NYK",
-      "weekly_projection": 163.83,
-      "season_projection": 3838.42
-    },
-    {
-      "index": 12,
-      "id": "lebron_james",
-      "name": "LeBron James",
-      "symbol": "JAMEL",
-      "nba_id": 2544,
-      "team": "LAL",
-      "weekly_projection": 165.06,
-      "season_projection": 3867.12
-    },
-    {
-      "index": 13,
-      "id": "trae_young",
-      "name": "Trae Young",
-      "symbol": "YOUNT",
-      "nba_id": 1629027,
-      "team": "ATL",
-      "weekly_projection": 156.87,
-      "season_projection": 3675.24
-    },
-    {
-      "index": 14,
-      "id": "franz_wagner",
-      "name": "Franz Wagner",
-      "symbol": "WAGNF",
-      "nba_id": 1630532,
-      "team": "ORL",
-      "weekly_projection": 143.12,
-      "season_projection": 3352.98
-    },
-    {
-      "index": 15,
-      "id": "donovan_mitchell",
-      "name": "Donovan Mitchell",
-      "symbol": "MITCD",
-      "nba_id": 1628378,
-      "team": "CLE",
-      "weekly_projection": 137.55,
-      "season_projection": 3222.6
-    },
-    {
-      "index": 16,
-      "id": "tyler_herro",
-      "name": "Tyler Herro",
-      "symbol": "HERRT",
-      "nba_id": 1629639,
-      "team": "MIA",
-      "weekly_projection": 136.81,
-      "season_projection": 3205.38
-    },
-    {
-      "index": 17,
-      "id": "de_aaron_fox",
-      "name": "De'Aaron Fox",
-      "symbol": "FOXD",
-      "nba_id": 1628368,
-      "team": "SAS",
-      "weekly_projection": 145.63,
-      "season_projection": 3412.02
-    },
-    {
-      "index": 18,
-      "id": "zach_lavine",
-      "name": "Zach LaVine",
-      "symbol": "LAVIZ",
-      "nba_id": 203897,
-      "team": "SAC",
-      "weekly_projection": 122.36,
-      "season_projection": 2866.72
-    },
-    {
-      "index": 19,
-      "id": "james_harden",
-      "name": "James Harden",
-      "symbol": "HARDJ",
-      "nba_id": 201935,
-      "team": "LAC",
-      "weekly_projection": 157.89,
-      "season_projection": 3699.02
-    },
-    {
-      "index": 20,
-      "id": "demar_derozan",
-      "name": "DeMar DeRozan",
-      "symbol": "DEROD",
-      "nba_id": 201942,
-      "team": "SAC",
-      "weekly_projection": 124.88,
-      "season_projection": 2925.76
-    },
-    {
-      "index": 21,
       "id": "jaylen_brown",
       "name": "Jaylen Brown",
       "symbol": "BROWJ",
       "nba_id": 1627759,
       "team": "BOS",
-      "weekly_projection": 132.33,
-      "season_projection": 3100.42
+      "weekly_projection": null
     },
     {
-      "index": 22,
-      "id": "jaren_jackson_jr_",
-      "name": "Jaren Jackson Jr.",
-      "symbol": "JRJ",
-      "nba_id": 1628991,
-      "team": "MEM",
-      "weekly_projection": 132.72,
-      "season_projection": 3109.44
+      "index": 7,
+      "id": "tyrese_maxey",
+      "name": "Tyrese Maxey",
+      "symbol": "MAXET",
+      "nba_id": 1630178,
+      "team": "PHI",
+      "weekly_projection": null
     },
     {
-      "index": 23,
-      "id": "norman_powell",
-      "name": "Norman Powell",
-      "symbol": "POWEN",
-      "nba_id": 1626181,
-      "team": "LAC",
-      "weekly_projection": 109.17,
-      "season_projection": 2557.58
-    },
-    {
-      "index": 24,
-      "id": "jalen_williams",
-      "name": "Jalen Williams",
-      "symbol": "WILLJ",
-      "nba_id": 1631114,
-      "team": "OKC",
-      "weekly_projection": 141.08,
-      "season_projection": 3305.42
-    },
-    {
-      "index": 25,
-      "id": "jamal_murray",
-      "name": "Jamal Murray",
-      "symbol": "MURRJ",
-      "nba_id": 1627750,
-      "team": "DEN",
-      "weekly_projection": 135.38,
-      "season_projection": 3171.76
-    },
-    {
-      "index": 26,
-      "id": "rj_barrett",
-      "name": "RJ Barrett",
-      "symbol": "BARRR",
-      "nba_id": 1629628,
-      "team": "TOR",
-      "weekly_projection": 130.06,
-      "season_projection": 3047.12
-    },
-    {
-      "index": 27,
-      "id": "jalen_green",
-      "name": "Jalen Green",
-      "symbol": "GREEJ",
-      "nba_id": 1630224,
-      "team": "HOU",
-      "weekly_projection": 114.52,
-      "season_projection": 2683.04
-    },
-    {
-      "index": 28,
-      "id": "darius_garland",
-      "name": "Darius Garland",
-      "symbol": "GARLD",
-      "nba_id": 1629636,
+      "index": 8,
+      "id": "donovan_mitchell",
+      "name": "Donovan Mitchell",
+      "symbol": "MITCD",
+      "nba_id": 1628378,
       "team": "CLE",
-      "weekly_projection": 124.36,
-      "season_projection": 2913.46
+      "weekly_projection": null
     },
     {
-      "index": 29,
-      "id": "jordan_poole",
-      "name": "Jordan Poole",
-      "symbol": "POOLJ",
-      "nba_id": 1629673,
-      "team": "WAS",
-      "weekly_projection": 115.33,
-      "season_projection": 2701.9
+      "index": 9,
+      "id": "kevin_durant",
+      "name": "Kevin Durant",
+      "symbol": "DURK",
+      "nba_id": 201142,
+      "team": "HOU",
+      "weekly_projection": null
     },
     {
-      "index": 30,
-      "id": "coby_white",
-      "name": "Coby White",
-      "symbol": "WHITC",
-      "nba_id": 1629632,
-      "team": "CHI",
-      "weekly_projection": 113.72,
-      "season_projection": 2664.18
+      "index": 10,
+      "id": "jalen_brunson",
+      "name": "Jalen Brunson",
+      "symbol": "BRUNJ",
+      "nba_id": 1628973,
+      "team": "NYK",
+      "weekly_projection": null
     },
     {
-      "index": 31,
-      "id": "miles_bridges",
-      "name": "Miles Bridges",
-      "symbol": "BRIDM",
-      "nba_id": 1628970,
-      "team": "CHA",
-      "weekly_projection": 130.38,
-      "season_projection": 3054.5
+      "index": 11,
+      "id": "cade_cunningham",
+      "name": "Cade Cunningham",
+      "symbol": "CUNNC",
+      "nba_id": 1630595,
+      "team": "DET",
+      "weekly_projection": null
     },
     {
-      "index": 32,
-      "id": "pascal_siakam",
-      "name": "Pascal Siakam",
-      "symbol": "SIAKP",
-      "nba_id": 1627783,
-      "team": "IND",
-      "weekly_projection": 127.33,
-      "season_projection": 2983.16
+      "index": 12,
+      "id": "jalen_johnson",
+      "name": "Jalen Johnson",
+      "symbol": "JOHNJ",
+      "nba_id": 1630552,
+      "team": "ATL",
+      "weekly_projection": null
     },
     {
-      "index": 33,
-      "id": "austin_reaves",
-      "name": "Austin Reaves",
-      "symbol": "REAVA",
-      "nba_id": 1630559,
+      "index": 13,
+      "id": "jayson_tatum",
+      "name": "Jayson Tatum",
+      "symbol": "TATUJ",
+      "nba_id": 1628369,
+      "team": "BOS",
+      "weekly_projection": null
+    },
+    {
+      "index": 14,
+      "id": "lebron_james",
+      "name": "LeBron James",
+      "symbol": "JAMEL",
+      "nba_id": 2544,
       "team": "LAL",
-      "weekly_projection": 126.35,
-      "season_projection": 2960.2
+      "weekly_projection": null
     },
     {
-      "index": 34,
+      "index": 15,
+      "id": "stephen_curry",
+      "name": "Stephen Curry",
+      "symbol": "CURRS",
+      "nba_id": 201939,
+      "team": "GSW",
+      "weekly_projection": null
+    },
+    {
+      "index": 16,
+      "id": "trae_young",
+      "name": "Trae Young",
+      "symbol": "YOUNT",
+      "nba_id": 1629027,
+      "team": "ATL",
+      "weekly_projection": null
+    },
+    {
+      "index": 17,
+      "id": "devin_booker",
+      "name": "Devin Booker",
+      "symbol": "BOOKD",
+      "nba_id": 1626164,
+      "team": "PHX",
+      "weekly_projection": null
+    },
+    {
+      "index": 18,
       "id": "scottie_barnes",
       "name": "Scottie Barnes",
       "symbol": "BARNS",
       "nba_id": 1630567,
       "team": "TOR",
-      "weekly_projection": 145.74,
-      "season_projection": 3414.48
+      "weekly_projection": null
     },
     {
-      "index": 35,
-      "id": "anfernee_simons",
-      "name": "Anfernee Simons",
-      "symbol": "SIMOA",
-      "nba_id": 1629014,
-      "team": "POR",
-      "weekly_projection": 107.59,
-      "season_projection": 2520.68
+      "index": 19,
+      "id": "de_aaron_fox",
+      "name": "De'Aaron Fox",
+      "symbol": "FOXD",
+      "nba_id": 1628368,
+      "team": "SAS",
+      "weekly_projection": null
     },
     {
-      "index": 36,
-      "id": "desmond_bane",
-      "name": "Desmond Bane",
-      "symbol": "BANED",
-      "nba_id": 1630217,
-      "team": "ORL",
-      "weekly_projection": 129.05,
-      "season_projection": 3023.34
+      "index": 20,
+      "id": "ja_morant",
+      "name": "Ja Morant",
+      "symbol": "MORJ",
+      "nba_id": 1629630,
+      "team": "MEM",
+      "weekly_projection": null
     },
     {
-      "index": 37,
+      "index": 21,
+      "id": "jamal_murray",
+      "name": "Jamal Murray",
+      "symbol": "MURRJ",
+      "nba_id": 1627750,
+      "team": "DEN",
+      "weekly_projection": null
+    },
+    {
+      "index": 22,
+      "id": "damian_lillard",
+      "name": "Damian Lillard",
+      "symbol": "LILLD",
+      "nba_id": 203081,
+      "team": "MIL",
+      "weekly_projection": null
+    },
+    {
+      "index": 23,
+      "id": "anthony_davis",
+      "name": "Anthony Davis",
+      "symbol": "DAVIA",
+      "nba_id": 203076,
+      "team": "WAS",
+      "weekly_projection": null
+    },
+    {
+      "index": 24,
+      "id": "james_harden",
+      "name": "James Harden",
+      "symbol": "HARDJ",
+      "nba_id": 201935,
+      "team": "CLE",
+      "weekly_projection": null
+    },
+    {
+      "index": 25,
       "id": "domantas_sabonis",
       "name": "Domantas Sabonis",
       "symbol": "SABOD",
       "nba_id": 1627734,
       "team": "SAC",
-      "weekly_projection": 158.13,
-      "season_projection": 3704.76
+      "weekly_projection": null
     },
     {
-      "index": 38,
+      "index": 26,
+      "id": "bam_adebayo",
+      "name": "Bam Adebayo",
+      "symbol": "ADEBB",
+      "nba_id": 1628389,
+      "team": "MIA",
+      "weekly_projection": null
+    },
+    {
+      "index": 27,
+      "id": "pascal_siakam",
+      "name": "Pascal Siakam",
+      "symbol": "SIAKP",
+      "nba_id": 1627783,
+      "team": "IND",
+      "weekly_projection": null
+    },
+    {
+      "index": 28,
       "id": "alperen_sengun",
       "name": "Alperen Sengun",
       "symbol": "SENGA",
       "nba_id": 1630578,
       "team": "HOU",
-      "weekly_projection": 146.69,
-      "season_projection": 3436.62
+      "weekly_projection": null
+    },
+    {
+      "index": 29,
+      "id": "joel_embiid",
+      "name": "Joel Embiid",
+      "symbol": "EMBIJ",
+      "nba_id": 203954,
+      "team": "PHI",
+      "weekly_projection": null
+    },
+    {
+      "index": 30,
+      "id": "tyrese_haliburton",
+      "name": "Tyrese Haliburton",
+      "symbol": "HALIT",
+      "nba_id": 1630169,
+      "team": "IND",
+      "weekly_projection": null
+    },
+    {
+      "index": 31,
+      "id": "franz_wagner",
+      "name": "Franz Wagner",
+      "symbol": "WAGNF",
+      "nba_id": 1630532,
+      "team": "ORL",
+      "weekly_projection": null
+    },
+    {
+      "index": 32,
+      "id": "jaren_jackson_jr",
+      "name": "Jaren Jackson Jr.",
+      "symbol": "JACKJ",
+      "nba_id": 1628991,
+      "team": "MEM",
+      "weekly_projection": null
+    },
+    {
+      "index": 33,
+      "id": "evan_mobley",
+      "name": "Evan Mobley",
+      "symbol": "MOBLE",
+      "nba_id": 1630596,
+      "team": "CLE",
+      "weekly_projection": null
+    },
+    {
+      "index": 34,
+      "id": "tyler_herro",
+      "name": "Tyler Herro",
+      "symbol": "HERRT",
+      "nba_id": 1629639,
+      "team": "MIA",
+      "weekly_projection": null
+    },
+    {
+      "index": 35,
+      "id": "austin_reaves",
+      "name": "Austin Reaves",
+      "symbol": "REAVA",
+      "nba_id": 1630559,
+      "team": "LAL",
+      "weekly_projection": null
+    },
+    {
+      "index": 36,
+      "id": "lamelo_ball",
+      "name": "LaMelo Ball",
+      "symbol": "BALLL",
+      "nba_id": 1630163,
+      "team": "CHA",
+      "weekly_projection": null
+    },
+    {
+      "index": 37,
+      "id": "kawhi_leonard",
+      "name": "Kawhi Leonard",
+      "symbol": "LEONK",
+      "nba_id": 202695,
+      "team": "LAC",
+      "weekly_projection": null
+    },
+    {
+      "index": 38,
+      "id": "zion_williamson",
+      "name": "Zion Williamson",
+      "symbol": "WILLZ",
+      "nba_id": 1629627,
+      "team": "NOP",
+      "weekly_projection": null
     },
     {
       "index": 39,
@@ -409,109 +370,98 @@
       "symbol": "RANDJ",
       "nba_id": 203944,
       "team": "MIN",
-      "weekly_projection": 119.59,
-      "season_projection": 2801.94
+      "weekly_projection": null
     },
     {
       "index": 40,
-      "id": "tyrese_haliburton",
-      "name": "Tyrese Haliburton",
-      "symbol": "HALIT",
-      "nba_id": 1630169,
-      "team": "IND",
-      "weekly_projection": 144.55,
-      "season_projection": 3386.6
+      "id": "cooper_flagg",
+      "name": "Cooper Flagg",
+      "symbol": "FLAGC",
+      "nba_id": 1642843,
+      "team": "DAL",
+      "weekly_projection": null
     },
     {
       "index": 41,
-      "id": "shaedon_sharpe",
-      "name": "Shaedon Sharpe",
-      "symbol": "SHARS",
-      "nba_id": 1631101,
-      "team": "POR",
-      "weekly_projection": 102.55,
-      "season_projection": 2402.6
+      "id": "kon_knueppel",
+      "name": "Kon Knueppel",
+      "symbol": "KNUEK",
+      "nba_id": 1642851,
+      "team": "CHA",
+      "weekly_projection": null
     },
     {
       "index": 42,
-      "id": "evan_mobley",
-      "name": "Evan Mobley",
-      "symbol": "MOBLE",
-      "nba_id": 1630596,
-      "team": "CLE",
-      "weekly_projection": 139.86,
-      "season_projection": 3276.72
+      "id": "keyonte_george",
+      "name": "Keyonte George",
+      "symbol": "GEORK",
+      "nba_id": 1641718,
+      "team": "UTA",
+      "weekly_projection": null
     },
     {
       "index": 43,
-      "id": "nikola_vu_evi_",
-      "name": "Nikola Vučević",
-      "symbol": "VUEN",
-      "nba_id": 202696,
-      "team": "CHI",
-      "weekly_projection": 135.69,
-      "season_projection": 3179.14
+      "id": "michael_porter_jr",
+      "name": "Michael Porter Jr.",
+      "symbol": "PORTM",
+      "nba_id": 1629008,
+      "team": "BKN",
+      "weekly_projection": null
     },
     {
       "index": 44,
-      "id": "collin_sexton",
-      "name": "Collin Sexton",
-      "symbol": "SEXTC",
-      "nba_id": 1629012,
-      "team": "UTA",
-      "weekly_projection": 97.44,
-      "season_projection": 2282.88
+      "id": "kristaps_porzingis",
+      "name": "Kristaps Porzingis",
+      "symbol": "PORZK",
+      "nba_id": 204001,
+      "team": "GSW",
+      "weekly_projection": null
     },
     {
       "index": 45,
-      "id": "michael_porter_jr_",
-      "name": "Michael Porter Jr.",
-      "symbol": "JRM",
-      "nba_id": 1629008,
-      "team": "DEN",
-      "weekly_projection": 110.77,
-      "season_projection": 2595.3
+      "id": "jalen_green",
+      "name": "Jalen Green",
+      "symbol": "GREEJ",
+      "nba_id": 1630224,
+      "team": "PHX",
+      "weekly_projection": null
     },
     {
       "index": 46,
-      "id": "bam_adebayo",
-      "name": "Bam Adebayo",
-      "symbol": "ADEBB",
-      "nba_id": 1628389,
-      "team": "MIA",
-      "weekly_projection": 139.89,
-      "season_projection": 3277.54
+      "id": "derrick_white",
+      "name": "Derrick White",
+      "symbol": "WHITD",
+      "nba_id": 1628401,
+      "team": "BOS",
+      "weekly_projection": null
     },
     {
       "index": 47,
-      "id": "og_anunoby",
-      "name": "OG Anunoby",
-      "symbol": "ANUNO",
-      "nba_id": 1628384,
-      "team": "NYK",
-      "weekly_projection": 115.01,
-      "season_projection": 2694.52
-    },
-    {
-      "index": 48,
-      "id": "andrew_wiggins",
-      "name": "Andrew Wiggins",
-      "symbol": "WIGGA",
-      "nba_id": 203952,
-      "team": "MIA",
-      "weekly_projection": 108.5,
-      "season_projection": 2542
-    },
-    {
-      "index": 49,
       "id": "mikal_bridges",
       "name": "Mikal Bridges",
       "symbol": "BRIDM",
       "nba_id": 1628969,
       "team": "NYK",
-      "weekly_projection": 103.56,
-      "season_projection": 2426.38
+      "weekly_projection": null
+    },
+    {
+      "index": 48,
+      "id": "desmond_bane",
+      "name": "Desmond Bane",
+      "symbol": "BANED",
+      "nba_id": 1630217,
+      "team": "ORL",
+      "weekly_projection": null
+    },
+    {
+      "index": 49,
+      "id": "nikola_vucevic",
+      "name": "Nikola Vucevic",
+      "symbol": "VUCEN",
+      "nba_id": 202696,
+      "team": "BOS",
+      "weekly_projection": null
     }
   ],
-  "deployedAt": "2026-03-31T20:11:16.237Z"
+  "deployedAt": "2026-03-31T22:10:50.462Z"
 }
