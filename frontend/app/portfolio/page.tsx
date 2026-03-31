@@ -2,7 +2,6 @@
 
 import { useAccount } from 'wagmi';
 import { Portfolio } from '@/components/Portfolio';
-import { PREVIEW } from '@/lib/preview';
 
 export default function PortfolioPage() {
   const { isConnected } = useAccount();
@@ -10,7 +9,7 @@ export default function PortfolioPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Your Portfolio</h1>
-      {isConnected || PREVIEW ? (
+      {isConnected ? (
         <Portfolio />
       ) : (
         <div className="bg-card rounded-xl p-8 text-center">

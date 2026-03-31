@@ -3,7 +3,6 @@
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
 import { usePortfolio, useDBucksBalance, useFaucetDBucks } from '@/hooks/useContracts';
-import { PREVIEW, PREVIEW_ADDRESS, PREVIEW_HOLDINGS, PREVIEW_BALANCE, PREVIEW_HOLDINGS_VALUE, PREVIEW_TOTAL_VALUE } from '@/lib/preview';
 import { PlayerAvatar } from './PlayerAvatar';
 
 // Map player index → demo info for display
@@ -27,12 +26,11 @@ const PLAYER_INFO: Record<number, { name: string; team: string; nbaId: number }>
 
 export function Portfolio() {
   const { address, isConnected } = useAccount();
-  const effectiveAddress = PREVIEW ? PREVIEW_ADDRESS : address;
-  const { data: portfolioData, isLoading } = usePortfolio(PREVIEW ? undefined : address);
-  const { data: dbucksBalance } = useDBucksBalance(PREVIEW ? undefined : address);
+  const { data: portfolioData, isLoading } = usePortfolio(address);
+  const { data: dbucksBalance } = useDBucksBalance(address);
   const { faucet, isPending: minting, isSuccess: minted } = useFaucetDBucks();
 
-  if (!isConnected && !PREVIEW) {
+  if (!isConnected) {
     return (
       <div className="bg-card rounded-xl border border-border p-6 text-center">
         <p className="text-sm text-muted-foreground">Connect your wallet to view your portfolio</p>
@@ -40,41 +38,23 @@ export function Portfolio() {
     );
   }
 
-  // Use preview data or real data
-  let balance: number;
-  let holdings: { index: number; shares: number; value: number; name: string; team: string; nbaId: number }[];
-  let holdingsValue: number;
-  let totalValue: number;
-  let loading: boolean;
+  const balance = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
+  let holdings: { index: number; shares: number; value: number; name: string; team: string; nbaId: number }[] = [];
+  let holdingsValue = 0;
 
-  if (PREVIEW) {
-    balance = PREVIEW_BALANCE;
-    holdings = PREVIEW_HOLDINGS.map(h => {
-      const info = PLAYER_INFO[h.index] || { name: `Player #${h.index}`, team: '???', nbaId: 0 };
-      return { ...h, name: info.name, team: info.team, nbaId: info.nbaId };
+  if (portfolioData) {
+    const [idxs, sharesArr, valuesArr] = portfolioData as [bigint[], bigint[], bigint[]];
+    holdings = idxs.map((idx, i) => {
+      const shares = parseFloat(formatUnits(sharesArr[i], 6));
+      const value = parseFloat(formatUnits(valuesArr[i], 6));
+      holdingsValue += value;
+      const info = PLAYER_INFO[Number(idx)] || { name: `Player #${Number(idx)}`, team: '???', nbaId: 0 };
+      return { index: Number(idx), shares, value, name: info.name, team: info.team, nbaId: info.nbaId };
     });
-    holdingsValue = PREVIEW_HOLDINGS_VALUE;
-    totalValue = PREVIEW_TOTAL_VALUE;
-    loading = false;
-  } else {
-    balance = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
-    holdings = [];
-    holdingsValue = 0;
-
-    if (portfolioData) {
-      const [idxs, sharesArr, valuesArr] = portfolioData as [bigint[], bigint[], bigint[]];
-      holdings = idxs.map((idx, i) => {
-        const shares = parseFloat(formatUnits(sharesArr[i], 6));
-        const value = parseFloat(formatUnits(valuesArr[i], 6));
-        holdingsValue += value;
-        const info = PLAYER_INFO[Number(idx)] || { name: `Player #${Number(idx)}`, team: '???', nbaId: 0 };
-        return { index: Number(idx), shares, value, name: info.name, team: info.team, nbaId: info.nbaId };
-      });
-    }
-
-    totalValue = balance + holdingsValue;
-    loading = isLoading;
   }
+
+  const totalValue = balance + holdingsValue;
+  const loading = isLoading;
 
   return (
     <div className="space-y-6">
@@ -85,18 +65,13 @@ export function Portfolio() {
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Portfolio Value</p>
             <p className="text-3xl font-bold text-foreground mt-1">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
-          {!PREVIEW && (
-            <button
-              onClick={() => faucet(10000)}
-              disabled={minting}
-              className="h-10 px-5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary-600 transition-all duration-200 disabled:opacity-50"
-            >
-              {minting ? 'Minting...' : minted ? 'Got it!' : 'Get 10k D-Bucks'}
-            </button>
-          )}
-          {PREVIEW && (
-            <span className="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-lg font-medium">Preview Mode</span>
-          )}
+          <button
+            onClick={() => faucet(10000)}
+            disabled={minting}
+            className="h-10 px-5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary-600 transition-all duration-200 disabled:opacity-50"
+          >
+            {minting ? 'Minting...' : minted ? 'Got it!' : 'Get 10k D-Bucks'}
+          </button>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -163,7 +138,7 @@ export function Portfolio() {
       {/* Wallet info */}
       <div className="bg-card rounded-2xl border border-white/[0.06] p-6 card-hover">
         <h3 className="font-semibold text-foreground mb-3">Wallet</h3>
-        <p className="text-sm text-muted-foreground font-mono break-all">{effectiveAddress}</p>
+        <p className="text-sm text-muted-foreground font-mono break-all">{address}</p>
       </div>
     </div>
   );
