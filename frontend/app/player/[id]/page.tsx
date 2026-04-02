@@ -14,7 +14,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
   ReferenceLine,
 } from 'recharts';
 import { PlayerTradingPanel } from '@/components/PlayerTradingPanel';
@@ -117,41 +116,45 @@ export default function PlayerProfilePage() {
     ? parseFloat(formatUnits(onChainPrice as bigint, 6))
     : (player as any)?.price || 10;
 
-  // Performance-based price chart: derives price from game fantasy points
   const chartDataPriceAll = useMemo(() => {
     if (games.length === 0) return [];
 
     const avgFpts = games.reduce((s, g) => s + g.fantasy_points, 0) / games.length;
     const data: { label: string; price: number }[] = [];
-    
-    // Start at 85% of current price, nudge up/down based on performance
-    let p = currentPrice * 0.85;
-    const reversed = [...games].reverse(); // oldest first
+
+    let p = currentPrice * (0.72 + (player?.index ?? 0) * 0.008);
+    const reversed = [...games].reverse();
+
+    const hashDate = (s: string) => {
+      let h = 2166136261;
+      for (let k = 0; k < s.length; k++) h = Math.imul(h ^ s.charCodeAt(k), 16777619);
+      return (h >>> 0) / 4294967296;
+    };
 
     for (let i = 0; i < reversed.length; i++) {
       const g = reversed[i];
       const diff = g.fantasy_points - avgFpts;
-      // Nudge proportional to how far above/below average
-      const nudge = (diff / Math.max(avgFpts, 1)) * currentPrice * 0.06;
-      p = p + nudge;
-      // Clamp to reasonable range
-      p = Math.max(currentPrice * 0.6, Math.min(currentPrice * 1.3, p));
+      const nudge = (diff / Math.max(avgFpts, 1)) * currentPrice * 0.24;
+      const swing = Math.sin(i * 1.7 + (player?.index ?? 0)) * currentPrice * 0.065;
+      const jitter = (hashDate(g.date + i) - 0.5) * currentPrice * 0.11;
+      const gap = i > 0 ? (g.fantasy_points - reversed[i - 1].fantasy_points) * 0.02 : 0;
+      p = p + nudge + swing + jitter + gap;
+      p = Math.max(currentPrice * 0.42, Math.min(currentPrice * 1.48, p));
 
       const label = g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date;
       data.push({ label, price: Math.round(p * 100) / 100 });
     }
 
-    // Ensure last point lands on currentPrice
     if (data.length > 0) {
       data[data.length - 1].price = currentPrice;
     }
 
     return data;
-  }, [games, currentPrice]);
+  }, [games, currentPrice, player?.index]);
 
   const chartDataFptsAll = games
     .slice()
-    .reverse() // oldest first for left-to-right
+    .reverse()
     .map((g) => ({
       label: g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date,
       fpts: g.fantasy_points,
@@ -159,7 +162,6 @@ export default function PlayerProfilePage() {
       result: g.result,
     }));
 
-  // Time range filtering: 1W = last 7 points, 1M = last 14, 3M = all
   const timeRangeLimit = timeRange === '1W' ? 7 : timeRange === '1M' ? 14 : Infinity;
 
   const chartDataPrice = useMemo(() => {
@@ -174,7 +176,6 @@ export default function PlayerProfilePage() {
 
   const chartData = chartMode === 'fpts' ? chartDataFpts : chartDataPrice;
 
-  // % change from performance trend
   let percentChange = 0;
   if (chartDataFpts.length >= 4) {
     const mid = Math.floor(chartDataFpts.length / 2);
@@ -182,7 +183,6 @@ export default function PlayerProfilePage() {
     const recentAvg = chartDataFpts.slice(mid).reduce((s, g) => s + g.fpts, 0) / (chartDataFpts.length - mid);
     percentChange = olderAvg > 0 ? ((recentAvg - olderAvg) / olderAvg) * 100 : 0;
   }
-  // For price mode, use price deviation from $10
   const priceChange = ((currentPrice - 10) / 10) * 100;
   const displayChange = chartMode === 'price' ? priceChange : percentChange;
   const isPositive = displayChange >= 0;
@@ -191,7 +191,7 @@ export default function PlayerProfilePage() {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
           <span className="text-sm text-muted-foreground">Loading player...</span>
         </div>
       </div>
@@ -232,171 +232,163 @@ export default function PlayerProfilePage() {
   const gradientId = chartMode === 'fpts' ? 'fptsGrad' : 'priceGrad';
 
   return (
-    <div className="relative space-y-6 pb-4">
+    <div className="relative space-y-8 pb-8">
+      {/* Single subtle ambient glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-28 -left-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute top-48 -right-24 h-80 w-80 rounded-full bg-cyan-400/10 blur-3xl" />
+        <div className="absolute -top-40 left-1/3 h-[28rem] w-[28rem] rounded-full bg-primary/[0.05] blur-[120px]" />
       </div>
 
+      {/* Back link — minimal */}
       <Link
         href="/"
-        className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Market
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Market
       </Link>
 
-      {/* Top section: player info + chart + trading panel — single card */}
-      <div className="relative overflow-hidden rounded-3xl border border-white/[0.09] bg-[radial-gradient(circle_at_top_right,rgba(74,138,244,0.16),transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.015))] shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-        {/* Player header row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-6 pb-0">
-          <PlayerAvatar name={player.name} nbaId={player.nba_id} size="xl" />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-4xl font-bold text-foreground">{player.name}</h1>
-            <p className="text-muted-foreground text-sm mt-1">{player.team} · {player.position}</p>
-            {/* Inline stats pills */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {statEntries.slice(0, 3).map(s => (
-                <span key={s.key} className="rounded-full border border-white/[0.12] bg-white/[0.03] px-3 py-1 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{s.value}</span> {s.label}
-                </span>
-              ))}
-              <span className="rounded-full border border-primary/30 bg-primary/12 px-3 py-1 text-xs text-primary">
-                <span className="font-semibold">{avgFpts.toFixed(1)}</span> FPts
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="rounded-2xl border border-white/[0.12] bg-black/15 px-4 py-3 text-right backdrop-blur">
-              <p className="text-3xl md:text-4xl font-bold text-foreground">${price.toFixed(2)}</p>
-              <div className={`flex items-center justify-end gap-1 mt-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                <span className="text-sm font-semibold">{isPositive ? '+' : ''}{displayChange.toFixed(1)}%</span>
-              </div>
-            </div>
-          </div>
+      {/* ── Player header — flat, no card wrapper ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+        <PlayerAvatar name={player.name} nbaId={player.nba_id} size="xl" />
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">{player.name}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{player.team} · {player.position}</p>
         </div>
-
-        {/* Chart */}
-        <div className="mt-5 border-t border-white/[0.08] px-6 pb-4 pt-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex rounded-full border border-white/[0.1] bg-black/20 p-0.5 backdrop-blur">
-                <button
-                  onClick={() => setChartMode('price')}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${chartMode === 'price' ? 'bg-primary text-primary-foreground shadow-[0_4px_12px_rgba(74,138,244,0.35)]' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  Price
-                </button>
-                <button
-                  onClick={() => setChartMode('fpts')}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${chartMode === 'fpts' ? 'bg-primary text-primary-foreground shadow-[0_4px_12px_rgba(74,138,244,0.35)]' : 'text-muted-foreground hover:text-foreground'}`}
-                >
-                  Fantasy Points
-                </button>
-              </div>
-              {/* Time range tabs */}
-              <div className="flex rounded-full border border-white/[0.1] bg-black/20 p-0.5 backdrop-blur">
-                {(['1W', '1M', '3M'] as TimeRange[]).map((range) => (
-                  <button
-                    key={range}
-                    onClick={() => setTimeRange(range)}
-                    className={`rounded-full px-2.5 py-1.5 text-xs font-medium transition-all ${timeRange === range ? 'bg-white/[0.12] text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                  >
-                    {range}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {chartMode === 'fpts' ? `${chartData.length} games` : onChainPrice ? 'On-chain' : 'Simulated'}
-            </span>
-          </div>
-
-          {gamesLoading && chartMode === 'fpts' ? (
-            <div className="flex items-center justify-center h-56">
-              <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-            </div>
-          ) : chartData.length === 0 ? (
-            <div className="flex items-center justify-center h-56 text-muted-foreground text-sm">
-              No data available
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-white/[0.1] bg-black/20 px-2 py-2 backdrop-blur-sm">
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-                  <defs>
-                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={chartColor} stopOpacity={0.24} />
-                      <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis
-                    dataKey="label"
-                    stroke="rgba(255,255,255,0.12)"
-                    tick={{ fill: 'rgb(139, 141, 149)', fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="rgba(255,255,255,0.12)"
-                    tick={{ fill: 'rgb(139, 141, 149)', fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={38}
-                    tickFormatter={chartMode === 'price' ? (v) => `$${v}` : undefined}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#17181c',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '10px',
-                      fontSize: '12px',
-                      boxShadow: '0 8px 20px rgba(0,0,0,0.45)',
-                      padding: '8px 12px',
-                    }}
-                    labelStyle={{ color: 'rgb(139, 141, 149)', marginBottom: '4px' }}
-                    itemStyle={{ color: chartColor }}
-                    formatter={(value: number | undefined) =>
-                      chartMode === 'price'
-                        ? [`$${(value ?? 0).toFixed(2)}`, 'Price']
-                        : [`${(value ?? 0).toFixed(1)} FPts`, 'Fantasy Points']
-                    }
-                  />
-                  {chartMode === 'price' && (
-                    <ReferenceLine
-                      y={currentPrice}
-                      stroke="rgba(255,255,255,0.2)"
-                      strokeDasharray="4 4"
-                      label={{
-                        value: `$${currentPrice.toFixed(2)}`,
-                        position: 'right',
-                        fill: 'rgb(139, 141, 149)',
-                        fontSize: 10,
-                      }}
-                    />
-                  )}
-                  <Area
-                    type="natural"
-                    dataKey={dataKey}
-                    stroke={chartColor}
-                    strokeWidth={2.4}
-                    fill={`url(#${gradientId})`}
-                    dot={false}
-                    activeDot={{ r: 4, fill: chartColor, stroke: '#17181c', strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        <div className="flex items-baseline gap-3 shrink-0">
+          <span className="text-3xl md:text-4xl font-bold text-foreground tabular-nums tracking-tight">
+            ${price.toFixed(2)}
+          </span>
+          <span className={`flex items-center gap-1 text-sm font-semibold ${isPositive ? 'text-success' : 'text-destructive'}`}>
+            {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+            {isPositive ? '+' : ''}{displayChange.toFixed(1)}%
+          </span>
         </div>
       </div>
-      
-      {/* Trading panel + stats — side by side */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <div className="sticky top-20 rounded-3xl border border-white/[0.08] bg-white/[0.015] p-1 backdrop-blur-sm">
+
+      {/* ── Chart — Polymarket-inspired: large, clean, minimal chrome ── */}
+      <div>
+        {/* Chart controls */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-5">
+            <div className="flex items-center gap-0.5">
+              {(['price', 'fpts'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setChartMode(m)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
+                    chartMode === m
+                      ? 'bg-white/[0.08] text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {m === 'price' ? 'Price' : 'Fantasy Pts'}
+                </button>
+              ))}
+            </div>
+            <div className="h-3.5 w-px bg-white/[0.08]" />
+            <div className="flex items-center gap-0.5">
+              {(['1W', '1M', '3M'] as TimeRange[]).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
+                    timeRange === range
+                      ? 'text-foreground bg-white/[0.06]'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span className="text-[11px] text-muted-foreground/50">
+            {chartMode === 'fpts' ? `${chartData.length} games` : onChainPrice ? 'On-chain' : 'Simulated'}
+          </span>
+        </div>
+
+        {/* Chart body — no border wrapper, clean and open */}
+        {gamesLoading && chartMode === 'fpts' ? (
+          <div className="flex items-center justify-center h-[300px]">
+            <div className="w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
+            No data available
+          </div>
+        ) : (
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+                <defs>
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.15} />
+                    <stop offset="80%" stopColor={chartColor} stopOpacity={0.02} />
+                    <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: 'rgba(139, 141, 149, 0.5)', fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  dy={8}
+                />
+                <YAxis
+                  tick={{ fill: 'rgba(139, 141, 149, 0.4)', fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                  tickFormatter={chartMode === 'price' ? (v) => `$${v}` : undefined}
+                />
+                <Tooltip
+                  cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
+                  contentStyle={{
+                    backgroundColor: 'rgba(20, 21, 24, 0.92)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.55)',
+                    padding: '8px 12px',
+                  }}
+                  labelStyle={{ color: 'rgba(139, 141, 149, 0.7)', marginBottom: '2px', fontSize: '11px' }}
+                  itemStyle={{ color: chartColor }}
+                  formatter={(value: number | undefined) =>
+                    chartMode === 'price'
+                      ? [`$${(value ?? 0).toFixed(2)}`, 'Price']
+                      : [`${(value ?? 0).toFixed(1)}`, 'FPts']
+                  }
+                />
+                {chartMode === 'price' && (
+                  <ReferenceLine
+                    y={currentPrice}
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeDasharray="3 3"
+                  />
+                )}
+                <Area
+                  type="monotone"
+                  dataKey={dataKey}
+                  stroke={chartColor}
+                  strokeWidth={1.5}
+                  fill={`url(#${gradientId})`}
+                  dot={false}
+                  activeDot={{ r: 3.5, fill: chartColor, stroke: '#141518', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* Subtle divider */}
+      <div className="h-px bg-white/[0.05]" />
+
+      {/* ── Trading panel + content columns ── */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* Trading panel — left */}
+        <div className="lg:col-span-1 order-first lg:order-none">
+          <div className="sticky top-20">
             <PlayerTradingPanel
               playerIndex={player.index}
               playerId={player.id}
@@ -406,81 +398,94 @@ export default function PlayerProfilePage() {
           </div>
         </div>
 
-        <div className="space-y-5 lg:col-span-2">
-          {/* Stats + projections in one card */}
-          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.015] p-5 backdrop-blur-sm">
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Season Averages</h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {statEntries.map(s => (
-                    <div key={s.key} className="rounded-2xl border border-white/[0.09] bg-white/[0.02] p-3 text-center">
-                      <p className="text-lg font-bold text-foreground">{s.value}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
-                    </div>
-                  ))}
+        {/* Stats + tables — right */}
+        <div className="space-y-8 lg:col-span-2">
+          {/* Season Averages — clean horizontal row */}
+          <div>
+            <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mb-4">
+              Season Averages
+            </h3>
+            <div className="flex items-center">
+              {statEntries.map((s, i) => (
+                <div
+                  key={s.key}
+                  className={`flex-1 text-center py-3 ${
+                    i > 0 ? 'border-l border-white/[0.05]' : ''
+                  }`}
+                >
+                  <p className="text-lg md:text-xl font-bold text-foreground tabular-nums">{s.value}</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1 uppercase tracking-wider font-medium">
+                    {s.label}
+                  </p>
                 </div>
-              </div>
-              <div>
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Fantasy Projections</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between rounded-2xl border border-primary/25 bg-primary/10 p-3">
-                    <span className="text-xs text-muted-foreground">FPts/Game</span>
-                    <span className="text-lg font-bold text-primary">{avgFpts.toFixed(1)}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-white/[0.09] bg-white/[0.02] p-3">
-                    <span className="text-xs text-muted-foreground">Weekly</span>
-                    <span className="text-lg font-bold text-foreground">{weeklyProj.toFixed(1)}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-white/[0.09] bg-white/[0.02] p-3">
-                    <span className="text-xs text-muted-foreground">Season</span>
-                    <span className="text-lg font-bold text-foreground">{seasonProj.toFixed(0)}</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  PTS×1 + REB×1.2 + AST×1.5 + STL×3 + BLK×3 − TOV×1
-                </p>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Recent games */}
-          {games.length > 0 && (
-            <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.015] backdrop-blur-sm">
-              <div className="px-5 py-4">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Games</h3>
+          {/* Fantasy Projections — flat cards */}
+          <div>
+            <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mb-4">
+              Fantasy Projections
+            </h3>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl bg-primary/[0.06] border border-primary/[0.1] px-4 py-3.5">
+                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium">FPts/Game</p>
+                <p className="text-xl font-bold text-primary mt-1.5 tabular-nums">{avgFpts.toFixed(1)}</p>
               </div>
-              <div className="overflow-x-auto">
+              <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] px-4 py-3.5">
+                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium">Weekly</p>
+                <p className="text-xl font-bold text-foreground mt-1.5 tabular-nums">{weeklyProj.toFixed(1)}</p>
+              </div>
+              <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] px-4 py-3.5">
+                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium">Season</p>
+                <p className="text-xl font-bold text-foreground mt-1.5 tabular-nums">{seasonProj.toFixed(0)}</p>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground/30 mt-2.5">
+              PTS x1 + REB x1.2 + AST x1.5 + STL x3 + BLK x3 - TOV x1
+            </p>
+          </div>
+
+          {/* Recent Games — clean table */}
+          {games.length > 0 && (
+            <div>
+              <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mb-4">
+                Recent Games
+              </h3>
+              <div className="overflow-x-auto rounded-xl border border-white/[0.04] bg-white/[0.01]">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-y border-white/[0.08] bg-black/10">
-                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Date</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Matchup</th>
-                      <th className="text-center px-4 py-2.5 font-medium text-muted-foreground text-xs">W/L</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">PTS</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">REB</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">AST</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">STL</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">BLK</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-primary text-xs">FPts</th>
+                    <tr className="border-b border-white/[0.05]">
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground/50 text-[11px] uppercase tracking-wider">Date</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground/50 text-[11px] uppercase tracking-wider">Matchup</th>
+                      <th className="text-center px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">W/L</th>
+                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">PTS</th>
+                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">REB</th>
+                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">AST</th>
+                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">STL</th>
+                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">BLK</th>
+                      <th className="text-right px-3 py-3 font-medium text-primary/60 text-[11px]">FPts</th>
                     </tr>
                   </thead>
                   <tbody>
                     {games.map((game, i) => (
-                      <tr key={i} className="border-b border-white/[0.05] last:border-0 transition-colors hover:bg-white/[0.03]">
-                        <td className="px-4 py-2.5 text-muted-foreground font-mono text-xs">{game.date}</td>
-                        <td className="px-4 py-2.5 text-foreground/90 text-xs">{game.matchup}</td>
-                        <td className="px-4 py-2.5 text-center">
+                      <tr
+                        key={i}
+                        className="border-b border-white/[0.025] last:border-0 transition-colors duration-150 hover:bg-white/[0.02]"
+                      >
+                        <td className="px-4 py-3 text-muted-foreground/60 font-mono text-xs">{game.date}</td>
+                        <td className="px-4 py-3 text-foreground/70 text-xs">{game.matchup}</td>
+                        <td className="px-3 py-3 text-center">
                           <span className={`text-xs font-semibold ${game.result === 'W' ? 'text-success' : 'text-destructive'}`}>
                             {game.result}
                           </span>
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.PTS?.toFixed(0)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.REB?.toFixed(0)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.AST?.toFixed(0)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.STL?.toFixed(0)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{game.stats.BLK?.toFixed(0)}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-xs font-semibold text-primary">
+                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.PTS?.toFixed(0)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.REB?.toFixed(0)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.AST?.toFixed(0)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.STL?.toFixed(0)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.BLK?.toFixed(0)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-primary">
                           {game.fantasy_points.toFixed(1)}
                         </td>
                       </tr>
@@ -491,38 +496,43 @@ export default function PlayerProfilePage() {
             </div>
           )}
 
-          {/* Transactions */}
+          {/* Recent Transactions */}
           {transactions.length > 0 && (
-            <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.015] backdrop-blur-sm">
-              <div className="px-5 py-4">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Transactions</h3>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Top 10 by volume · Last 7 days</p>
+            <div>
+              <div className="flex items-baseline justify-between mb-4">
+                <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">
+                  Recent Transactions
+                </h3>
+                <span className="text-[10px] text-muted-foreground/30">Last 7 days</span>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-xl border border-white/[0.04] bg-white/[0.01]">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-y border-white/[0.08] bg-black/10">
-                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Wallet</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Side</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">Shares</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground text-xs">Cost</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground text-xs">Date</th>
+                    <tr className="border-b border-white/[0.05]">
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground/50 text-[11px] uppercase tracking-wider">Wallet</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground/50 text-[11px] uppercase tracking-wider">Side</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground/50 text-[11px]">Shares</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground/50 text-[11px]">Cost</th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground/50 text-[11px]">Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {transactions.map((tx, i) => (
-                      <tr key={i} className="border-b border-white/[0.05] last:border-0 transition-colors hover:bg-white/[0.03]">
-                        <td className="px-4 py-2.5 text-foreground/90 font-mono text-xs">
+                      <tr
+                        key={i}
+                        className="border-b border-white/[0.025] last:border-0 transition-colors duration-150 hover:bg-white/[0.02]"
+                      >
+                        <td className="px-4 py-3 text-foreground/60 font-mono text-xs">
                           {tx.wallet_address.length > 12 ? `${tx.wallet_address.slice(0, 6)}...${tx.wallet_address.slice(-4)}` : tx.wallet_address}
                         </td>
-                        <td className="px-4 py-2.5">
+                        <td className="px-4 py-3">
                           <span className={`text-xs font-semibold ${tx.side === 'buy' ? 'text-success' : 'text-destructive'}`}>
                             {tx.side}
                           </span>
                         </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-xs text-foreground">{tx.shares}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-xs font-medium text-primary">${Number(tx.cost).toFixed(2)}</td>
-                        <td className="px-4 py-2.5 text-muted-foreground font-mono text-xs">
+                        <td className="px-4 py-3 text-right font-mono text-xs text-foreground/70">{tx.shares}</td>
+                        <td className="px-4 py-3 text-right font-mono text-xs font-medium text-foreground">${Number(tx.cost).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-muted-foreground/50 font-mono text-xs">
                           {new Date(tx.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </td>
                       </tr>

@@ -117,28 +117,28 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
   const isSuccess = bought || sold;
 
   return (
-    <div className="flex h-full flex-col rounded-[1.35rem] border border-white/[0.09] bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] p-6 shadow-[0_14px_34px_rgba(0,0,0,0.3)] backdrop-blur-sm">
-      <h3 className="text-lg font-semibold text-foreground mb-4">Trade</h3>
+    <div className="flex h-full flex-col rounded-2xl border border-white/[0.05] bg-white/[0.015] p-5 backdrop-blur-sm">
+      <h3 className="text-sm font-semibold text-foreground mb-4 tracking-tight">Trade</h3>
 
       {isSuccess && (
-        <div className="mb-4 p-3 bg-success/10 rounded-xl text-success text-sm font-medium text-center">
+        <div className="mb-4 p-3 bg-success/[0.08] rounded-xl text-success text-sm font-medium text-center">
           Trade complete
         </div>
       )}
 
-      <div className="mb-4 flex gap-1 rounded-full border border-white/[0.1] bg-black/20 p-1">
+      <div className="mb-4 flex gap-0.5 rounded-xl bg-white/[0.03] p-0.5">
         <button
           onClick={() => setMode('buy')}
-          className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-all duration-200 ${
-            mode === 'buy' ? 'border border-success/40 bg-success/20 text-success' : 'text-gray-400 hover:text-foreground'
+          className={`flex-1 rounded-[10px] py-2.5 text-sm font-semibold transition-all duration-200 ${
+            mode === 'buy' ? 'bg-success/15 text-success' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Buy
         </button>
         <button
           onClick={() => setMode('sell')}
-          className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-all duration-200 ${
-            mode === 'sell' ? 'border border-destructive/40 bg-destructive/20 text-destructive' : 'text-gray-400 hover:text-foreground'
+          className={`flex-1 rounded-[10px] py-2.5 text-sm font-semibold transition-all duration-200 ${
+            mode === 'sell' ? 'bg-destructive/15 text-destructive' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           Sell
@@ -158,13 +158,13 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0"
-          className="h-12 w-full rounded-2xl border border-white/[0.12] bg-black/20 px-4 text-base font-semibold text-foreground placeholder-muted-foreground transition-all duration-200 focus:border-success/50 focus:outline-none focus:ring-2 focus:ring-success/40 [color-scheme:dark]"
+          className="h-12 w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 text-base font-semibold text-foreground placeholder-muted-foreground/40 transition-all duration-200 focus:border-primary/30 focus:outline-none focus:ring-1 focus:ring-primary/20 [color-scheme:dark]"
         />
         <p className="text-xs text-gray-400 mt-1.5">${price.toFixed(2)} per share</p>
       </div>
 
       {quote && (
-        <div className="mb-4 space-y-2 rounded-2xl border border-white/[0.1] bg-white/[0.03] p-4">
+        <div className="mb-4 space-y-2 rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">{mode === 'buy' ? 'Cost' : 'You receive'}</span>
             <span className="font-semibold text-foreground">${quote.total.toFixed(2)}</span>
@@ -182,10 +182,10 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
         <button
           onClick={handleTrade}
           disabled={!quote || isPending || isSuccess}
-          className={`w-full h-12 rounded-xl text-base font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card mt-auto ${
+          className={`w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none mt-auto ${
             mode === 'buy'
-              ? 'bg-success text-white hover:bg-success/90 focus:ring-success'
-              : 'bg-destructive text-white hover:bg-destructive/90 focus:ring-destructive'
+              ? 'bg-success text-white hover:bg-success/90'
+              : 'bg-destructive text-white hover:bg-destructive/90'
           }`}
         >
           {isPending ? 'Confirming...' : isSuccess ? 'Done' : needsApproval ? 'Approve' : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'}`}
