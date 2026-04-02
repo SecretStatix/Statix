@@ -1,9 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
 import { usePortfolio, useDBucksBalance, useFaucetDBucks } from '@/hooks/useContracts';
 import { PlayerAvatar } from './PlayerAvatar';
+import { PortfolioCharts, type AllocationSlice } from './portfolio/PortfolioCharts';
 
 // Map player index → demo info for display
 const PLAYER_INFO: Record<number, { name: string; team: string; nbaId: number }> = {
@@ -24,121 +26,163 @@ const PLAYER_INFO: Record<number, { name: string; team: string; nbaId: number }>
   14: { name: 'Donovan Mitchell',         team: 'CLE', nbaId: 1628378 },
 };
 
+type HoldingRow = {
+  index: number;
+  shares: number;
+  value: number;
+  name: string;
+  team: string;
+  nbaId: number;
+};
+
 export function Portfolio() {
   const { address, isConnected } = useAccount();
   const { data: portfolioData, isLoading } = usePortfolio(address);
   const { data: dbucksBalance } = useDBucksBalance(address);
   const { faucet, isPending: minting, isSuccess: minted } = useFaucetDBucks();
 
+  const { balance, holdings, holdingsValue } = useMemo(() => {
+    const bal = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
+    const rows: HoldingRow[] = [];
+    let hv = 0;
+    if (portfolioData) {
+      const [idxs, sharesArr, valuesArr] = portfolioData as [bigint[], bigint[], bigint[]];
+      idxs.forEach((idx, i) => {
+        const shares = parseFloat(formatUnits(sharesArr[i], 6));
+        const value = parseFloat(formatUnits(valuesArr[i], 6));
+        hv += value;
+        const info = PLAYER_INFO[Number(idx)] || { name: `Player #${Number(idx)}`, team: '???', nbaId: 0 };
+        rows.push({ index: Number(idx), shares, value, name: info.name, team: info.team, nbaId: info.nbaId });
+      });
+    }
+    return { balance: bal, holdings: rows, holdingsValue: hv };
+  }, [portfolioData, dbucksBalance]);
+
+  const totalValue = balance + holdingsValue;
+  const loading = isLoading;
+
+  const allocation: AllocationSlice[] = useMemo(() => {
+    if (totalValue <= 0) return [];
+    const rows: AllocationSlice[] = [];
+    if (balance > 0) {
+      rows.push({ name: 'Cash (D-Bucks)', value: balance, pct: (balance / totalValue) * 100 });
+    }
+    holdings.forEach((h) => {
+      rows.push({ name: h.name, value: h.value, pct: (h.value / totalValue) * 100 });
+    });
+    return rows.sort((a, b) => b.value - a.value);
+  }, [balance, holdings, totalValue]);
+
   if (!isConnected) {
     return (
-      <div className="bg-card rounded-xl border border-border p-6 text-center">
+      <div className="rounded-2xl border border-white/[0.05] bg-white/[0.02] px-6 py-10 text-center backdrop-blur-sm">
         <p className="text-sm text-muted-foreground">Connect your wallet to view your portfolio</p>
       </div>
     );
   }
 
-  const balance = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
-  let holdings: { index: number; shares: number; value: number; name: string; team: string; nbaId: number }[] = [];
-  let holdingsValue = 0;
-
-  if (portfolioData) {
-    const [idxs, sharesArr, valuesArr] = portfolioData as [bigint[], bigint[], bigint[]];
-    holdings = idxs.map((idx, i) => {
-      const shares = parseFloat(formatUnits(sharesArr[i], 6));
-      const value = parseFloat(formatUnits(valuesArr[i], 6));
-      holdingsValue += value;
-      const info = PLAYER_INFO[Number(idx)] || { name: `Player #${Number(idx)}`, team: '???', nbaId: 0 };
-      return { index: Number(idx), shares, value, name: info.name, team: info.team, nbaId: info.nbaId };
-    });
-  }
-
-  const totalValue = balance + holdingsValue;
-  const loading = isLoading;
-
   return (
-    <div className="space-y-6">
-      {/* Summary cards */}
-      <div className="bg-card rounded-2xl border border-white/[0.06] p-6 card-hover">
-        <div className="flex items-center justify-between mb-5">
+    <div className="space-y-8">
+      {/* Hero strip — single surface, soft separation (not nested boxes) */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/[0.06] bg-gradient-to-br from-white/[0.05] via-transparent to-primary/[0.04] px-5 py-6 sm:px-8 sm:py-8">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/[0.07] blur-3xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Portfolio Value</p>
-            <p className="text-3xl font-bold text-foreground mt-1">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">
+              Net portfolio value
+            </p>
+            <p className="mt-2 text-4xl font-semibold tracking-tight tabular-nums text-foreground sm:text-5xl">
+              ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
           </div>
           <button
             onClick={() => faucet(10000)}
             disabled={minting}
-            className="h-10 px-5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary-600 transition-all duration-200 disabled:opacity-50"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:bg-primary-600 disabled:opacity-50"
           >
             {minting ? 'Minting...' : minted ? 'Got it!' : 'Get 10k D-Bucks'}
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl p-4 bg-white/[0.03] border border-white/[0.04]">
-            <p className="text-xs text-muted-foreground">D-Bucks Balance</p>
-            <p className="text-lg font-semibold text-foreground mt-1">${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        <div className="relative mt-8 flex flex-col gap-6 border-t border-white/[0.06] pt-8 sm:flex-row sm:divide-x sm:divide-white/[0.06] sm:gap-0">
+          <div className="flex-1 sm:pr-8">
+            <p className="text-xs font-medium text-muted-foreground">Cash</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+              ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
           </div>
-          <div className="rounded-xl p-4 bg-white/[0.03] border border-white/[0.04]">
-            <p className="text-xs text-muted-foreground">Holdings Value</p>
-            <p className="text-lg font-semibold text-foreground mt-1">${holdingsValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <div className="flex-1 sm:px-8">
+            <p className="text-xs font-medium text-muted-foreground">In positions</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+              ${holdingsValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
           </div>
-          <div className="rounded-xl p-4 bg-white/[0.03] border border-white/[0.04]">
-            <p className="text-xs text-muted-foreground">Positions</p>
-            <p className="text-lg font-semibold text-foreground mt-1">{holdings.length}</p>
+          <div className="flex-1 sm:pl-8">
+            <p className="text-xs font-medium text-muted-foreground">Open positions</p>
+            <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{holdings.length}</p>
           </div>
         </div>
       </div>
 
-      {/* Holdings table */}
-      <div className="bg-card rounded-2xl border border-white/[0.06] overflow-hidden card-hover">
-        <div className="px-6 py-4 border-b border-white/[0.06]">
-          <h3 className="font-semibold text-foreground">Your Holdings</h3>
+      {/* Charts */}
+      <PortfolioCharts totalValue={totalValue} seedKey={address ?? '0x'} allocation={allocation} />
+
+      {/* Holdings — airy list, not heavy card-in-card */}
+      <section>
+        <div className="mb-4 flex items-baseline justify-between gap-4">
+          <h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground/80">Holdings</h2>
         </div>
 
-        {loading ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">Loading...</div>
-        ) : holdings.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">No holdings yet — buy some player shares!</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-white/[0.04]">
-            {/* Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs text-muted-foreground uppercase tracking-wider">
-              <div className="col-span-5">Player</div>
-              <div className="col-span-2 text-right">Shares</div>
-              <div className="col-span-2 text-right">Avg Price</div>
-              <div className="col-span-3 text-right">Value</div>
+        <div className="overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.015]">
+          {loading ? (
+            <div className="py-14 text-center text-sm text-muted-foreground">Loading positions…</div>
+          ) : holdings.length === 0 ? (
+            <div className="py-14 text-center">
+              <p className="text-sm text-muted-foreground">No holdings yet — buy some player shares.</p>
             </div>
-            {holdings.map((h) => (
-              <div key={h.index} className="grid grid-cols-12 gap-4 px-6 py-3.5 items-center hover:bg-white/[0.02] transition-colors">
-                <div className="col-span-5 flex items-center gap-3">
-                  <PlayerAvatar name={h.name} nbaId={h.nbaId} size="sm" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{h.name}</p>
-                    <p className="text-xs text-muted-foreground">{h.team}</p>
-                  </div>
-                </div>
-                <div className="col-span-2 text-right">
-                  <span className="text-sm font-medium text-foreground">{h.shares.toFixed(2)}</span>
-                </div>
-                <div className="col-span-2 text-right">
-                  <span className="text-sm text-muted-foreground">${(h.value / h.shares).toFixed(2)}</span>
-                </div>
-                <div className="col-span-3 text-right">
-                  <span className="text-sm font-semibold text-foreground">${h.value.toFixed(2)}</span>
-                </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-12 gap-3 border-b border-white/[0.05] px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:px-5">
+                <div className="col-span-6 sm:col-span-5">Player</div>
+                <div className="col-span-2 text-right tabular-nums">Shares</div>
+                <div className="col-span-2 hidden text-right tabular-nums sm:block">Avg</div>
+                <div className="col-span-4 text-right tabular-nums sm:col-span-3">Value</div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <ul className="divide-y divide-white/[0.04]">
+                {holdings.map((h) => (
+                  <li key={h.index}>
+                    <div className="grid grid-cols-12 gap-3 px-4 py-4 transition-colors hover:bg-white/[0.02] sm:px-5">
+                      <div className="col-span-6 flex min-w-0 items-center gap-3 sm:col-span-5">
+                        <PlayerAvatar name={h.name} nbaId={h.nbaId} size="sm" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">{h.name}</p>
+                          <p className="text-xs text-muted-foreground">{h.team}</p>
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className="text-sm tabular-nums text-foreground">{h.shares.toFixed(2)}</span>
+                      </div>
+                      <div className="col-span-2 hidden text-right sm:block">
+                        <span className="text-sm tabular-nums text-muted-foreground">
+                          ${(h.value / h.shares).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="col-span-4 text-right sm:col-span-3">
+                        <span className="text-sm font-semibold tabular-nums text-foreground">${h.value.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </section>
 
-      {/* Wallet info */}
-      <div className="bg-card rounded-2xl border border-white/[0.06] p-6 card-hover">
-        <h3 className="font-semibold text-foreground mb-3">Wallet</h3>
-        <p className="text-sm text-muted-foreground font-mono break-all">{address}</p>
+      {/* Wallet — compact, not a slab */}
+      <div className="flex flex-col gap-2 rounded-xl border border-dashed border-white/[0.08] bg-transparent px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">Wallet</span>
+        <p className="font-mono text-xs text-muted-foreground break-all text-right sm:max-w-[70%]">{address}</p>
       </div>
     </div>
   );
