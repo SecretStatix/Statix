@@ -3,11 +3,11 @@
   "chainId": 84532,
   "deployer": "0x639Daa0d790Ff595A2203db01552A28b2339a3f4",
   "contracts": {
-    "MockUSDC": "0x4AA685FE1d8EDD8dA5E691aD7CC68f30c8137251",
-    "DBucks": "0x5c059592c8dd364dBE1B4C4C7c7106c39540DFFA",
-    "PoolFactory": "0xE6E5826a00262edD7d6BBa6132ae821299FC4B98",
-    "StatixRouter": "0x4E11F0132bb75A2c75fdE63C86206820E6c9906B",
-    "DividendHub": "0x3465131AfB3ae6331766913A2e209439A0b09fe3"
+    "MockUSDC": "0x29932Ae69AbafaDD6372051B6d55a6d263892796",
+    "DBucks": "0x0054198B8E85423b15E08De2D2f48C1Af51297cD",
+    "PoolFactory": "0x9aa3E38674519521B811b73E3a2f85eAed1a77D8",
+    "StatixRouter": "0xEcf00aefb5fFC1DC8B415098b1538fF92d70b876",
+    "DividendHub": "0x8308293da57F8D17e947ebaE55546Ab1E49860C5"
   },
   "faucetMode": true,
   "faucetLimit": "100000000000",
@@ -463,5 +463,5 @@
       "weekly_projection": null
     }
   ],
-  "deployedAt": "2026-04-03T19:32:41.069Z"
+  "deployedAt": "2026-04-03T19:43:17.069Z"
 }

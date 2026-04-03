@@ -12,11 +12,13 @@ import { ActivityFeed } from '@/components/ActivityFeed';
 function HomeContent() {
   const [players, setPlayers] = useState<PlayerData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const { data: onChainData } = useAllPlayers();
 
   useEffect(() => {
     async function load() {
+      setLoadError(null);
       try {
         const apiPlayers = await getPlayers();
 
@@ -48,33 +50,22 @@ function HomeContent() {
         setPlayers(mapped);
       } catch (err) {
         console.error('Failed to load players:', err);
-        try {
-          const res = await fetch('/deployments.json');
-          const deployment = await res.json();
-          const mapped = deployment.players.map((p: any) => ({
-            index: p.index,
-            id: p.id,
-            name: p.name,
-            team: p.team || '',
-            symbol: p.symbol,
-            position: p.position || 'F',
-            nbaId: p.nba_id,
-            price: 10,
-            avgFantasyPoints: (p.weekly_projection ?? 0) / 3.5,
-            weeklyProjection: p.weekly_projection ?? 0,
-            seasonProjection: p.season_projection ?? 0,
-            totalShares: 0,
-          }));
-          setPlayers(mapped);
-        } catch {
-          console.error('No player data available');
-        }
+        setPlayers([]);
+        setLoadError('Unable to fetch player data');
       } finally {
         setLoading(false);
       }
     }
     load();
   }, [onChainData]);
+
+  if (loadError) {
+    return (
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-6 py-12 text-center">
+        <p className="text-destructive font-medium">{loadError}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

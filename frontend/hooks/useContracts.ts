@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import { baseSepolia } from "viem/chains";
@@ -15,6 +17,15 @@ const GAS_APPROVE = BigInt(120_000);
 const GAS_ROUTER = BigInt(1_200_000);
 const GAS_FAUCET = BigInt(300_000);
 const GAS_CLAIM_WEEKS = BigInt(2_000_000);
+
+/** Invalidate cached wagmi `readContract` queries so portfolio/quotes refresh after a tx. */
+function useInvalidateReadContractsOnTxSuccess(isSuccess: boolean, hash: `0x${string}` | undefined) {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!isSuccess || !hash) return;
+    queryClient.invalidateQueries({ queryKey: ["readContract"] });
+  }, [isSuccess, hash, queryClient]);
+}
 
 // Read player price
 export function usePlayerPrice(playerIndex: number) {
@@ -118,6 +129,7 @@ export function useUnclaimedDividends(userAddress?: string) {
 export function useApproveDBucks() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
   const approve = (amount: number) => {
     writeContract({
@@ -140,6 +152,7 @@ export function useApproveDBucks() {
 export function useBuyShares() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
   const buy = (playerIndex: number, shares: number, maxCost: number) => {
     writeContract({
@@ -163,6 +176,7 @@ export function useBuyShares() {
 export function useSellShares() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
   const sell = (playerIndex: number, shares: number, minRevenue: number) => {
     writeContract({
@@ -220,6 +234,7 @@ export function useFaucetEligibility(userAddress?: `0x${string}`) {
 export function useFaucetDBucks() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
   const faucet = (amount: number) => {
     writeContract({
@@ -248,6 +263,7 @@ export function useCurrentWeek() {
 export function useClaimMultipleWeeks() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
   const claimAll = (weeks: number[]) => {
     writeContract({
