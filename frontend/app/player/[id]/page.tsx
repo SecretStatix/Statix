@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
-import { getPlayer, getPlayerGames, getPlayerTransactions } from '@/lib/api';
+import { getPlayer, getPlayerGames, getPlayerPriceHistory, getPlayerTransactions } from '@/lib/api';
 import { usePlayerPrice } from '@/hooks/useContracts';
 import { formatUnits } from 'viem';
 import {
@@ -62,6 +62,12 @@ export default function PlayerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [gamesLoading, setGamesLoading] = useState(true);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
+  const [priceHistoryLoading, setPriceHistoryLoading] = useState(true);
+  const [priceHistory, setPriceHistory] = useState<{
+    points: { timestamp: string; price: number }[];
+    range_change_pct: number | null;
+    vs_listing_pct: number;
+  } | null>(null);
   const [error, setError] = useState('');
   const [chartMode, setChartMode] = useState<'fpts' | 'price'>('price');
   const [timeRange, setTimeRange] = useState<TimeRange>('3M');
@@ -112,45 +118,42 @@ export default function PlayerProfilePage() {
     loadTransactions();
   }, [player]);
 
+  const priceRangeDays = timeRange === '1W' ? 7 : timeRange === '1M' ? 30 : 90;
+
+  useEffect(() => {
+    async function loadPriceHistory() {
+      if (!player) return;
+      setPriceHistoryLoading(true);
+      try {
+        const data = await getPlayerPriceHistory(playerId, priceRangeDays);
+        setPriceHistory({
+          points: Array.isArray(data.points) ? data.points : [],
+          range_change_pct:
+            typeof data.range_change_pct === 'number' ? data.range_change_pct : null,
+          vs_listing_pct: typeof data.vs_listing_pct === 'number' ? data.vs_listing_pct : 0,
+        });
+      } catch {
+        console.error('Failed to load price history');
+        setPriceHistory(null);
+      } finally {
+        setPriceHistoryLoading(false);
+      }
+    }
+    loadPriceHistory();
+  }, [player, playerId, priceRangeDays]);
+
   const currentPrice = onChainPrice
     ? parseFloat(formatUnits(onChainPrice as bigint, 6))
     : (player as any)?.price || 10;
 
-  const chartDataPriceAll = useMemo(() => {
-    if (games.length === 0) return [];
-
-    const avgFpts = games.reduce((s, g) => s + g.fantasy_points, 0) / games.length;
-    const data: { label: string; price: number }[] = [];
-
-    let p = currentPrice * (0.72 + (player?.index ?? 0) * 0.008);
-    const reversed = [...games].reverse();
-
-    const hashDate = (s: string) => {
-      let h = 2166136261;
-      for (let k = 0; k < s.length; k++) h = Math.imul(h ^ s.charCodeAt(k), 16777619);
-      return (h >>> 0) / 4294967296;
-    };
-
-    for (let i = 0; i < reversed.length; i++) {
-      const g = reversed[i];
-      const diff = g.fantasy_points - avgFpts;
-      const nudge = (diff / Math.max(avgFpts, 1)) * currentPrice * 0.24;
-      const swing = Math.sin(i * 1.7 + (player?.index ?? 0)) * currentPrice * 0.065;
-      const jitter = (hashDate(g.date + i) - 0.5) * currentPrice * 0.11;
-      const gap = i > 0 ? (g.fantasy_points - reversed[i - 1].fantasy_points) * 0.02 : 0;
-      p = p + nudge + swing + jitter + gap;
-      p = Math.max(currentPrice * 0.42, Math.min(currentPrice * 1.48, p));
-
-      const label = g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date;
-      data.push({ label, price: Math.round(p * 100) / 100 });
-    }
-
-    if (data.length > 0) {
-      data[data.length - 1].price = currentPrice;
-    }
-
-    return data;
-  }, [games, currentPrice, player?.index]);
+  const chartDataPrice = useMemo(() => {
+    if (!priceHistory?.points?.length) return [];
+    return priceHistory.points.map((pt) => {
+      const d = new Date(pt.timestamp);
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return { label, price: Math.round(pt.price * 100) / 100 };
+    });
+  }, [priceHistory]);
 
   const chartDataFptsAll = games
     .slice()
@@ -163,11 +166,6 @@ export default function PlayerProfilePage() {
     }));
 
   const timeRangeLimit = timeRange === '1W' ? 7 : timeRange === '1M' ? 14 : Infinity;
-
-  const chartDataPrice = useMemo(() => {
-    if (timeRangeLimit >= chartDataPriceAll.length) return chartDataPriceAll;
-    return chartDataPriceAll.slice(-timeRangeLimit);
-  }, [chartDataPriceAll, timeRangeLimit]);
 
   const chartDataFpts = useMemo(() => {
     if (timeRangeLimit >= chartDataFptsAll.length) return chartDataFptsAll;
@@ -183,8 +181,11 @@ export default function PlayerProfilePage() {
     const recentAvg = chartDataFpts.slice(mid).reduce((s, g) => s + g.fpts, 0) / (chartDataFpts.length - mid);
     percentChange = olderAvg > 0 ? ((recentAvg - olderAvg) / olderAvg) * 100 : 0;
   }
-  const priceChange = ((currentPrice - 10) / 10) * 100;
-  const displayChange = chartMode === 'price' ? priceChange : percentChange;
+  const priceChangeVsListing = ((currentPrice - 10) / 10) * 100;
+  const displayChange =
+    chartMode === 'price'
+      ? priceHistory?.range_change_pct ?? priceHistory?.vs_listing_pct ?? priceChangeVsListing
+      : percentChange;
   const isPositive = displayChange >= 0;
 
   if (loading) {
@@ -303,12 +304,18 @@ export default function PlayerProfilePage() {
             </div>
           </div>
           <span className="text-[11px] text-muted-foreground/50">
-            {chartMode === 'fpts' ? `${chartData.length} games` : onChainPrice ? 'On-chain' : 'Simulated'}
+            {chartMode === 'fpts'
+              ? `${chartData.length} games`
+              : priceHistoryLoading
+                ? 'Loading…'
+                : process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+                  ? 'Demo'
+                  : 'Pool snapshots'}
           </span>
         </div>
 
         {/* Chart body — no border wrapper, clean and open */}
-        {gamesLoading && chartMode === 'fpts' ? (
+        {((chartMode === 'fpts' && gamesLoading) || (chartMode === 'price' && priceHistoryLoading)) ? (
           <div className="flex items-center justify-center h-[300px]">
             <div className="w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
           </div>

@@ -25,5 +25,8 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Backend indexer checkpoint (local / server)
+backend/indexer_state.json
+
 # Claude Code
 .claude/

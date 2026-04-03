@@ -108,3 +108,24 @@ CREATE POLICY "Service insert" ON users FOR INSERT WITH CHECK (auth.role() = 'se
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS player_name TEXT;
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS fee NUMERIC DEFAULT 0;
 ALTER TABLE transactions ADD COLUMN IF NOT EXISTS price_per_share NUMERIC DEFAULT 0;
+
+-- ============================================================
+-- Pool price snapshots (indexer: one row per trade from chain logs)
+-- timestamp = block time; block_number + log_index order events within a block
+-- ============================================================
+CREATE TABLE IF NOT EXISTS pool_price_snapshots (
+    id BIGSERIAL PRIMARY KEY,
+    pool_index INTEGER NOT NULL,
+    price NUMERIC NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL,
+    block_number BIGINT NOT NULL,
+    log_index INTEGER NOT NULL,
+    UNIQUE (block_number, log_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pool_price_snapshots_pool_time
+    ON pool_price_snapshots (pool_index, block_number, log_index);
+
+ALTER TABLE pool_price_snapshots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read" ON pool_price_snapshots FOR SELECT USING (true);
+CREATE POLICY "Service insert" ON pool_price_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');

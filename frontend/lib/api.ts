@@ -1,7 +1,7 @@
 // API client for Statix backend
 // Demo mode: when NEXT_PUBLIC_DEMO_MODE=true, returns mock data from lib/demo-data.ts
 
-import { getDemoPlayers, getDemoPlayer, getDemoPlayerGames, getDemoPlayerTransactions, getDemoRecentTransactions, getDemoLeaderboard } from './demo-data';
+import { getDemoPlayers, getDemoPlayer, getDemoPlayerGames, getDemoPlayerPriceHistory, getDemoPlayerTransactions, getDemoRecentTransactions, getDemoLeaderboard } from './demo-data';
 
 const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'; // Remove this + 5 checks to disable demo
 
@@ -33,6 +33,11 @@ export async function getPlayer(id: string) {
 export async function getPlayerGames(id: string, lastN = 10) {
   if (DEMO) return getDemoPlayerGames(id, lastN);
   return fetchAPI(`/api/players/${id}/games?last_n=${lastN}`);
+}
+
+export async function getPlayerPriceHistory(id: string, days = 90) {
+  if (DEMO) return getDemoPlayerPriceHistory(id, days);
+  return fetchAPI(`/api/players/${id}/price-history?days=${days}`);
 }
 
 export async function getPlayerTransactions(playerIndex: number, limit = 10, days = 7) {
