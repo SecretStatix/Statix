@@ -4,9 +4,9 @@ const path = require("path");
 
 const PLAYERS = require("./players.json");
 
-// Faucet: 1,000 D-Bucks per address (testnet only, disabled on mainnet)
-// Owner can raise later via dbucks.setFaucetMode(true, newLimit)
-const FAUCET_LIMIT = 1000n * 10n ** 6n;
+// Faucet cap (single source of truth: frontend/lib/faucet-config.json)
+const FAUCET_CFG = require(path.join(__dirname, "..", "..", "frontend", "lib", "faucet-config.json"));
+const FAUCET_LIMIT = BigInt(FAUCET_CFG.faucetLimitHuman) * 10n ** 6n;
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -104,9 +104,9 @@ async function main() {
     const names = batch.map((p) => p.name);
     const symbols = batch.map((p) => p.symbol);
     const playerIds = batch.map((p) => p.id);
-    const projections = batch.map((p) =>
-      BigInt(Math.round(p.season_projection * 1e6))
-    );
+    // Weekly projections are set off-chain each week via DividendHub.setNextWeekProjectionsBatch
+    // (see distribute-dividends.js). Deploy with 0.
+    const projections = batch.map(() => 0n);
 
     process.stdout.write(
       `   Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.map((p) => p.symbol).join(", ")}...`
@@ -156,7 +156,7 @@ async function main() {
       DividendHub: hubAddress,
     },
     faucetMode: isTestnet,
-    faucetLimit: "100000",
+    faucetLimit: (isTestnet ? FAUCET_LIMIT : 0n).toString(),
     players: PLAYERS.map((p, idx) => ({
       index: idx,
       id: p.id,
@@ -164,8 +164,7 @@ async function main() {
       symbol: p.symbol,
       nba_id: p.nba_id,
       team: p.team,
-      weekly_projection: p.weekly_projection,
-      season_projection: p.season_projection,
+      weekly_projection: p.weekly_projection ?? null,
     })),
     deployedAt: new Date().toISOString(),
   };
@@ -193,7 +192,9 @@ async function main() {
   console.log(`DividendHub:   ${hubAddress}`);
   console.log(`Pools created: ${poolCount}`);
   console.log(`\nUser flow:`);
-  console.log(`  Testnet: call DBucks.faucet() to get free D-Bucks (100k limit)`);
+  console.log(
+    `  Testnet: call DBucks.faucet() to get free D-Bucks (${Number(FAUCET_CFG.faucetLimitHuman).toLocaleString()} / address max)`,
+  );
   console.log(`  Approve StatixRouter to spend D-Bucks (once)`);
   console.log(`  Then: router.buy(poolIndex, shares, maxCost) to trade!`);
   console.log(`  Claims: hub.claimDividend(week) or hub.claimMultipleWeeks([...])`);

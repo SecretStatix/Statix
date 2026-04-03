@@ -9,7 +9,7 @@ from typing import List, Optional
 import hmac
 import os
 
-from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points
+from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points, get_next_week_projection
 from chain import get_deployment
 from db import get_supabase, get_store
 
@@ -65,6 +65,8 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
             if weekly_projection > 0:
                 outperformance = (actual_points - weekly_projection) / weekly_projection
 
+            next_week_proj = get_next_week_projection(nba_id, p)
+
             results.append({
                 "player_index": p["index"],
                 "name": p["name"],
@@ -72,6 +74,7 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
                 "games_played": weekly["games_played"],
                 "actual_points": round(actual_points, 2),
                 "projected_points": round(weekly_projection, 2),
+                "next_week_projected": round(next_week_proj, 2),
                 "outperformance": round(outperformance, 4),
             })
         except Exception as e:
@@ -95,12 +98,13 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
                     "games_played": r["games_played"],
                 }).execute()
 
-    # Format for on-chain submission
+    # Format for on-chain submission (weekly fantasy points scaled 1e6, same units as actuals)
+    ok = [r for r in results if "error" not in r]
     on_chain_data = {
-        "player_indices": [r["player_index"] for r in results if "error" not in r],
-        "actual_points_scaled": [
-            int(r["actual_points"] * 1e6) for r in results if "error" not in r
-        ],
+        "player_indices": [r["player_index"] for r in ok],
+        "actual_points_scaled": [int(r["actual_points"] * 1e6) for r in ok],
+        "this_week_projected_scaled": [int(r["projected_points"] * 1e6) for r in ok],
+        "next_week_projected_scaled": [int(r["next_week_projected"] * 1e6) for r in ok],
     }
 
     return {

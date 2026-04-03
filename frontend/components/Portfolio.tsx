@@ -3,7 +3,13 @@
 import { useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
-import { usePortfolio, useDBucksBalance, useFaucetDBucks } from '@/hooks/useContracts';
+import {
+  usePortfolio,
+  useDBucksBalance,
+  useFaucetDBucks,
+  useFaucetEligibility,
+  FAUCET_UI_MINT_AMOUNT,
+} from '@/hooks/useContracts';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PortfolioCharts, type AllocationSlice } from './portfolio/PortfolioCharts';
 
@@ -40,6 +46,7 @@ export function Portfolio() {
   const { data: portfolioData, isLoading } = usePortfolio(address);
   const { data: dbucksBalance } = useDBucksBalance(address);
   const { faucet, isPending: minting, isSuccess: minted } = useFaucetDBucks();
+  const { canMintFull, faucetMode, capReached } = useFaucetEligibility(address);
 
   const { balance, holdings, holdingsValue } = useMemo(() => {
     const bal = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
@@ -95,13 +102,37 @@ export function Portfolio() {
               ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
-          <button
-            onClick={() => faucet(10000)}
-            disabled={minting}
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:bg-primary-600 disabled:opacity-50"
-          >
-            {minting ? 'Minting...' : minted ? 'Got it!' : 'Get 10k D-Bucks'}
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => faucet(FAUCET_UI_MINT_AMOUNT)}
+              disabled={minting || !canMintFull}
+              title={
+                faucetMode === false
+                  ? 'Faucet is disabled on-chain'
+                  : !canMintFull
+                    ? 'Per-wallet testnet faucet cap reached'
+                    : undefined
+              }
+              className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:bg-primary-600 disabled:opacity-50"
+            >
+              {minting
+                ? 'Minting...'
+                : minted
+                  ? 'Got it!'
+                  : `Get ${FAUCET_UI_MINT_AMOUNT.toLocaleString()} D-Bucks`}
+            </button>
+            {capReached && (
+              <p className="max-w-[14rem] text-right text-[11px] text-muted-foreground">
+                Faucet cap reached for this wallet (on-chain limit).
+              </p>
+            )}
+            {faucetMode === false && (
+              <p className="max-w-[14rem] text-right text-[11px] text-muted-foreground">
+                Faucet is disabled on-chain.
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="relative mt-8 flex flex-col gap-6 border-t border-white/[0.06] pt-8 sm:flex-row sm:divide-x sm:divide-white/[0.06] sm:gap-0">

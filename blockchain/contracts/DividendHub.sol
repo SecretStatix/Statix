@@ -9,9 +9,6 @@ import "./IPlayerPool.sol";
 import "./PoolFactory.sol";
 
 
-// FIXME: weeklong projected fantasy is wrong. 
-// FIXME: OffChain: sort the 50 pools by outeperformance, pick the top 120.
-
 /**
  * @title DividendHub
  * @notice Centralized dividend management across all player pools.
@@ -109,7 +106,7 @@ contract DividendHub is Ownable, ReentrancyGuard {
             require(poolAddr != address(0), "Invalid pool");
 
             IPlayerPool pool = IPlayerPool(poolAddr);
-            uint256 weeklyProjection = pool.projectedPoints() / 17;
+            uint256 weeklyProjection = pool.projectedPoints();
 
             int256 outperformance = 0;
             if (weeklyProjection > 0) {
@@ -121,6 +118,23 @@ contract DividendHub is Ownable, ReentrancyGuard {
                 projectedPoints: weeklyProjection,
                 outperformance: outperformance
             });
+        }
+    }
+
+    /**
+     * @notice After each week, set each pool's projection for the *next* scoring week (1e6 scale).
+     *         Pools are created with 0; seed before the first setWeeklyPerformanceBatch or via this call.
+     */
+    function setNextWeekProjectionsBatch(
+        uint256[] calldata _poolIdxs,
+        uint256[] calldata _projectedWeeklyPointsScaled
+    ) external onlyOwner {
+        require(_poolIdxs.length == _projectedWeeklyPointsScaled.length, "Length mismatch");
+        for (uint256 i = 0; i < _poolIdxs.length; i++) {
+            uint256 idx = _poolIdxs[i];
+            address poolAddr = factory.pools(idx);
+            require(poolAddr != address(0), "Invalid pool");
+            IPlayerPool(poolAddr).setProjectedPoints(_projectedWeeklyPointsScaled[i]);
         }
     }
 
