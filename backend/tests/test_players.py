@@ -119,3 +119,43 @@ class TestGetPlayerGames:
     def test_invalid_last_n_returns_422(self, client):
         response = client.get("/api/players/shai_gilgeous_alexander/games?last_n=200")
         assert response.status_code == 422
+
+
+class TestGetPlayerPriceHistory:
+    """GET /api/players/{player_id}/price-history"""
+
+    @patch("routes.players._spot_price_from_chain", return_value=12.5)
+    @patch("routes.players._fetch_snapshot_rows")
+    def test_returns_structure_with_snapshots(self, mock_rows, mock_spot, client):
+        mock_rows.return_value = [
+            {
+                "timestamp": "2025-01-15T12:00:00+00:00",
+                "price": 11.0,
+                "block_number": 100,
+                "log_index": 0,
+            },
+        ]
+        response = client.get("/api/players/shai_gilgeous_alexander/price-history?days=30")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["player_id"] == "shai_gilgeous_alexander"
+        assert data["days"] == 30
+        assert data["current_price"] == 12.5
+        assert data["current_price_source"] == "chain"
+        assert isinstance(data["points"], list)
+        assert len(data["points"]) >= 3  # anchor + trade + live close
+        assert data["range_change_pct"] is not None
+        assert "vs_listing_pct" in data
+
+    @patch("routes.players._spot_price_from_chain", return_value=None)
+    @patch("routes.players._fetch_snapshot_rows", return_value=[])
+    def test_no_rows_uses_default_price(self, mock_rows, mock_spot, client):
+        response = client.get("/api/players/0/price-history")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["current_price"] == 10.0
+        assert data["points"] == []
+
+    def test_unknown_player_404(self, client):
+        response = client.get("/api/players/nonexistent_player_xyz/price-history")
+        assert response.status_code == 404

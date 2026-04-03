@@ -122,6 +122,48 @@ export function getDemoPlayerGames(id: string, lastN = 20) {
   };
 }
 
+/** Same shape as GET /api/players/{id}/price-history for demo mode charts. */
+export function getDemoPlayerPriceHistory(playerId: string, days: number) {
+  const p = DEMO_PLAYERS.find((x) => x.id === playerId);
+  const base = DEMO_PRICES[playerId] || 10;
+  const n = Math.min(48, Math.max(8, Math.floor(days / 2) + 6));
+  const now = Date.now();
+  const span = days * 24 * 60 * 60 * 1000;
+  const msPer = span / Math.max(1, n - 1);
+  const points: { timestamp: string; price: number; block_number: number; log_index: number }[] = [];
+  let price = base * (0.94 + Math.random() * 0.06);
+  for (let i = 0; i < n; i++) {
+    const t = new Date(now - span + i * msPer);
+    price = Math.max(base * 0.78, Math.min(base * 1.22, price + (Math.random() - 0.47) * 0.35));
+    points.push({
+      timestamp: t.toISOString(),
+      price: Math.round(price * 100) / 100,
+      block_number: 12_000_000 + i,
+      log_index: i % 3,
+    });
+  }
+  const t0 = new Date(new Date(points[0].timestamp).getTime() - 1000);
+  points.unshift({
+    timestamp: t0.toISOString(),
+    price: 10,
+    block_number: 0,
+    log_index: -1,
+  });
+  const last = points[points.length - 1].price;
+  const first = points[0].price;
+  const range_change_pct = first !== 0 ? ((last - first) / first) * 100 : 0;
+  return {
+    player_index: p?.index ?? 0,
+    player_id: playerId,
+    days,
+    points,
+    current_price: last,
+    current_price_source: "chain",
+    range_change_pct: Math.round(range_change_pct * 100) / 100,
+    vs_listing_pct: Math.round(((last - 10) / 10) * 10000) / 100,
+  };
+}
+
 export function getDemoPlayerTransactions(playerIndex: number, limit = 10) {
   const sides = ["buy", "sell"] as const;
   const wallets = [

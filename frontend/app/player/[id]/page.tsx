@@ -134,6 +134,12 @@ export default function PlayerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [gamesLoading, setGamesLoading] = useState(true);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
+  const [priceHistoryLoading, setPriceHistoryLoading] = useState(true);
+  const [priceHistory, setPriceHistory] = useState<{
+    points: { timestamp: string; price: number }[];
+    range_change_pct: number | null;
+    vs_listing_pct: number;
+  } | null>(null);
   const [error, setError] = useState('');
   const [chartMode, setChartMode] = useState<'fpts' | 'price'>('price');
   const [timeRange, setTimeRange] = useState<TimeRange>('3M');
@@ -237,13 +243,21 @@ export default function PlayerProfilePage() {
       const label = formatDateLabel(g.date);
       data.push({ label, price: Math.round(p * 100) / 100 });
     }
+    loadPriceHistory();
+  }, [player, playerId, priceRangeDays]);
 
-    if (data.length > 0) {
-      data[data.length - 1].price = currentPrice;
-    }
+  const currentPrice = onChainPrice
+    ? parseFloat(formatUnits(onChainPrice as bigint, 6))
+    : (player as any)?.price || 10;
 
-    return data;
-  }, [games, currentPrice, player?.index]);
+  const chartDataPrice = useMemo(() => {
+    if (!priceHistory?.points?.length) return [];
+    return priceHistory.points.map((pt) => {
+      const d = new Date(pt.timestamp);
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return { label, price: Math.round(pt.price * 100) / 100 };
+    });
+  }, [priceHistory]);
 
   const chartDataFptsAll = games
     .slice()
@@ -255,11 +269,6 @@ export default function PlayerProfilePage() {
     }));
 
   const timeRangeLimit = timeRange === '1W' ? 7 : timeRange === '1M' ? 14 : Infinity;
-
-  const chartDataPrice = useMemo(() => {
-    if (timeRangeLimit >= chartDataPriceAll.length) return chartDataPriceAll;
-    return chartDataPriceAll.slice(-timeRangeLimit);
-  }, [chartDataPriceAll, timeRangeLimit]);
 
   const chartDataFpts = useMemo(() => {
     if (timeRangeLimit >= chartDataFptsAll.length) return chartDataFptsAll;
@@ -275,8 +284,11 @@ export default function PlayerProfilePage() {
     const recentAvg = chartDataFpts.slice(mid).reduce((s, g) => s + g.fpts, 0) / (chartDataFpts.length - mid);
     percentChange = olderAvg > 0 ? ((recentAvg - olderAvg) / olderAvg) * 100 : 0;
   }
-  const priceChange = ((currentPrice - 10) / 10) * 100;
-  const displayChange = chartMode === 'price' ? priceChange : percentChange;
+  const priceChangeVsListing = ((currentPrice - 10) / 10) * 100;
+  const displayChange =
+    chartMode === 'price'
+      ? priceHistory?.range_change_pct ?? priceHistory?.vs_listing_pct ?? priceChangeVsListing
+      : percentChange;
   const isPositive = displayChange >= 0;
 
   // Compute display stats BEFORE early returns (React hooks rule)
@@ -410,12 +422,18 @@ export default function PlayerProfilePage() {
             </div>
           </div>
           <span className="text-[11px] text-muted-foreground/50">
-            {chartMode === 'fpts' ? `${chartData.length} games` : onChainPrice ? 'On-chain' : 'Simulated'}
+            {chartMode === 'fpts'
+              ? `${chartData.length} games`
+              : priceHistoryLoading
+                ? 'Loading…'
+                : process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+                  ? 'Demo'
+                  : 'Pool snapshots'}
           </span>
         </div>
 
         {/* Chart body — no border wrapper, clean and open */}
-        {gamesLoading && chartMode === 'fpts' ? (
+        {((chartMode === 'fpts' && gamesLoading) || (chartMode === 'price' && priceHistoryLoading)) ? (
           <div className="flex items-center justify-center h-[300px]">
             <div className="w-6 h-6 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
           </div>
