@@ -30,3 +30,6 @@ backend/indexer_state.json
 
 # Claude Code
 .claude/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

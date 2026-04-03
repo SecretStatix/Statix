@@ -11,9 +11,11 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from nba_stats import fetch_top_players, calculate_fantasy_points, fetch_player_game_log, generate_player_id
-from chain import get_deployment, get_abi
-from db import get_supabase
+from nba_stats import fetch_top_players, calculate_fantasy_points, fetch_player_game_log, fetch_player_season_stats, generate_player_id
+from chain import get_deployment
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -26,6 +28,31 @@ def _float_field(player: dict, key: str, default: float = 0.0) -> float:
     """Coerce player[key] to float; missing or None uses default."""
     v = player.get(key)
     return default if v is None else float(v)
+
+
+def _load_nba_cache() -> dict:
+    """Load player_cache.json into a dict keyed by nba_id."""
+    cache_path = Path(__file__).parent.parent / "player_cache.json"
+    if not cache_path.exists():
+        return {}
+    with open(cache_path) as f:
+        data = json.load(f)
+    return {row["nba_id"]: row for row in data.get("players", [])}
+
+
+def _get_cached_or_live(nba_id: int, nba_cache: dict) -> Optional[dict]:
+    """Return cached stats for a player, or fetch live from NBA API on miss."""
+    cached = nba_cache.get(nba_id)
+    if cached and cached.get("avg_stats"):
+        return cached
+    try:
+        live = fetch_player_season_stats(nba_id)
+        if live and live.get("avg_stats"):
+            logger.info("Live-fetched stats for nba_id=%s", nba_id)
+            return live
+    except Exception as e:
+        logger.warning("NBA API fetch failed for nba_id=%s: %s", nba_id, e)
+    return cached
 
 
 class PlayerResponse(BaseModel):
@@ -97,21 +124,14 @@ def _get_players() -> list:
 async def list_players():
     """Get all 50 tradeable players."""
     players = _get_players()
-    # Merge with cached NBA stats for avg_stats
-    cache_path = Path(__file__).parent.parent / "player_cache.json"
-    nba_cache = {}
-    if cache_path.exists():
-        with open(cache_path) as f:
-            data = json.load(f)
-            for row in data.get("players", []):
-                nba_cache[row["nba_id"]] = row
+    nba_cache = _load_nba_cache()
 
     result = []
     for p in players:
         cached = nba_cache.get(p.get("nba_id"))
         wp = _float_field(p, "weekly_projection", 0.0)
-        fallback_avg = wp / 3.5
-        if cached:
+        fallback_avg = wp / 3.5 if wp else 0.0
+        if cached and cached.get("avg_stats"):
             afp = cached.get("avg_fantasy_points")
             avg_fp = float(afp) if afp is not None else fallback_avg
         else:
@@ -328,12 +348,46 @@ async def get_player_price_history(
 
 @router.get("/{player_id}")
 async def get_player(player_id: str):
-    """Get player details by ID."""
+    """Get player details by ID, enriched with cached NBA stats."""
     players = _get_players()
+    target = None
     for p in players:
         if p["id"] == player_id or str(p.get("index")) == player_id:
-            return p
-    raise HTTPException(status_code=404, detail="Player not found")
+            target = p
+            break
+
+    if not target:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    nba_cache = _load_nba_cache()
+    nba_id = target.get("nba_id")
+    stats = _get_cached_or_live(nba_id, nba_cache) if nba_id else None
+
+    wp = _float_field(target, "weekly_projection", 0.0)
+    fallback_avg = wp / 3.5 if wp else 0.0
+    if stats and stats.get("avg_stats"):
+        afp = stats.get("avg_fantasy_points")
+        avg_fp = float(afp) if afp is not None else fallback_avg
+        wp_resolved = float(stats.get("weekly_projection") or wp)
+        sp_resolved = float(stats.get("season_projection") or _float_field(target, "season_projection", 0.0))
+    else:
+        avg_fp = fallback_avg
+        wp_resolved = wp
+        sp_resolved = _float_field(target, "season_projection", 0.0)
+
+    return PlayerResponse(
+        index=target["index"],
+        id=target["id"],
+        name=target["name"],
+        team=target.get("team", ""),
+        symbol=target.get("symbol", ""),
+        nba_id=target.get("nba_id", 0),
+        position=stats.get("position", "F") if stats else target.get("position", "F"),
+        avg_fantasy_points=avg_fp,
+        weekly_projection=wp_resolved,
+        season_projection=sp_resolved,
+        avg_stats=stats.get("avg_stats", {}) if stats else {},
+    )
 
 
 @router.get("/{player_id}/games")

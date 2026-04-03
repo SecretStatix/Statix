@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
 import {
@@ -10,26 +10,11 @@ import {
   useFaucetEligibility,
   FAUCET_UI_MINT_AMOUNT,
 } from '@/hooks/useContracts';
+import { getPlayers } from '@/lib/api';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PortfolioCharts, type AllocationSlice } from './portfolio/PortfolioCharts';
 
-const PLAYER_INFO: Record<number, { name: string; team: string; nbaId: number }> = {
-  0:  { name: 'Shai Gilgeous-Alexander', team: 'OKC', nbaId: 1628983 },
-  1:  { name: 'Giannis Antetokounmpo',   team: 'MIL', nbaId: 203507 },
-  2:  { name: 'Nikola Jokic',             team: 'DEN', nbaId: 203999 },
-  3:  { name: 'Luka Doncic',              team: 'LAL', nbaId: 1629029 },
-  4:  { name: 'Jayson Tatum',             team: 'BOS', nbaId: 1628369 },
-  5:  { name: 'Anthony Davis',            team: 'LAL', nbaId: 203076 },
-  6:  { name: 'Kevin Durant',             team: 'PHX', nbaId: 201142 },
-  7:  { name: 'Anthony Edwards',          team: 'MIN', nbaId: 1630162 },
-  8:  { name: 'Tyrese Haliburton',        team: 'IND', nbaId: 1630169 },
-  9:  { name: 'Victor Wembanyama',        team: 'SAS', nbaId: 1641705 },
-  10: { name: 'Devin Booker',             team: 'PHX', nbaId: 1626164 },
-  11: { name: 'LaMelo Ball',              team: 'CHA', nbaId: 1630163 },
-  12: { name: 'Ja Morant',                team: 'MEM', nbaId: 1629630 },
-  13: { name: 'Joel Embiid',              team: 'PHI', nbaId: 203954 },
-  14: { name: 'Donovan Mitchell',         team: 'CLE', nbaId: 1628378 },
-};
+type PlayerMeta = { name: string; team: string; nbaId: number };
 
 type HoldingRow = {
   index: number;
@@ -47,6 +32,26 @@ export function Portfolio() {
   const { faucet, isPending: minting, isSuccess: minted } = useFaucetDBucks();
   const { canMintFull, faucetMode, capReached } = useFaucetEligibility(address);
 
+  const [playerMap, setPlayerMap] = useState<Map<number, PlayerMeta>>(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getPlayers();
+        if (cancelled) return;
+        const m = new Map<number, PlayerMeta>();
+        for (const p of list as { index: number; name: string; team: string; nba_id?: number }[]) {
+          m.set(p.index, { name: p.name, team: p.team || '', nbaId: p.nba_id ?? 0 });
+        }
+        setPlayerMap(m);
+      } catch {
+        if (!cancelled) setPlayerMap(new Map());
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const { balance, holdings, holdingsValue } = useMemo(() => {
     const bal = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
     const rows: HoldingRow[] = [];
@@ -57,12 +62,13 @@ export function Portfolio() {
         const shares = parseFloat(formatUnits(sharesArr[i], 6));
         const value = parseFloat(formatUnits(valuesArr[i], 6));
         hv += value;
-        const info = PLAYER_INFO[Number(idx)] || { name: `Player #${Number(idx)}`, team: '???', nbaId: 0 };
-        rows.push({ index: Number(idx), shares, value, name: info.name, team: info.team, nbaId: info.nbaId });
+        const n = Number(idx);
+        const meta = playerMap.get(n) || { name: `Player #${n}`, team: '???', nbaId: 0 };
+        rows.push({ index: n, shares, value, name: meta.name, team: meta.team, nbaId: meta.nbaId });
       });
     }
     return { balance: bal, holdings: rows, holdingsValue: hv };
-  }, [portfolioData, dbucksBalance]);
+  }, [portfolioData, dbucksBalance, playerMap]);
 
   const totalValue = balance + holdingsValue;
   const loading = isLoading;
@@ -188,7 +194,7 @@ export function Portfolio() {
                     </div>
                     <div className="col-span-2 hidden text-right sm:block">
                       <span className="text-sm tabular-nums text-muted-foreground">
-                        ${(h.value / h.shares).toFixed(2)}
+                        ${(h.shares > 0 ? h.value / h.shares : 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="col-span-4 text-right sm:col-span-3">

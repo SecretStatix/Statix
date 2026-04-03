@@ -9,18 +9,18 @@
   --foreground: #F0F0F2;
   --card: #18191d;
   --card-foreground: #F0F0F2;
-  --primary: #4A8AF4;
-  --primary-600: #3B7AE8;
-  --primary-700: #2D6AD4;
+  --primary: #5B9AFF;
+  --primary-600: #4A8BF5;
+  --primary-700: #3A7BE5;
   --primary-foreground: #FFFFFF;
   --secondary: #232428;
   --secondary-foreground: #F0F0F2;
   --muted: #232428;
-  --muted-foreground: #8B8D95;
-  --accent: #4A8AF4;
+  --muted-foreground: #9B9DA5;
+  --accent: #5B9AFF;
   --accent-foreground: #FFFFFF;
-  --destructive: #EF4444;
-  --success: #22C55E;
+  --destructive: #FF6B6B;
+  --success: #3EE88A;
   --border: #2A2B30;
   --input: #232428;
   --ring: #4A8AF4;
@@ -73,4 +73,34 @@ body {
 
 .animate-fade-in {
   animation: fade-in 0.4s ease-out forwards;
+}
+
+/* Stock ticker marquee */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.ticker-track {
+  animation: ticker-scroll 18s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* Stat number vertical slide */
+@keyframes stat-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-slide {
+  animation: stat-slide-up 0.35s ease-out forwards;
 }
