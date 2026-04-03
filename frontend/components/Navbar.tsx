@@ -6,12 +6,13 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
-import { TrendingUp, BarChart3, User, Info, Search } from 'lucide-react';
+import { TrendingUp, BarChart3, User as UserIcon, Info, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProfileMenu } from '@/components/ProfileMenu';
 
 const NAV_LINKS = [
   { href: '/', label: 'Market', icon: TrendingUp },
-  { href: '/portfolio', label: 'Portfolio', icon: User },
+  { href: '/portfolio', label: 'Portfolio', icon: UserIcon },
   { href: '/dividends', label: 'Dividends', icon: BarChart3 },
   { href: '/leaderboard', label: 'Leaderboard', icon: Info },
 ];
@@ -24,6 +25,7 @@ export function Navbar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const username = user?.user_metadata?.username || user?.email?.split('@')[0] || '';
+  const profileLabel = username || user?.email?.split('@')[0] || 'Account';
   const fundedRef = useRef(false);
 
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || '');
@@ -143,15 +145,9 @@ export function Navbar() {
               </button>
             ) : null}
 
-            {username && (
-              <div className="hidden sm:flex items-center gap-3 pl-3 border-l border-white/[0.08]">
-                <span className="text-sm text-muted-foreground">{username}</span>
-                <button
-                  onClick={handleSignOut}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Log out
-                </button>
+            {user && (
+              <div className="flex items-center pl-3 border-l border-white/[0.08]">
+                <ProfileMenu email={user.email} label={profileLabel} onSignOut={handleSignOut} />
               </div>
             )}
           </div>

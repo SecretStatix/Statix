@@ -235,7 +235,7 @@ export default function PlayerProfilePage() {
     <div className="relative space-y-8 pb-8">
       {/* Single subtle ambient glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 left-1/3 h-[28rem] w-[28rem] rounded-full bg-primary/[0.05] blur-[120px]" />
+        <div className="absolute -top-40 left-1/3 h-[28rem] w-[28rem] rounded-full bg-primary/[0.03] blur-[140px]" />
       </div>
 
       {/* Back link — minimal */}

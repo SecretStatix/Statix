@@ -141,12 +141,12 @@ export function PortfolioCharts({ totalValue, seedKey, allocation }: PortfolioCh
   );
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-      {/* CoinMarketCap-style: line + volume, right axis, horizontal grid only */}
-      <div className="lg:col-span-3 overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0c0d11]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.05] px-4 py-3 sm:px-5">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground/70">
-            Portfolio value
+    <div className="grid grid-cols-1 lg:grid-cols-5 lg:divide-x lg:divide-white/[0.06]">
+      {/* Chart: single dark canvas, no outer card chrome */}
+      <div className="border-b border-white/[0.06] lg:col-span-3 lg:border-b-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 sm:px-8 sm:pt-6">
+          <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
+            Value (illustrative)
           </p>
           <div className="flex rounded-lg bg-white/[0.04] p-0.5">
             {(['1W', '1M'] as Range[]).map((r) => (
@@ -166,11 +166,11 @@ export function PortfolioCharts({ totalValue, seedKey, allocation }: PortfolioCh
           </div>
         </div>
 
-        <p className="px-4 pt-2 text-[10px] text-muted-foreground/50 sm:px-5">
-          Illustrative series from your current balance — not historical performance.
+        <p className="mt-1 px-5 text-[10px] text-muted-foreground/50 sm:px-8">
+          Not historical performance — derived from your current balance.
         </p>
 
-        <div className="relative h-[260px] w-full px-1 pb-1">
+        <div className="relative mx-5 mb-5 mt-3 h-[260px] overflow-hidden rounded-xl bg-[#0c0d11] sm:mx-8 sm:mb-6">
           {totalValue <= 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               Fund your account or buy shares to see the chart.
@@ -285,13 +285,10 @@ export function PortfolioCharts({ totalValue, seedKey, allocation }: PortfolioCh
         </div>
       </div>
 
-      {/* Allocation donut */}
-      <div className="lg:col-span-2 rounded-2xl border border-white/[0.05] bg-gradient-to-b from-white/[0.03] to-transparent px-4 pt-4 pb-3 sm:px-5 flex flex-col">
-        <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground/70 mb-1">
-          Allocation
-        </p>
-        <p className="text-xs text-muted-foreground/60 mb-2">By position value</p>
-        <div className="flex min-h-[220px] flex-1 flex-col sm:flex-row items-center gap-4">
+      <div className="flex flex-col px-5 py-5 sm:px-8 sm:py-6 lg:col-span-2">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Allocation</p>
+        <p className="mt-1 text-xs text-muted-foreground/60">By position value</p>
+        <div className="mt-4 flex min-h-[220px] flex-1 flex-col items-center gap-5 sm:flex-row">
           {pieData.length === 0 ? (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground py-8">
               No holdings to chart
