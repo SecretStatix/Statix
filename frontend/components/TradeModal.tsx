@@ -21,11 +21,12 @@ interface TradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   player: PlayerData;
+  initialMode?: 'buy' | 'sell';
 }
 
-export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
+export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: TradeModalProps) {
   const { address, isConnected } = useAccount();
-  const [mode, setMode] = useState<'buy' | 'sell'>('buy');
+  const [mode, setMode] = useState<'buy' | 'sell'>(initialMode);
   const [amount, setAmount] = useState('');
   const shares = parseFloat(amount) || 0;
 
@@ -44,10 +45,11 @@ export function TradeModal({ isOpen, onClose, player }: TradeModalProps) {
   useEffect(() => {
     if (!isOpen) {
       setAmount('');
-      setMode('buy');
       tradeInfoRef.current = null;
+    } else {
+      setMode(initialMode);
     }
-  }, [isOpen]);
+  }, [isOpen, initialMode]);
 
   useEffect(() => {
     if (bought || sold) {

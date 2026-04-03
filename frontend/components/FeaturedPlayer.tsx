@@ -15,6 +15,7 @@ interface FeaturedPlayerProps {
 
 export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
+  const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('buy');
 
   const featured = useMemo(() => {
     if (players.length === 0) return null;
@@ -115,14 +116,14 @@ export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => setTradeModalOpen(true)}
-                className="h-9 px-4 rounded-lg text-sm font-semibold bg-[#0a7a52] text-white hover:bg-[#0e9966] transition-colors"
+                onClick={() => { setTradeMode('buy'); setTradeModalOpen(true); }}
+                className="h-9 px-4 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary-600 transition-colors"
               >
                 Buy
               </button>
               <button
-                onClick={() => setTradeModalOpen(true)}
-                className="h-9 px-4 rounded-lg text-sm font-semibold bg-[#cc3333] text-white hover:bg-[#e04040] transition-colors"
+                onClick={() => { setTradeMode('sell'); setTradeModalOpen(true); }}
+                className="h-9 px-4 rounded-lg text-sm font-semibold bg-secondary text-muted-foreground hover:text-foreground border border-white/[0.06] transition-colors"
               >
                 Sell
               </button>
@@ -136,6 +137,7 @@ export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
           isOpen={tradeModalOpen}
           onClose={() => setTradeModalOpen(false)}
           player={featured}
+          initialMode={tradeMode}
         />
       )}
     </>
