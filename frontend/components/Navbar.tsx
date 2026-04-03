@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
+import Image from 'next/image';
 import { TrendingUp, BarChart3, User as UserIcon, Info, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfileMenu } from '@/components/ProfileMenu';
@@ -82,13 +83,11 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-card/90 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex h-14 items-center justify-between gap-4">
           <div className="flex items-center gap-4 lg:gap-6">
             <Link href="/" className="flex items-center gap-2 group shrink-0">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs group-hover:bg-primary-600 transition-colors shadow-lg shadow-primary/20">
-                SX
-              </div>
+              <Image src="/logo.png" alt="Statix" width={32} height={32} className="rounded-lg" />
               <span className="text-lg font-bold text-foreground hidden sm:inline tracking-tight">
                 Statix
               </span>

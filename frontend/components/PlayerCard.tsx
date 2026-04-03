@@ -57,7 +57,7 @@ function getTeamAccentStyle(team: string): CSSProperties {
   const color = TEAM_COLORS[team?.toUpperCase()] || '#2B3440';
   const [r, g, b] = getRgb(color);
   return {
-    borderLeftColor: `rgba(${r}, ${g}, ${b}, 0.7)`,
+    borderLeftColor: `rgb(${r}, ${g}, ${b})`,
     '--team-r': r,
     '--team-g': g,
     '--team-b': b,
@@ -81,7 +81,7 @@ export function PlayerCard({ player, onTrade }: PlayerCardProps) {
         const r = getComputedStyle(el).getPropertyValue('--team-r');
         const g = getComputedStyle(el).getPropertyValue('--team-g');
         const b = getComputedStyle(el).getPropertyValue('--team-b');
-        el.style.boxShadow = `0 8px 24px rgba(${r}, ${g}, ${b}, 0.18), 0 4px 12px rgba(0,0,0,0.2)`;
+        el.style.boxShadow = `0 8px 28px rgba(${r}, ${g}, ${b}, 0.28), 0 4px 12px rgba(0,0,0,0.25)`;
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = '';
@@ -91,16 +91,16 @@ export function PlayerCard({ player, onTrade }: PlayerCardProps) {
         <div className="flex items-center gap-3">
           <PlayerAvatar name={player.name} nbaId={player.nbaId} size="md" />
           <div className="flex-1 min-w-0">
-            <h3 className="truncate text-sm font-semibold text-foreground transition-colors duration-200">
+            <h3 className="text-base font-semibold leading-tight text-foreground transition-colors duration-200">
               {player.name}
             </h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">{player.team} · {player.position}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{player.team} · {player.position} · {Math.round(player.avgFantasyPoints)} FP</p>
           </div>
           <div className="text-right shrink-0">
             <p className="text-xl font-bold text-foreground">${player.price.toFixed(2)}</p>
             <span className={cn(
               "inline-block text-xs font-semibold px-1.5 py-0.5 rounded",
-              isPositive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+              isPositive ? "bg-success/25 text-success" : "bg-destructive/25 text-destructive"
             )}>
               {isPositive ? '+' : ''}{pctChange.toFixed(1)}%
             </span>
@@ -115,7 +115,7 @@ export function PlayerCard({ player, onTrade }: PlayerCardProps) {
               e.preventDefault();
               onTrade();
             }}
-            className="h-9 rounded-md border-0 bg-[#0f8a5f] text-sm font-semibold text-white transition-all duration-200 hover:bg-[#12a06d] focus:outline-none focus:ring-2 focus:ring-[#12a06d]/40 focus:ring-offset-1 focus:ring-offset-card"
+            className="h-9 rounded-md border-0 bg-[#0a7a52] text-sm font-semibold text-white transition-all duration-200 hover:bg-[#0e9966] focus:outline-none focus:ring-2 focus:ring-[#0a7a52]/40 focus:ring-offset-1 focus:ring-offset-card"
           >
             Buy
           </button>
@@ -124,7 +124,7 @@ export function PlayerCard({ player, onTrade }: PlayerCardProps) {
               e.preventDefault();
               onTrade();
             }}
-            className="h-9 rounded-md border-0 bg-destructive text-sm font-semibold text-white transition-all duration-200 hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-destructive/40 focus:ring-offset-1 focus:ring-offset-card"
+            className="h-9 rounded-md border-0 bg-[#cc3333] text-sm font-semibold text-white transition-all duration-200 hover:bg-[#e04040] focus:outline-none focus:ring-2 focus:ring-[#cc3333]/40 focus:ring-offset-1 focus:ring-offset-card"
           >
             Sell
           </button>

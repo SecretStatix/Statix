@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Newspaper, ExternalLink } from 'lucide-react';
 import { getPlayer, getPlayerGames, getPlayerTransactions } from '@/lib/api';
 import { usePlayerPrice } from '@/hooks/useContracts';
 import { formatUnits } from 'viem';
@@ -15,6 +15,7 @@ import {
   YAxis,
   Tooltip,
   ReferenceLine,
+  CartesianGrid,
 } from 'recharts';
 import { PlayerTradingPanel } from '@/components/PlayerTradingPanel';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
@@ -50,7 +51,78 @@ interface PlayerTransaction {
   created_at: string;
 }
 
+interface NewsItem {
+  title: string;
+  source: string;
+  time: string;
+  url: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  category: 'player' | 'team';
+}
+
 type TimeRange = '1W' | '1M' | '3M';
+type StatsPeriod = 'season' | 'last1' | 'last5';
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatDateLabel(dateStr: string): string {
+  const trimmed = dateStr.length > 8 ? dateStr.slice(0, 8).trim() : dateStr.trim();
+  const parts = trimmed.split('/');
+  if (parts.length >= 2) {
+    const monthIdx = parseInt(parts[0], 10) - 1;
+    const day = parseInt(parts[1], 10);
+    if (monthIdx >= 0 && monthIdx < 12 && !isNaN(day)) {
+      return `${MONTH_NAMES[monthIdx]} ${day}`;
+    }
+  }
+  return trimmed;
+}
+
+function AnimatedValue({ value, decimals = 1 }: { value: number; decimals?: number }) {
+  const [display, setDisplay] = useState(value);
+  const [color, setColor] = useState<'text-foreground' | 'text-success' | 'text-destructive'>('text-foreground');
+  const prevRef = useRef(value);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const from = prevRef.current;
+    const to = value;
+    prevRef.current = value;
+
+    if (from === to) return;
+
+    const direction = to > from ? 1 : -1;
+    const step = Math.pow(10, -decimals); // 0.1 for 1 decimal
+    const totalSteps = Math.round(Math.abs(to - from) / step);
+    const maxSteps = 30; // cap at 30 ticks
+    const actualSteps = Math.min(totalSteps, maxSteps);
+    const stepSize = (to - from) / actualSteps;
+
+    setColor(direction > 0 ? 'text-success' : 'text-destructive');
+
+    let current = 0;
+    const tick = () => {
+      current++;
+      if (current >= actualSteps) {
+        setDisplay(to);
+        return;
+      }
+      setDisplay(Math.round((from + stepSize * current) * Math.pow(10, decimals)) / Math.pow(10, decimals));
+      rafRef.current = requestAnimationFrame(() => setTimeout(tick, 30));
+    };
+    tick();
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [value, decimals]);
+
+  return (
+    <span className={`transition-colors duration-300 ${color}`}>
+      {display.toFixed(decimals)}
+    </span>
+  );
+}
 
 export default function PlayerProfilePage() {
   const params = useParams();
@@ -65,6 +137,9 @@ export default function PlayerProfilePage() {
   const [error, setError] = useState('');
   const [chartMode, setChartMode] = useState<'fpts' | 'price'>('price');
   const [timeRange, setTimeRange] = useState<TimeRange>('3M');
+  const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>('season');
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   const { data: onChainPrice } = usePlayerPrice(player?.index ?? 0);
 
@@ -112,6 +187,24 @@ export default function PlayerProfilePage() {
     loadTransactions();
   }, [player]);
 
+  useEffect(() => {
+    async function loadNews() {
+      if (!player) return;
+      try {
+        const res = await fetch(`/api/player-news?player=${encodeURIComponent(player.name)}&team=${encodeURIComponent(player.team)}`);
+        const data = await res.json();
+        if (Array.isArray(data.news) && data.news.length > 0) {
+          setNews(data.news);
+        }
+      } catch {
+        console.error('Failed to load news');
+      } finally {
+        setNewsLoading(false);
+      }
+    }
+    loadNews();
+  }, [player]);
+
   const currentPrice = onChainPrice
     ? parseFloat(formatUnits(onChainPrice as bigint, 6))
     : (player as any)?.price || 10;
@@ -123,7 +216,7 @@ export default function PlayerProfilePage() {
     const data: { label: string; price: number }[] = [];
 
     let p = currentPrice * (0.72 + (player?.index ?? 0) * 0.008);
-    const reversed = [...games].reverse();
+    const ordered = [...games];
 
     const hashDate = (s: string) => {
       let h = 2166136261;
@@ -131,17 +224,17 @@ export default function PlayerProfilePage() {
       return (h >>> 0) / 4294967296;
     };
 
-    for (let i = 0; i < reversed.length; i++) {
-      const g = reversed[i];
+    for (let i = 0; i < ordered.length; i++) {
+      const g = ordered[i];
       const diff = g.fantasy_points - avgFpts;
       const nudge = (diff / Math.max(avgFpts, 1)) * currentPrice * 0.24;
       const swing = Math.sin(i * 1.7 + (player?.index ?? 0)) * currentPrice * 0.065;
       const jitter = (hashDate(g.date + i) - 0.5) * currentPrice * 0.11;
-      const gap = i > 0 ? (g.fantasy_points - reversed[i - 1].fantasy_points) * 0.02 : 0;
+      const gap = i > 0 ? (g.fantasy_points - ordered[i - 1].fantasy_points) * 0.02 : 0;
       p = p + nudge + swing + jitter + gap;
       p = Math.max(currentPrice * 0.42, Math.min(currentPrice * 1.48, p));
 
-      const label = g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date;
+      const label = formatDateLabel(g.date);
       data.push({ label, price: Math.round(p * 100) / 100 });
     }
 
@@ -154,9 +247,8 @@ export default function PlayerProfilePage() {
 
   const chartDataFptsAll = games
     .slice()
-    .reverse()
     .map((g) => ({
-      label: g.date.length > 8 ? g.date.slice(0, 8).trim() : g.date,
+      label: formatDateLabel(g.date),
       fpts: g.fantasy_points,
       matchup: g.matchup,
       result: g.result,
@@ -187,6 +279,31 @@ export default function PlayerProfilePage() {
   const displayChange = chartMode === 'price' ? priceChange : percentChange;
   const isPositive = displayChange >= 0;
 
+  // Compute display stats BEFORE early returns (React hooks rule)
+  const seasonStats = player?.avg_stats || {};
+  const displayStats = useMemo(() => {
+    if (statsPeriod === 'last1' && games.length > 0) {
+      return games[0].stats;
+    } else if (statsPeriod === 'last5' && games.length > 0) {
+      const slice = games.slice(0, Math.min(5, games.length));
+      const avg: Record<string, number> = {};
+      for (const key of ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV']) {
+        avg[key] = slice.reduce((sum, g) => sum + (g.stats[key] || 0), 0) / slice.length;
+      }
+      return avg;
+    }
+    return seasonStats;
+  }, [statsPeriod, games, seasonStats]);
+
+  const statEntries: { label: string; value: string; key: string }[] = [
+    { label: 'PTS', value: (displayStats.PTS ?? 0).toFixed(1), key: 'pts' },
+    { label: 'REB', value: (displayStats.REB ?? 0).toFixed(1), key: 'reb' },
+    { label: 'AST', value: (displayStats.AST ?? 0).toFixed(1), key: 'ast' },
+    { label: 'STL', value: (displayStats.STL ?? 0).toFixed(1), key: 'stl' },
+    { label: 'BLK', value: (displayStats.BLK ?? 0).toFixed(1), key: 'blk' },
+    { label: 'TOV', value: (displayStats.TOV ?? 0).toFixed(1), key: 'tov' },
+  ];
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -213,21 +330,11 @@ export default function PlayerProfilePage() {
   const avgFpts = Number(player.avg_fantasy_points) || (Number(player.weekly_projection) || 0) / 3.5 || 0;
   const weeklyProj = Number(player.weekly_projection) || avgFpts * 3.5;
   const seasonProj = Number(player.season_projection) || avgFpts * 82;
-  const stats = player.avg_stats || {};
   const price = currentPrice;
 
-  const statEntries: { label: string; value: string; key: string }[] = [
-    { label: 'PTS', value: (stats.PTS ?? 0).toFixed(1), key: 'pts' },
-    { label: 'REB', value: (stats.REB ?? 0).toFixed(1), key: 'reb' },
-    { label: 'AST', value: (stats.AST ?? 0).toFixed(1), key: 'ast' },
-    { label: 'STL', value: (stats.STL ?? 0).toFixed(1), key: 'stl' },
-    { label: 'BLK', value: (stats.BLK ?? 0).toFixed(1), key: 'blk' },
-    { label: 'TOV', value: (stats.TOV ?? 0).toFixed(1), key: 'tov' },
-  ];
-
   const chartColor = chartMode === 'price'
-    ? (isPositive ? '#22C55E' : '#EF4444')
-    : '#4A8AF4';
+    ? (isPositive ? '#3EE88A' : '#FF6B6B')
+    : '#5B9AFF';
   const dataKey = chartMode === 'fpts' ? 'fpts' : 'price';
   const gradientId = chartMode === 'fpts' ? 'fptsGrad' : 'priceGrad';
 
@@ -322,11 +429,17 @@ export default function PlayerProfilePage() {
               <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
                 <defs>
                   <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.15} />
-                    <stop offset="80%" stopColor={chartColor} stopOpacity={0.02} />
+                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.18} />
+                    <stop offset="70%" stopColor={chartColor} stopOpacity={0.03} />
                     <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
+                <CartesianGrid
+                  horizontal={true}
+                  vertical={false}
+                  stroke="rgba(255,255,255,0.04)"
+                  strokeDasharray="3 3"
+                />
                 <XAxis
                   dataKey="label"
                   tick={{ fill: 'rgba(139, 141, 149, 0.5)', fontSize: 10 }}
@@ -335,11 +448,12 @@ export default function PlayerProfilePage() {
                   dy={8}
                 />
                 <YAxis
+                  domain={['dataMin - 0.5', 'dataMax + 0.5']}
                   tick={{ fill: 'rgba(139, 141, 149, 0.4)', fontSize: 10 }}
                   tickLine={false}
                   axisLine={false}
                   width={40}
-                  tickFormatter={chartMode === 'price' ? (v) => `$${v}` : undefined}
+                  tickFormatter={chartMode === 'price' ? (v: number) => `$${v}` : undefined}
                 />
                 <Tooltip
                   cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
@@ -367,7 +481,7 @@ export default function PlayerProfilePage() {
                   />
                 )}
                 <Area
-                  type="monotone"
+                  type="linear"
                   dataKey={dataKey}
                   stroke={chartColor}
                   strokeWidth={1.5}
@@ -386,34 +500,135 @@ export default function PlayerProfilePage() {
 
       {/* ── Trading panel + content columns ── */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Trading panel — left */}
-        <div className="lg:col-span-1 order-first lg:order-none">
-          <div className="sticky top-20">
-            <PlayerTradingPanel
-              playerIndex={player.index}
-              playerId={player.id}
-              playerName={player.name}
-              price={price}
-            />
+        {/* Trading panel + News — left */}
+        <div className="lg:col-span-1 order-first lg:order-none space-y-6">
+          <PlayerTradingPanel
+            playerIndex={player.index}
+            playerId={player.id}
+            playerName={player.name}
+            price={price}
+          />
+
+          {/* News Section */}
+          <div className="rounded-xl border border-white/[0.06] bg-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-2">
+              <Newspaper className="w-3.5 h-3.5 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">News</h3>
+              <span className="ml-auto text-[9px] text-muted-foreground/40 uppercase tracking-wider">Live</span>
+            </div>
+
+            {newsLoading ? (
+              <div className="px-4 py-8 flex flex-col items-center gap-2">
+                <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+                <span className="text-[10px] text-muted-foreground/40">Loading news...</span>
+              </div>
+            ) : news.length === 0 ? (
+              <div className="px-4 py-6 text-center">
+                <p className="text-xs text-muted-foreground/50">No news available</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/[0.04]">
+                {/* Player news */}
+                {news.some(n => n.category === 'player') && (
+                  <div className="px-4 pt-3 pb-1">
+                    <span className="text-xs text-muted-foreground/50 uppercase tracking-wider font-semibold">Player</span>
+                  </div>
+                )}
+                {news.filter(n => n.category === 'player').map((item, i) => (
+                  <a key={`p-${i}`} href={item.url} target="_blank" rel="noopener noreferrer" className="block px-4 py-3 hover:bg-white/[0.02] transition-colors cursor-pointer group">
+                    <div className="flex items-start gap-2.5">
+                      <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
+                        item.sentiment === 'positive' ? 'bg-success' : item.sentiment === 'negative' ? 'bg-destructive' : 'bg-muted-foreground/40'
+                      }`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-foreground/80 leading-relaxed group-hover:text-foreground transition-colors">
+                          {item.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="text-[10px] text-muted-foreground/40">{item.source}</span>
+                          <span className="text-[10px] text-muted-foreground/30">{item.time}</span>
+                        </div>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors mt-0.5 shrink-0" />
+                    </div>
+                  </a>
+                ))}
+
+                {/* Team news */}
+                {news.some(n => n.category === 'team') && (
+                  <div className="px-4 pt-3 pb-1">
+                    <span className="text-xs text-muted-foreground/50 uppercase tracking-wider font-semibold">Team</span>
+                  </div>
+                )}
+                {news.filter(n => n.category === 'team').map((item, i) => (
+                  <a key={`t-${i}`} href={item.url} target="_blank" rel="noopener noreferrer" className="block px-4 py-3 hover:bg-white/[0.02] transition-colors cursor-pointer group">
+                    <div className="flex items-start gap-2.5">
+                      <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
+                        item.sentiment === 'positive' ? 'bg-success' : item.sentiment === 'negative' ? 'bg-destructive' : 'bg-muted-foreground/40'
+                      }`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-foreground/80 leading-relaxed group-hover:text-foreground transition-colors">
+                          {item.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="text-[10px] text-muted-foreground/40">{item.source}</span>
+                          <span className="text-[10px] text-muted-foreground/30">{item.time}</span>
+                        </div>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors mt-0.5 shrink-0" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <div className="px-4 py-2.5 border-t border-white/[0.04] bg-white/[0.01]">
+              <p className="text-[9px] text-muted-foreground/30 text-center">
+                News sourced from Google News — not financial advice
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Stats + tables — right */}
         <div className="space-y-8 lg:col-span-2">
-          {/* Season Averages — clean horizontal row */}
+          {/* Player Averages — with period toggle */}
           <div>
-            <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mb-4">
-              Season Averages
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">
+                Player Averages
+              </h3>
+              <div className="flex items-center gap-0.5">
+                {([
+                  { key: 'season' as StatsPeriod, label: 'Season' },
+                  { key: 'last5' as StatsPeriod, label: 'Last 5' },
+                  { key: 'last1' as StatsPeriod, label: 'Last Game' },
+                ]).map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setStatsPeriod(key)}
+                    className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all duration-200 ${
+                      statsPeriod === key
+                        ? 'bg-white/[0.08] text-foreground'
+                        : 'text-muted-foreground/50 hover:text-foreground'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex items-center">
               {statEntries.map((s, i) => (
                 <div
                   key={s.key}
-                  className={`flex-1 text-center py-3 ${
+                  className={`flex-1 text-center py-3 overflow-hidden ${
                     i > 0 ? 'border-l border-white/[0.05]' : ''
                   }`}
                 >
-                  <p className="text-lg md:text-xl font-bold text-foreground tabular-nums">{s.value}</p>
+                  <p className="text-lg md:text-xl font-bold tabular-nums">
+                    <AnimatedValue value={parseFloat(s.value)} />
+                  </p>
                   <p className="text-[10px] text-muted-foreground/50 mt-1 uppercase tracking-wider font-medium">
                     {s.label}
                   </p>
@@ -422,26 +637,35 @@ export default function PlayerProfilePage() {
             </div>
           </div>
 
-          {/* Fantasy Projections — flat cards */}
+          {/* Fantasy Projections — stat cards with accent bars */}
           <div>
             <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mb-4">
               Fantasy Projections
             </h3>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-xl bg-primary/[0.06] border border-primary/[0.1] px-4 py-3.5">
-                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium">FPts/Game</p>
-                <p className="text-xl font-bold text-primary mt-1.5 tabular-nums">{avgFpts.toFixed(1)}</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="relative overflow-hidden rounded-xl bg-card border border-white/[0.06] p-4">
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium ml-2">FPts/Game</p>
+                <p className="text-2xl font-bold text-primary mt-2 ml-2 tabular-nums">{avgFpts.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground/30 mt-1 ml-2">per game avg</p>
+                <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-primary/[0.06] rounded-full blur-2xl" />
               </div>
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] px-4 py-3.5">
-                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium">Weekly</p>
-                <p className="text-xl font-bold text-foreground mt-1.5 tabular-nums">{weeklyProj.toFixed(1)}</p>
+              <div className="relative overflow-hidden rounded-xl bg-card border border-white/[0.06] p-4">
+                <div className="absolute top-0 left-0 w-1 h-full bg-success" />
+                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium ml-2">Weekly</p>
+                <p className="text-2xl font-bold text-foreground mt-2 ml-2 tabular-nums">{weeklyProj.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground/30 mt-1 ml-2">~3.5 games</p>
+                <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-success/[0.06] rounded-full blur-2xl" />
               </div>
-              <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] px-4 py-3.5">
-                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium">Season</p>
-                <p className="text-xl font-bold text-foreground mt-1.5 tabular-nums">{seasonProj.toFixed(0)}</p>
+              <div className="relative overflow-hidden rounded-xl bg-card border border-white/[0.06] p-4">
+                <div className="absolute top-0 left-0 w-1 h-full bg-amber-400" />
+                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium ml-2">Season</p>
+                <p className="text-2xl font-bold text-foreground mt-2 ml-2 tabular-nums">{seasonProj.toFixed(0)}</p>
+                <p className="text-[10px] text-muted-foreground/30 mt-1 ml-2">82 games</p>
+                <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-amber-400/[0.06] rounded-full blur-2xl" />
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground/30 mt-2.5">
+            <p className="text-[10px] text-muted-foreground/30 mt-3">
               PTS x1 + REB x1.2 + AST x1.5 + STL x3 + BLK x3 - TOV x1
             </p>
           </div>
