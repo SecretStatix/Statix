@@ -7,13 +7,20 @@ export default function DividendsPage() {
   const { isConnected } = useAccount();
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Dividends</h1>
+    <div className="space-y-10 pb-12">
+      <header className="space-y-1">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Dividends</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Weekly distributions</h1>
+        <p className="max-w-lg text-sm text-muted-foreground">
+          Claim your share of fee-funded pools — base allocation plus outperform bonuses.
+        </p>
+      </header>
+
       {isConnected ? (
         <DividendSummary />
       ) : (
-        <div className="bg-card rounded-xl p-8 text-center">
-          <p className="text-muted-foreground">Connect your wallet to view your dividends.</p>
+        <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.012] to-transparent px-6 py-16 text-center">
+          <p className="text-sm text-muted-foreground">Connect your wallet to view your dividends.</p>
         </div>
       )}
     </div>

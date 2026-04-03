@@ -12,7 +12,7 @@ export function DividendSummary() {
 
   if (!isConnected) {
     return (
-      <div className="bg-card rounded-xl border border-border p-6 text-center">
+      <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.012] to-transparent px-6 py-12 text-center">
         <p className="text-sm text-muted-foreground">Connect your wallet to view dividends</p>
       </div>
     );
@@ -30,49 +30,60 @@ export function DividendSummary() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Summary card */}
-      <div className="bg-card rounded-2xl border border-white/[0.06] p-6 card-hover">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-semibold text-foreground">Dividend Summary</h3>
-        </div>
+    <div className="relative overflow-hidden rounded-3xl border border-white/[0.06] bg-gradient-to-b from-white/[0.02] to-transparent">
+      <div className="pointer-events-none absolute -right-28 -top-28 h-[22rem] w-[22rem] rounded-full bg-primary/[0.04] blur-[120px]" />
 
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="bg-success/10 rounded-xl p-4 border border-success/20">
-            <p className="text-xs text-success">Unclaimed Dividends</p>
-            <p className="text-2xl font-bold text-success mt-1">${unclaimed.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{weekCount} week{weekCount !== 1 ? 's' : ''}</p>
+      <div className="relative border-b border-white/[0.06] px-5 py-6 sm:px-8 sm:py-7">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">At a glance</p>
+        <div className="mt-6 flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between sm:gap-0 sm:divide-x sm:divide-white/[0.06]">
+          <div className="flex-1 sm:pr-10">
+            <p className="text-xs font-medium text-muted-foreground">Unclaimed dividends</p>
+            <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-success">${unclaimed.toFixed(2)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {weekCount} week{weekCount !== 1 ? 's' : ''} pending
+            </p>
           </div>
-          <div className="rounded-xl p-4 bg-white/[0.03] border border-white/[0.04]">
-            <p className="text-xs text-muted-foreground">Current Week</p>
-            <p className="text-2xl font-bold text-foreground mt-1">Week {currentWeek}</p>
+          <div className="flex-1 sm:px-10">
+            <p className="text-xs font-medium text-muted-foreground">Current week</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">Week {currentWeek}</p>
           </div>
-          <div className="rounded-xl p-4 bg-white/[0.03] border border-white/[0.04]">
-            <p className="text-xs text-muted-foreground">Active Positions</p>
-            <p className="text-2xl font-bold text-foreground mt-1">—</p>
+          <div className="flex-1 sm:pl-10">
+            <p className="text-xs font-medium text-muted-foreground">Active positions</p>
+            <p className="mt-1 text-2xl font-semibold text-foreground">—</p>
+            <p className="mt-1 text-[11px] text-muted-foreground/80">From portfolio</p>
           </div>
         </div>
+      </div>
 
+      <div className="relative border-b border-white/[0.06] px-5 py-6 sm:px-8">
         {unclaimed > 0 ? (
           <button
+            type="button"
             onClick={handleClaimAll}
             disabled={claiming}
-            className="w-full h-12 rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary-600 transition-all duration-200 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-card"
+            className="w-full rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/15 transition hover:bg-primary-600 disabled:opacity-50"
           >
-            {claiming ? 'Claiming...' : claimed ? 'Claimed!' : `Claim All (${weekCount} week${weekCount !== 1 ? 's' : ''})`}
+            {claiming ? 'Claiming...' : claimed ? 'Claimed!' : `Claim all (${weekCount} week${weekCount !== 1 ? 's' : ''})`}
           </button>
         ) : (
-          <p className="text-xs text-muted-foreground text-center">No dividends to claim yet</p>
+          <p className="text-center text-sm text-muted-foreground">No dividends to claim yet.</p>
         )}
       </div>
 
-      {/* How it works */}
-      <div className="bg-card rounded-2xl border border-white/[0.06] p-6 card-hover">
-        <h3 className="font-semibold text-foreground mb-3">How Dividends Work</h3>
-        <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
-          <p><span className="text-foreground font-medium">20% Base Pool</span> — distributed to all shareholders proportionally.</p>
-          <p><span className="text-foreground font-medium">80% Outperformer Pool</span> — bonus for holding players who beat their fantasy projections.</p>
-          <p className="text-xs mt-3">Dividends are funded by 1.5% trading fees (67% goes to dividend pool). Claims are processed on-chain via DividendHub.</p>
+      <div className="relative px-5 py-6 sm:px-8 sm:py-7">
+        <h3 className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">How dividends work</h3>
+        <div className="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
+          <p>
+            <span className="font-medium text-foreground">20% base pool</span> — shared across all shareholders by stake.
+          </p>
+          <p>
+            <span className="font-medium text-foreground">80% outperformer pool</span> — extra for holdings in players
+            who beat projections.
+          </p>
+          <p className="text-xs text-muted-foreground/90 pt-1">
+            Trading fees (1.5% on each trade; 67% to the dividend pool) fund distributions. Claims settle on-chain via
+            DividendHub.
+          </p>
         </div>
       </div>
     </div>

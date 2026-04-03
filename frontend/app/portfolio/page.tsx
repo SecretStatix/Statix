@@ -19,7 +19,7 @@ export default function PortfolioPage() {
       {isConnected ? (
         <Portfolio />
       ) : (
-        <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-transparent px-6 py-16 text-center">
+        <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.012] to-transparent px-6 py-16 text-center">
           <p className="text-sm text-muted-foreground">Connect your wallet to view your portfolio.</p>
         </div>
       )}

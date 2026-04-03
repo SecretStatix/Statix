@@ -32,8 +32,8 @@ body {
   color: var(--foreground);
   background: var(--background);
   background-image:
-    radial-gradient(ellipse 120% 80% at 50% -30%, rgba(74, 138, 244, 0.09), transparent 50%),
-    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(34, 197, 94, 0.04), transparent 45%);
+    radial-gradient(ellipse 160% 120% at 50% -35%, rgba(74, 138, 244, 0.035), transparent 62%),
+    radial-gradient(ellipse 100% 70% at 95% -5%, rgba(34, 197, 94, 0.018), transparent 58%);
   -webkit-font-smoothing: antialiased;
 }
 

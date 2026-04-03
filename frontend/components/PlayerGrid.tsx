@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PlayerCard } from './PlayerCard';
 import { TradeModal } from './TradeModal';
+import { isGuardPosition, isForwardPosition, isCenterPosition } from '@/lib/positions';
 
 export interface PlayerData {
   index: number;
@@ -61,13 +62,13 @@ export function PlayerGrid({ players, loading }: PlayerGridProps) {
       );
     }
 
-    // Position filters
+    // Position filters (data uses PG/SG, SF/PF, C — not generic G/F)
     if (activeTab === 'guards') {
-      list = list.filter(p => p.position === 'G');
+      list = list.filter((p) => isGuardPosition(p.position));
     } else if (activeTab === 'forwards') {
-      list = list.filter(p => p.position === 'F');
+      list = list.filter((p) => isForwardPosition(p.position));
     } else if (activeTab === 'centers') {
-      list = list.filter(p => p.position === 'C');
+      list = list.filter((p) => isCenterPosition(p.position));
     }
 
     // Sorting
