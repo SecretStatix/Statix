@@ -6,14 +6,17 @@ import { getLeaderboard } from '@/lib/api';
 export default function LeaderboardPage() {
   const [leaders, setLeaders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
         const data = await getLeaderboard();
         setLeaders(data);
+        setError(null);
       } catch {
         setLeaders([]);
+        setError('Failed to load leaderboard. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -36,6 +39,10 @@ export default function LeaderboardPage() {
 
         {loading ? (
           <div className="relative py-16 text-center text-sm text-muted-foreground">Loading…</div>
+        ) : error ? (
+          <div className="relative px-6 py-16 text-center">
+            <p className="text-sm text-destructive max-w-md mx-auto">{error}</p>
+          </div>
         ) : leaders.length === 0 ? (
           <div className="relative px-6 py-16 text-center">
             <p className="text-sm text-muted-foreground max-w-md mx-auto">

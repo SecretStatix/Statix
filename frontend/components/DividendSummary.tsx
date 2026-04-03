@@ -2,13 +2,14 @@
 
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
-import { useUnclaimedDividends, useClaimMultipleWeeks, useCurrentWeek } from '@/hooks/useContracts';
+import { useUnclaimedDividends, useClaimMultipleWeeks, useCurrentWeek, usePortfolio } from '@/hooks/useContracts';
 
 export function DividendSummary() {
   const { address, isConnected } = useAccount();
   const { data: unclaimedData } = useUnclaimedDividends(address);
   const { data: currentWeekData } = useCurrentWeek();
   const { claimAll, isPending: claiming, isSuccess: claimed } = useClaimMultipleWeeks();
+  const { data: portfolioData } = usePortfolio(address);
 
   if (!isConnected) {
     return (
@@ -49,8 +50,18 @@ export function DividendSummary() {
           </div>
           <div className="flex-1 sm:pl-10">
             <p className="text-xs font-medium text-muted-foreground">Active positions</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">—</p>
-            <p className="mt-1 text-[11px] text-muted-foreground/80">From portfolio</p>
+            <p className="mt-1 text-2xl font-semibold text-foreground">
+              {(() => {
+                if (!portfolioData) return '—';
+                const [, sharesArr] = portfolioData as [bigint[], bigint[], bigint[]];
+                let n = 0;
+                for (let i = 0; i < sharesArr.length; i++) {
+                  if (sharesArr[i] > BigInt(0)) n++;
+                }
+                return n;
+              })()}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground/80">Players with shares</p>
           </div>
         </div>
       </div>
