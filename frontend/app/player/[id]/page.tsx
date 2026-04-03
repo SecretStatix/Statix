@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, TrendingUp, TrendingDown, Newspaper, ExternalLink } from 'lucide-react';
-import { getPlayer, getPlayerGames, getPlayerTransactions } from '@/lib/api';
+import { getPlayer, getPlayerGames, getPlayerTransactions, getPlayerPriceHistory } from '@/lib/api';
 import { usePlayerPrice } from '@/hooks/useContracts';
 import { formatUnits } from 'viem';
 import {
@@ -211,44 +211,36 @@ export default function PlayerProfilePage() {
     loadNews();
   }, [player]);
 
-  const currentPrice = onChainPrice
-    ? parseFloat(formatUnits(onChainPrice as bigint, 6))
-    : (player as any)?.price || 10;
+  const priceRangeDays = useMemo(
+    () => (timeRange === '1W' ? 7 : timeRange === '1M' ? 30 : 90),
+    [timeRange]
+  );
 
-  const chartDataPriceAll = useMemo(() => {
-    if (games.length === 0) return [];
+  const currentPrice =
+    onChainPrice != null
+      ? parseFloat(formatUnits(onChainPrice as bigint, 6))
+      : null;
 
-    const avgFpts = games.reduce((s, g) => s + g.fantasy_points, 0) / games.length;
-    const data: { label: string; price: number }[] = [];
-
-    let p = currentPrice * (0.72 + (player?.index ?? 0) * 0.008);
-    const ordered = [...games];
-
-    const hashDate = (s: string) => {
-      let h = 2166136261;
-      for (let k = 0; k < s.length; k++) h = Math.imul(h ^ s.charCodeAt(k), 16777619);
-      return (h >>> 0) / 4294967296;
-    };
-
-    for (let i = 0; i < ordered.length; i++) {
-      const g = ordered[i];
-      const diff = g.fantasy_points - avgFpts;
-      const nudge = (diff / Math.max(avgFpts, 1)) * currentPrice * 0.24;
-      const swing = Math.sin(i * 1.7 + (player?.index ?? 0)) * currentPrice * 0.065;
-      const jitter = (hashDate(g.date + i) - 0.5) * currentPrice * 0.11;
-      const gap = i > 0 ? (g.fantasy_points - ordered[i - 1].fantasy_points) * 0.02 : 0;
-      p = p + nudge + swing + jitter + gap;
-      p = Math.max(currentPrice * 0.42, Math.min(currentPrice * 1.48, p));
-
-      const label = formatDateLabel(g.date);
-      data.push({ label, price: Math.round(p * 100) / 100 });
+  useEffect(() => {
+    async function loadPriceHistory() {
+      if (!player) return;
+      setPriceHistoryLoading(true);
+      try {
+        const data = await getPlayerPriceHistory(playerId, priceRangeDays);
+        setPriceHistory({
+          points: data.points ?? [],
+          range_change_pct: data.range_change_pct ?? null,
+          vs_listing_pct: data.vs_listing_pct ?? 0,
+        });
+      } catch {
+        console.error('Failed to load price history');
+        setPriceHistory(null);
+      } finally {
+        setPriceHistoryLoading(false);
+      }
     }
     loadPriceHistory();
   }, [player, playerId, priceRangeDays]);
-
-  const currentPrice = onChainPrice
-    ? parseFloat(formatUnits(onChainPrice as bigint, 6))
-    : (player as any)?.price || 10;
 
   const chartDataPrice = useMemo(() => {
     if (!priceHistory?.points?.length) return [];
@@ -284,7 +276,8 @@ export default function PlayerProfilePage() {
     const recentAvg = chartDataFpts.slice(mid).reduce((s, g) => s + g.fpts, 0) / (chartDataFpts.length - mid);
     percentChange = olderAvg > 0 ? ((recentAvg - olderAvg) / olderAvg) * 100 : 0;
   }
-  const priceChangeVsListing = ((currentPrice - 10) / 10) * 100;
+  const priceChangeVsListing =
+    currentPrice != null ? ((currentPrice - 10) / 10) * 100 : 0;
   const displayChange =
     chartMode === 'price'
       ? priceHistory?.range_change_pct ?? priceHistory?.vs_listing_pct ?? priceChangeVsListing
@@ -335,6 +328,17 @@ export default function PlayerProfilePage() {
           <ArrowLeft className="w-4 h-4" />
           Back to Market
         </Link>
+      </div>
+    );
+  }
+
+  if (currentPrice === null) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+          <span className="text-sm text-muted-foreground">Loading on-chain price…</span>
+        </div>
       </div>
     );
   }

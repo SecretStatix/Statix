@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
+import { Flame } from 'lucide-react';
 import { PlayerData } from './PlayerGrid';
 import { PlayerAvatar } from './PlayerAvatar';
 
@@ -35,9 +36,6 @@ export function HotPlayers({ players, loading }: HotPlayersProps) {
 
   if (hotPlayers.length === 0) return null;
 
-  // Triple the items for seamless looping
-  const tickerItems = [...hotPlayers, ...hotPlayers, ...hotPlayers];
-
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -48,7 +46,7 @@ export function HotPlayers({ players, loading }: HotPlayersProps) {
       <div className="flex gap-3 overflow-x-auto pb-1">
         {hotPlayers.map(player => (
             <Link
-              key={`${player.id}-${idx}`}
+              key={player.id}
               href={`/player/${player.id}`}
               className="flex items-center gap-2.5 shrink-0 px-5 hover:brightness-125 transition-all duration-150"
             >
