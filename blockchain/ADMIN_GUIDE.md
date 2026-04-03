@@ -13,7 +13,7 @@ All contract parameters are now configurable by the owner wallet without redeplo
 | `protocolFeeRecipient` | deployer | StatixRouter | Wallet that receives protocol fees |
 | `basePoolBps` | 2000 (20%) | DividendHub | % of dividends split to all holders (rest goes to outperformers) |
 | `faucetMode` | true (testnet) | DBucks | Whether free minting is enabled |
-| `faucetLimit` | 1,000 DBucks | DBucks | Max free mint per address |
+| `faucetLimit` | 100,000 DBucks | DBucks | Max free mint per address |
 | `defaultInitialShares` | 1,000 | PoolFactory | Starting shares for new player pools |
 | `defaultInitialCash` | $10,000 | PoolFactory | Starting cash for new player pools |
 | `tradingPaused` | false | StatixRouter | Global trading pause |
@@ -68,6 +68,8 @@ main().catch(console.error);
 ```
 
 ### Change Faucet Limit
+
+**Canonical values:** `frontend/lib/faucet-config.json` (`faucetLimitHuman`, `faucetUiMintPerClickHuman`). `deploy-statix.js` reads that file for `FAUCET_LIMIT`; redeploy or call `setFaucetMode` on an existing DBucks.
 
 ```javascript
 const hre = require("hardhat");

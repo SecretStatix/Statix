@@ -20,12 +20,13 @@ describe("Integration (full-stack)", function () {
   const FAUCET_LIMIT = 500_000n * SCALE;
   const SHARES = 10n * SCALE;
 
+  // Weekly fantasy projections (1e6 scale) — on-chain storage is weekly, not season/17
   const PROJECTIONS = [
-    1700n * SCALE,
-    3400n * SCALE,
-    5100n * SCALE,
-    1700n * SCALE,
-    3400n * SCALE,
+    100n * SCALE,
+    200n * SCALE,
+    300n * SCALE,
+    100n * SCALE,
+    200n * SCALE,
   ];
 
   async function deployFixture() {

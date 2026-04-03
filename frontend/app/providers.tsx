@@ -3,14 +3,14 @@
 import { PrivyProvider } from '@privy-io/react-auth';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig } from '@privy-io/wagmi';
-import { baseSepolia, base } from 'viem/chains';
+import { baseSepolia } from 'viem/chains';
 import { http } from 'wagmi';
 
+// Must match Privy `supportedChains` — see https://docs.privy.io/guide/react/wallets/usage/wagmi
 const wagmiConfig = createConfig({
-  chains: [baseSepolia, base],
+  chains: [baseSepolia],
   transports: {
     [baseSepolia.id]: http(),
-    [base.id]: http(),
   },
 });
 
@@ -31,7 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         },
         defaultChain: baseSepolia,
-        supportedChains: [baseSepolia, base],
+        supportedChains: [baseSepolia],
       }}
     >
       <QueryClientProvider client={queryClient}>

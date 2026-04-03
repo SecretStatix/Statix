@@ -15,6 +15,9 @@ interface IPlayerPool {
     function snapshotTotalShares() external returns (uint256);
     function snapshotUserHoldings(uint256 week, address user) external;
 
+    /// @notice Updates weekly fantasy projection (1e6 scale) for upcoming dividend weeks; hub only.
+    function setProjectedPoints(uint256 _projectedPoints) external;
+
     // --- Liquidity (called by Router) ---
     function addLiquidity(uint256 cashAmount) external returns (uint256 lpTokensMinted);
     function removeLiquidity(uint256 lpTokens) external returns (uint256 cashOut);

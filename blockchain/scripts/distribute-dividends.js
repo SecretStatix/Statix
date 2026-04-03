@@ -34,6 +34,8 @@ async function main() {
 
   const router = await hre.ethers.getContractAt("StatixRouter", routerAddress);
   const hub = await hre.ethers.getContractAt("DividendHub", hubAddress);
+  const factoryAddress = deployments.contracts.PoolFactory;
+  const factory = await hre.ethers.getContractAt("PoolFactory", factoryAddress);
 
   const currentWeek = await hub.currentWeek();
   console.log(`Current week: ${currentWeek}`);
@@ -119,35 +121,49 @@ async function main() {
   console.log("   Trading paused.");
 
   try {
-    // 3. Submit performance on-chain via Hub
-    console.log("\n3. Submitting performance data on-chain...");
+    // 3. First distribution: pools start with projectedPoints=0 — seed this week's projections from backend
+    const pool0Addr = await factory.pools(0);
+    const pool0 = await hre.ethers.getContractAt("IPlayerPool", pool0Addr);
+    const firstProj = await pool0.projectedPoints();
+    const thisWeekScaled = onChainData.this_week_projected_scaled;
+
+    if (firstProj === 0n && Array.isArray(thisWeekScaled) && thisWeekScaled.length > 0) {
+      console.log("\n3a. Seeding weekly projections for this scoring week (first run)...");
+      const seedTx = await hub.setNextWeekProjectionsBatch(
+        onChainData.player_indices.map((i) => BigInt(i)),
+        thisWeekScaled.map((v) => BigInt(v))
+      );
+      await seedTx.wait();
+      console.log("   Projections set on pools.");
+    }
+
+    // 3b. Submit performance on-chain via Hub (actual vs pool.projectedPoints for this week)
+    console.log("\n3b. Submitting performance data on-chain...");
     const setBatchTx = await hub.setWeeklyPerformanceBatch(
-      onChainData.player_indices,
+      onChainData.player_indices.map((i) => BigInt(i)),
       onChainData.actual_points_scaled.map((v) => BigInt(v))
     );
     await setBatchTx.wait();
     console.log("   Performance set!");
 
-    // 3b. Pick the top 10 outperformers by outperformance ratio
+    // 3c. Pick the top N outperformers using on-chain outperformance (matches contract math)
     const TOP_N = 10;
-    console.log(`\n3b. Selecting top ${TOP_N} outperformers...`);
+    console.log(`\n3c. Selecting top ${TOP_N} outperformers...`);
     const outperformers = [];
-    for (let i = 0; i < onChainData.player_indices.length; i++) {
-      const idx = onChainData.player_indices[i];
-      const player = deployments.players.find((p) => p.index === idx);
-      if (!player) continue;
-      const weeklyProj = player.season_projection / 17;
-      const actual = onChainData.actual_points_scaled[i] / 1e6;
-      if (weeklyProj > 0 && actual > weeklyProj) {
-        outperformers.push({ index: idx, outperf: (actual - weeklyProj) / weeklyProj });
+    for (const idx of onChainData.player_indices) {
+      const perf = await hub.weeklyPerformance(currentWeek, idx);
+      if (perf.outperformance > 0n) {
+        outperformers.push({ index: idx, outperf: perf.outperformance });
       }
     }
 
-    outperformers.sort((a, b) => b.outperf - a.outperf);
+    outperformers.sort((a, b) => (a.outperf < b.outperf ? 1 : a.outperf > b.outperf ? -1 : 0));
     const eligible = outperformers.slice(0, TOP_N);
 
     console.log(`   ${outperformers.length} outperformers total, top ${eligible.length} eligible:`);
-    eligible.forEach((e) => console.log(`     Player #${e.index}: +${(e.outperf * 100).toFixed(1)}%`));
+    eligible.forEach((e) =>
+      console.log(`     Player #${e.index}: outperformance=${e.outperf.toString()} (1e18 scale)`)
+    );
 
     const eligibleTx = await hub.setOutperformerEligible(eligible.map((e) => e.index));
     await eligibleTx.wait();
@@ -180,6 +196,21 @@ async function main() {
     await advanceTx.wait();
     const newWeek = await hub.currentWeek();
     console.log(`   Now on week ${newWeek}`);
+
+    const nextScaled = onChainData.next_week_projected_scaled;
+    if (Array.isArray(nextScaled) && nextScaled.length === onChainData.player_indices.length) {
+      console.log("\n6b. Setting next week's projected points on pools...");
+      const projTx = await hub.setNextWeekProjectionsBatch(
+        onChainData.player_indices.map((i) => BigInt(i)),
+        nextScaled.map((v) => BigInt(v))
+      );
+      await projTx.wait();
+      console.log("   Next week projections updated.");
+    } else {
+      console.warn(
+        "\n   Warning: next_week_projected_scaled missing or wrong length — run hub.setNextWeekProjectionsBatch manually before the next week."
+      );
+    }
 
     // Unpause trading
     const unpauseTx = await router.setTradingPaused(false);

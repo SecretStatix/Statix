@@ -251,6 +251,16 @@ def get_weekly_actuals(
     }
 
 
+def get_next_week_projection(nba_id: int, player: Dict) -> float:
+    """Projected fantasy points for the *upcoming* NBA week (next scoring window).
+
+    Wired into on-chain updates via DividendHub.setNextWeekProjectionsBatch.
+    Replace with a dedicated forecast feed when available.
+    """
+    # Default: reuse latest weekly estimate from deployment / cache
+    return float(player.get("weekly_projection") or 0)
+
+
 def generate_player_id(name: str) -> str:
     """Generate a clean ID from player name.
 

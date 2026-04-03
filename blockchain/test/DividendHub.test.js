@@ -12,10 +12,10 @@ describe("DividendHub (unit tests)", function () {
   const INIT_CASH = 10_000n * SCALE;
   const BPS = 10000n;
 
-  // Projected points chosen to divide cleanly by 17 for deterministic math
-  const PROJ_A = 1700n * SCALE; // weekly = 100 * SCALE
-  const PROJ_B = 3400n * SCALE; // weekly = 200 * SCALE
-  const PROJ_C = 5100n * SCALE; // weekly = 300 * SCALE
+  // Weekly fantasy projections (1e6 scale), stored on-chain per pool — not season/17
+  const PROJ_A = 100n * SCALE;
+  const PROJ_B = 200n * SCALE;
+  const PROJ_C = 300n * SCALE;
 
   const SHARES_BUY = 10n * SCALE;
 

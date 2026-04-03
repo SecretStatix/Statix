@@ -248,6 +248,8 @@ async def log_transaction(tx: TransactionLog):
     Log a completed on-chain transaction to Supabase.
     Public endpoint — blockchain is the source of truth; Supabase is for analytics/leaderboard.
     """
+    print("Recieved transaciton")
+    print(tx)
 
     row = {
         "wallet_address": tx.wallet_address,
@@ -270,6 +272,8 @@ async def log_transaction(tx: TransactionLog):
     else:
         store = get_store()
         store["transactions"].append(tx.model_dump())
+    
+    print("Transaction logged in supabase")
 
     return {"status": "logged"}
 
