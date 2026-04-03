@@ -94,7 +94,7 @@ export function PlayerGrid({ players, loading }: PlayerGridProps) {
             <div key={t.key} className="h-8 w-20 bg-secondary/50 rounded-lg animate-pulse shrink-0" />
           ))}
         </div>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="bg-card border border-border rounded-xl p-4 space-y-3 animate-pulse">
               <div className="flex items-center gap-3">
@@ -115,14 +115,14 @@ export function PlayerGrid({ players, loading }: PlayerGridProps) {
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto py-1">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
               activeTab === key
-                ? 'bg-primary/10 text-primary'
+                ? 'bg-primary/10 text-primary ring-1 ring-primary/25'
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
             }`}
           >
@@ -132,7 +132,7 @@ export function PlayerGrid({ players, loading }: PlayerGridProps) {
         <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">{filtered.length} players</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {filtered.map((player) => (
           <PlayerCard
             key={player.id}

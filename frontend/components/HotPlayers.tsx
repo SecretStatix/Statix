@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { Flame } from 'lucide-react';
 import { PlayerData } from './PlayerGrid';
 import { PlayerAvatar } from './PlayerAvatar';
 
@@ -20,48 +19,43 @@ export function HotPlayers({ players, loading }: HotPlayersProps) {
 
   if (loading) {
     return (
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="flex items-center gap-3 bg-card border border-white/[0.06] rounded-xl px-4 py-3 animate-pulse shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-secondary/70" />
-            <div className="space-y-1.5">
-              <div className="h-3.5 w-24 bg-secondary/70 rounded" />
-              <div className="h-3 w-16 bg-secondary/70 rounded" />
+      <div className="border-y border-white/[0.15] py-3">
+        <div className="flex items-center gap-10">
+          {[1, 2, 3, 4, 5, 6, 7].map(i => (
+            <div key={i} className="flex items-center gap-2 shrink-0 animate-pulse">
+              <div className="w-6 h-6 rounded-md bg-secondary/70" />
+              <div className="h-3.5 w-20 bg-secondary/70 rounded" />
+              <div className="h-3.5 w-14 bg-secondary/70 rounded" />
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
 
   if (hotPlayers.length === 0) return null;
 
+  // Triple the items for seamless looping
+  const tickerItems = [...hotPlayers, ...hotPlayers, ...hotPlayers];
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Flame className="w-4 h-4 text-orange-400" />
-        <h3 className="text-sm font-semibold text-foreground">Hot Players</h3>
-      </div>
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        {hotPlayers.map(player => {
+    <div className="border-y border-white/[0.15] py-2.5 overflow-hidden">
+      <div className="ticker-track flex items-center">
+        {tickerItems.map((player, idx) => {
           const pctChange = ((player.price - 10) / 10) * 100;
           const isPositive = pctChange >= 0;
           return (
             <Link
-              key={player.id}
+              key={`${player.id}-${idx}`}
               href={`/player/${player.id}`}
-              className="flex items-center gap-3 bg-card border border-white/[0.06] rounded-xl px-4 py-3 hover:border-primary/20 transition-all duration-200 shrink-0"
+              className="flex items-center gap-2.5 shrink-0 px-5 hover:brightness-125 transition-all duration-150"
             >
               <PlayerAvatar name={player.name} nbaId={player.nbaId} size="sm" />
-              <div>
-                <p className="text-sm font-medium text-foreground whitespace-nowrap">{player.name}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-foreground">${player.price.toFixed(2)}</span>
-                  <span className={`text-xs font-semibold ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                    {isPositive ? '+' : ''}{pctChange.toFixed(1)}%
-                  </span>
-                </div>
-              </div>
+              <span className="text-sm font-medium text-foreground whitespace-nowrap">{player.name}</span>
+              <span className="text-sm font-bold text-foreground">${player.price.toFixed(2)}</span>
+              <span className={`text-xs font-bold ${isPositive ? 'text-success' : 'text-destructive'}`}>
+                {isPositive ? '\u25B2' : '\u25BC'} {Math.abs(pctChange).toFixed(1)}%
+              </span>
             </Link>
           );
         })}
