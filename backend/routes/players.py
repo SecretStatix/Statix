@@ -14,6 +14,12 @@ from chain import get_deployment
 router = APIRouter()
 
 
+def _float_field(player: dict, key: str, default: float = 0.0) -> float:
+    """Coerce player[key] to float; missing or None uses default."""
+    v = player.get(key)
+    return default if v is None else float(v)
+
+
 class PlayerResponse(BaseModel):
     index: int
     id: str
@@ -66,12 +72,19 @@ async def list_players():
     if cache_path.exists():
         with open(cache_path) as f:
             data = json.load(f)
-            for p in data.get("players", []):
-                nba_cache[p["nba_id"]] = p
+            for row in data.get("players", []):
+                nba_cache[row["nba_id"]] = row
 
     result = []
     for p in players:
         cached = nba_cache.get(p.get("nba_id"))
+        wp = _float_field(p, "weekly_projection", 0.0)
+        fallback_avg = wp / 3.5
+        if cached:
+            afp = cached.get("avg_fantasy_points")
+            avg_fp = float(afp) if afp is not None else fallback_avg
+        else:
+            avg_fp = fallback_avg
         result.append(PlayerResponse(
             index=p["index"],
             id=p["id"],
@@ -80,9 +93,9 @@ async def list_players():
             symbol=p.get("symbol", ""),
             nba_id=p.get("nba_id", 0),
             position=cached.get("position", "F") if cached else "F",
-            avg_fantasy_points=cached.get("avg_fantasy_points", p.get("weekly_projection", 0) / 3.5) if cached else p.get("weekly_projection", 0) / 3.5,
-            weekly_projection=p.get("weekly_projection", 0),
-            season_projection=p.get("season_projection", 0),
+            avg_fantasy_points=avg_fp,
+            weekly_projection=wp,
+            season_projection=_float_field(p, "season_projection", 0.0),
             avg_stats=cached.get("avg_stats", {}) if cached else {},
         ))
 
