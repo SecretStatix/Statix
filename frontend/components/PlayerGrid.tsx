@@ -144,7 +144,7 @@ export function PlayerGrid({ players, loading }: PlayerGridProps) {
 
       {filtered.length === 0 && (
         <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border border-white/[0.06]">
-          No players match your search.
+          {search ? 'No players match your search.' : 'No players in this category.'}
         </div>
       )}
 

@@ -14,7 +14,7 @@ interface HotPlayersProps {
 export function HotPlayers({ players, loading }: HotPlayersProps) {
   const hotPlayers = useMemo(() => {
     return [...players]
-      .sort((a, b) => Math.abs(b.price - 10) - Math.abs(a.price - 10))
+      .sort((a, b) => b.avgFantasyPoints - a.avgFantasyPoints)
       .slice(0, 5);
   }, [players]);
 
@@ -38,15 +38,13 @@ export function HotPlayers({ players, loading }: HotPlayersProps) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Flame className="w-4 h-4 text-orange-400" />
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <Flame className="w-4 h-4 text-orange-400 shrink-0" />
         <h3 className="text-sm font-semibold text-foreground">Hot Players</h3>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wide">by avg fantasy / game</span>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-1">
-        {hotPlayers.map(player => {
-          const pctChange = ((player.price - 10) / 10) * 100;
-          const isPositive = pctChange >= 0;
-          return (
+        {hotPlayers.map(player => (
             <Link
               key={player.id}
               href={`/player/${player.id}`}
@@ -56,15 +54,12 @@ export function HotPlayers({ players, loading }: HotPlayersProps) {
               <div>
                 <p className="text-sm font-medium text-foreground whitespace-nowrap">{player.name}</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-foreground">${player.price.toFixed(2)}</span>
-                  <span className={`text-xs font-semibold ${isPositive ? 'text-success' : 'text-destructive'}`}>
-                    {isPositive ? '+' : ''}{pctChange.toFixed(1)}%
-                  </span>
+                  <span className="text-sm font-bold text-primary">{player.avgFantasyPoints.toFixed(1)} FP/G</span>
+                  <span className="text-xs text-muted-foreground">${player.price.toFixed(2)}</span>
                 </div>
               </div>
             </Link>
-          );
-        })}
+          ))}
       </div>
     </div>
   );

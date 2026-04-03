@@ -219,6 +219,25 @@ async def get_player_transactions(player_index: int, limit: int = 10, days: int 
     return txs[:limit]
 
 
+def _build_player_name_map() -> dict[int, str]:
+    """Build index→name lookup from deployments.json for filling NULL names."""
+    deployment = get_deployment()
+    if not deployment:
+        return {}
+    return {p["index"]: p["name"] for p in deployment.get("players", [])}
+
+
+def _fill_missing_names(txs: list[dict]) -> list[dict]:
+    """Patch transactions that have a NULL player_name with the deployment name."""
+    name_map: dict[int, str] | None = None
+    for tx in txs:
+        if not tx.get("player_name"):
+            if name_map is None:
+                name_map = _build_player_name_map()
+            tx["player_name"] = name_map.get(tx.get("player_index", -1))
+    return txs
+
+
 @router.get("/transactions/recent")
 async def get_recent_transactions(limit: int = Query(default=15, le=50)):
     """
@@ -234,12 +253,12 @@ async def get_recent_transactions(limit: int = Query(default=15, le=50)):
             .limit(limit)
             .execute()
         )
-        return res.data or []
+        return _fill_missing_names(res.data or [])
     # In-memory fallback
     store = get_store()
     txs = list(store.get("transactions", []))
     txs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-    return txs[:limit]
+    return _fill_missing_names(txs[:limit])
 
 
 @router.post("/log-transaction")
@@ -248,8 +267,14 @@ async def log_transaction(tx: TransactionLog):
     Log a completed on-chain transaction to Supabase.
     Public endpoint — blockchain is the source of truth; Supabase is for analytics/leaderboard.
     """
-    print("Recieved transaciton")
-    print(tx)
+    player_name = tx.player_name
+    if not player_name:
+        deployment = get_deployment()
+        if deployment:
+            for p in deployment.get("players", []):
+                if p["index"] == tx.player_index:
+                    player_name = p["name"]
+                    break
 
     row = {
         "wallet_address": tx.wallet_address,
@@ -259,8 +284,8 @@ async def log_transaction(tx: TransactionLog):
         "cost": tx.cost,
         "tx_hash": tx.tx_hash,
     }
-    if tx.player_name is not None:
-        row["player_name"] = tx.player_name
+    if player_name:
+        row["player_name"] = player_name
     if tx.fee is not None:
         row["fee"] = tx.fee
     if tx.price_per_share is not None:
@@ -272,8 +297,6 @@ async def log_transaction(tx: TransactionLog):
     else:
         store = get_store()
         store["transactions"].append(tx.model_dump())
-    
-    print("Transaction logged in supabase")
 
     return {"status": "logged"}
 
