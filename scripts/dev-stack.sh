@@ -6,8 +6,11 @@
 #   Requires blockchain/.env with PRIVATE_KEY (deployer) and test ETH on Base Sepolia for gas.
 #   Writes deployments.json → frontend/backend can read addresses; faucet is ON on testnet for DBucks mints.
 #
-# Requires a GUI terminal emulator. Tries: kitty, gnome-terminal, konsole, xfce4-terminal, xterm.
+# Requires a GUI terminal emulator.
+#   macOS: Terminal.app via osascript (default on Darwin)
+#   Linux: kitty, gnome-terminal, konsole, xfce4-terminal, xterm
 # Override: TERMINAL=gnome-terminal ./scripts/dev-stack.sh
+#           TERMINAL=Terminal.app ./scripts/dev-stack.sh   (same as default on Mac)
 
 set -euo pipefail
 
@@ -18,10 +21,17 @@ BACKEND_CMD="cd $(printf '%q' "$ROOT/backend") && ( [ -f venv/bin/activate ] && 
 CHAIN_CMD="cd $(printf '%q' "$ROOT/blockchain") && set -e && echo '' && echo '==> Deploying to Base Sepolia (chain 84532)' && echo '    Needs: PRIVATE_KEY in .env here, and Sepolia ETH on that wallet for gas.' && echo '' && npm run deploy:sepolia && echo '' && echo '==> Done. deployments.json updated. In the app: switch wallet to Base Sepolia, then mint DBucks / trade.'"
 FRONTEND_CMD="cd $(printf '%q' "$ROOT/frontend") && exec npm run dev"
 
+# Escape a string for use inside AppleScript double quotes (Terminal.app "do script").
+escape_for_applescript() {
+  printf '%s' "$1" | perl -pe 's/\\/\\\\/g; s/"/\\"/g'
+}
+
 TERMINAL="${TERMINAL:-}"
 
 if [[ -z "$TERMINAL" ]]; then
-  if command -v kitty >/dev/null 2>&1; then
+  if [[ "$(uname -s)" == "Darwin" ]] && [[ -d "/System/Applications/Utilities/Terminal.app" || -d "/Applications/Utilities/Terminal.app" ]]; then
+    TERMINAL=Terminal.app
+  elif command -v kitty >/dev/null 2>&1; then
     TERMINAL=kitty
   elif command -v gnome-terminal >/dev/null 2>&1; then
     TERMINAL=gnome-terminal
@@ -36,6 +46,20 @@ fi
 
 launch_three() {
   case "$TERMINAL" in
+    Terminal.app|terminal.app|macos)
+      # Each "do script" opens a new Terminal window. Use bash -lc like Linux (venv activate is bash-friendly).
+      macos_do_script() {
+        local full="bash -lc $(printf '%q' "$1")"
+        osascript -e "tell application \"Terminal\" to do script \"$(escape_for_applescript "$full")\""
+      }
+      osascript -e 'tell application "Terminal" to activate'
+      sleep 0.2
+      macos_do_script "$BACKEND_CMD"
+      sleep 0.3
+      macos_do_script "$CHAIN_CMD"
+      sleep 0.3
+      macos_do_script "$FRONTEND_CMD"
+      ;;
     kitty)
       kitty -T "Statix — Backend" -d "$ROOT/backend" bash -lc "$BACKEND_CMD" &
       sleep 0.3
@@ -92,8 +116,10 @@ if launch_three; then
 fi
 
 cat << EOF >&2
-No supported terminal found (tried kitty, gnome-terminal, konsole, xfce4-terminal, xterm).
-Install one, or set TERMINAL to a command that accepts: -e bash -lc 'CMD'
+No supported terminal found.
+  macOS: Terminal.app should be used automatically (or set TERMINAL=Terminal.app).
+  Linux: install one of kitty, gnome-terminal, konsole, xfce4-terminal, xterm,
+         or set TERMINAL to a command that accepts: -e bash -lc 'CMD'
 
 Run manually in three terminals:
 

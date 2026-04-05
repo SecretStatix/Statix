@@ -95,6 +95,9 @@ CREATE POLICY "Public read" ON users FOR SELECT USING (true);
 
 -- Service role write policies (only backend with service_role key can write)
 CREATE POLICY "Service insert" ON transactions FOR INSERT WITH CHECK (auth.role() = 'service_role');
+-- Required for chain indexer upserts (ON CONFLICT UPDATE) into `transactions`
+DROP POLICY IF EXISTS "Service update" ON transactions;
+CREATE POLICY "Service update" ON transactions FOR UPDATE USING (auth.role() = 'service_role');
 CREATE POLICY "Service insert" ON dividend_claims FOR INSERT WITH CHECK (auth.role() = 'service_role');
 CREATE POLICY "Service insert" ON weekly_performance FOR INSERT WITH CHECK (auth.role() = 'service_role');
 CREATE POLICY "Service upsert" ON weekly_performance FOR UPDATE USING (auth.role() = 'service_role');

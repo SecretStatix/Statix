@@ -8,6 +8,7 @@ from typing import List, Optional
 import json
 import logging
 import os
+from db import get_supabase
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 

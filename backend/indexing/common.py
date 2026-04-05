@@ -1,5 +1,7 @@
 """
-Shared StatixRouter indexer: RPC, logs → snapshot rows, Supabase upsert, backfill.
+Shared StatixRouter indexer: RPC, logs → pool_price_snapshots + transactions, Supabase upsert.
+
+`transactions` rows are derived from Buy/Sell events (single source of truth — no client POST).
 """
 
 from __future__ import annotations
@@ -32,6 +34,30 @@ BLOCK_CHUNK = int(os.getenv("INDEXER_BLOCK_CHUNK", "2000"))
 FIRST_LOOKBACK = int(os.getenv("INDEXER_FIRST_LOOKBACK", "50000"))
 FROM_BLOCK_ENV = os.getenv("INDEXER_FROM_BLOCK")
 UPSERT_BATCH = int(os.getenv("INDEXER_UPSERT_BATCH", "100"))
+
+# DBucks / share amounts on-chain use 6 decimals (match StatixRouter + DBucks).
+TOKEN_DECIMALS = 6
+_TOKEN_SCALE = Decimal(10) ** TOKEN_DECIMALS
+
+
+def _human_amount(raw: int) -> float:
+    return float(Decimal(raw) / _TOKEN_SCALE)
+
+
+def _tx_hash_hex(ev: object) -> str:
+    h = ev["transactionHash"]
+    if hasattr(h, "hex"):
+        hx = h.hex()
+        return hx if hx.startswith("0x") else "0x" + hx
+    s = str(h)
+    return s if s.startswith("0x") else "0x" + s
+
+
+def _player_index_to_name() -> dict[int, str]:
+    dep = get_deployment()
+    if not dep:
+        return {}
+    return {int(p["index"]): p["name"] for p in dep.get("players", [])}
 
 
 def load_state() -> dict:
@@ -127,7 +153,16 @@ def avg_price_dbucks_per_share(shares: int, amount: int) -> Decimal | None:
     return Decimal(amount) / Decimal(shares)
 
 
-def collect_snapshots(w3: Web3, router, from_block: int, to_block: int) -> list[dict]:
+def collect_trade_index_rows(
+    w3: Web3, router, from_block: int, to_block: int
+) -> tuple[list[dict], list[dict]]:
+    """
+    Fetch Buy/Sell logs in one pass. Build:
+    - pool_price_snapshots rows (AMM line chart)
+    - transactions rows (activity feed / history; keyed by tx_hash)
+
+    Buy `cost` column = total DBucks paid (actualCost + fee). Sell `cost` = net revenue to seller.
+    """
     buy_logs = list(router.events.Buy.get_logs(from_block=from_block, to_block=to_block))
     sell_logs = list(
         router.events.Sell.get_logs(from_block=from_block, to_block=to_block)
@@ -137,18 +172,32 @@ def collect_snapshots(w3: Web3, router, from_block: int, to_block: int) -> list[
     combined.extend(("sell", ev) for ev in sell_logs)
     combined.sort(key=lambda x: (x[1]["blockNumber"], x[1]["logIndex"]))
 
-    rows: list[dict] = []
+    snapshot_rows: list[dict] = []
+    transaction_rows: list[dict] = []
     block_ts_cache: dict[int, int] = {}
+    names = _player_index_to_name()
 
     for side, ev in combined:
         args = ev["args"]
         block_number = int(ev["blockNumber"])
         log_index = int(ev["logIndex"])
         pool_index = int(args["poolIndex"])
-        shares = int(args["shares"])
-        amount = int(args["cost"]) if side == "buy" else int(args["revenue"])
+        shares_raw = int(args["shares"])
+        tx_hash = _tx_hash_hex(ev)
 
-        price = avg_price_dbucks_per_share(shares, amount)
+        if side == "buy":
+            cost_raw = int(args["cost"])
+            fee_raw = int(args["fee"])
+            amount_for_price = cost_raw
+            total_paid_raw = cost_raw + fee_raw
+            wallet = args["buyer"]
+        else:
+            revenue_raw = int(args["revenue"])
+            fee_raw = int(args["fee"])
+            amount_for_price = revenue_raw
+            wallet = args["seller"]
+
+        price = avg_price_dbucks_per_share(shares_raw, amount_for_price)
         if price is None:
             continue
 
@@ -159,7 +208,7 @@ def collect_snapshots(w3: Web3, router, from_block: int, to_block: int) -> list[
         ts = block_ts_cache[block_number]
         dt = datetime.fromtimestamp(ts, tz=timezone.utc)
 
-        rows.append(
+        snapshot_rows.append(
             {
                 "pool_index": pool_index,
                 "price": float(price),
@@ -169,7 +218,40 @@ def collect_snapshots(w3: Web3, router, from_block: int, to_block: int) -> list[
             }
         )
 
-    return rows
+        shares_h = _human_amount(shares_raw)
+        fee_h = _human_amount(fee_raw)
+        if side == "buy":
+            cost_h = _human_amount(total_paid_raw)
+        else:
+            cost_h = _human_amount(revenue_raw)
+
+        price_per_share = (cost_h / shares_h) if shares_h > 0 else 0.0
+
+        wallet_lower = Web3.to_checksum_address(wallet).lower()
+
+        trow: dict = {
+            "wallet_address": wallet_lower,
+            "player_index": pool_index,
+            "side": side,
+            "shares": shares_h,
+            "cost": cost_h,
+            "tx_hash": tx_hash,
+            "fee": fee_h,
+            "price_per_share": price_per_share,
+            "created_at": dt.isoformat(),
+        }
+        pname = names.get(pool_index)
+        if pname:
+            trow["player_name"] = pname
+        transaction_rows.append(trow)
+
+    return snapshot_rows, transaction_rows
+
+
+def collect_snapshots(w3: Web3, router, from_block: int, to_block: int) -> list[dict]:
+    """Backward-compatible: snapshot rows only."""
+    snaps, _ = collect_trade_index_rows(w3, router, from_block, to_block)
+    return snaps
 
 
 def upsert_snapshot_rows(sb, rows: list[dict]) -> int:
@@ -186,6 +268,18 @@ def upsert_snapshot_rows(sb, rows: list[dict]) -> int:
     return total
 
 
+def upsert_transaction_rows(sb, rows: list[dict]) -> int:
+    """Insert/update `transactions` from chain events (unique on tx_hash)."""
+    if not rows:
+        return 0
+    total = 0
+    for i in range(0, len(rows), UPSERT_BATCH):
+        batch = rows[i : i + UPSERT_BATCH]
+        sb.table("transactions").upsert(batch, on_conflict="tx_hash").execute()
+        total += len(batch)
+    return total
+
+
 def sync_range(
     w3: Web3,
     router,
@@ -194,28 +288,35 @@ def sync_range(
     end: int,
     *,
     persist_state: bool,
-) -> int:
-    total_rows = 0
+) -> tuple[int, int]:
+    total_snap = 0
+    total_tx = 0
     a = start
     while a <= end:
         b = min(a + BLOCK_CHUNK - 1, end)
-        rows = collect_snapshots(w3, router, a, b)
-        if rows and sb is not None:
-            upsert_snapshot_rows(sb, rows)
-            total_rows += len(rows)
-        elif rows and sb is None:
-            print(f"Dry run: would upsert {len(rows)} rows (blocks {a}-{b})")
-            total_rows += len(rows)
+        snap_rows, tx_rows = collect_trade_index_rows(w3, router, a, b)
+        if sb is not None:
+            if snap_rows:
+                total_snap += upsert_snapshot_rows(sb, snap_rows)
+            if tx_rows:
+                total_tx += upsert_transaction_rows(sb, tx_rows)
+        elif snap_rows or tx_rows:
+            print(
+                f"Dry run: would upsert {len(snap_rows)} snapshot(s), "
+                f"{len(tx_rows)} transaction(s) (blocks {a}-{b})"
+            )
+            total_snap += len(snap_rows)
+            total_tx += len(tx_rows)
 
         if persist_state:
             save_state(b)
 
         a = b + 1
 
-    return total_rows
+    return total_snap, total_tx
 
 
-def catch_up_gap(sb) -> int:
+def catch_up_gap(sb) -> tuple[int, int]:
     """Index from last_processed+1 through safe_latest (for reconnect / WS drop)."""
     w3 = connect_w3_http()
     router = build_router_contract(w3)
@@ -225,7 +326,7 @@ def catch_up_gap(sb) -> int:
     safe = max(0, latest - CONFIRMATIONS)
     start = last + 1
     if start > safe:
-        return 0
+        return 0, 0
     return sync_range(w3, router, sb, start, safe, persist_state=True)
 
 
@@ -273,7 +374,7 @@ def run_backfill_once(
         f"Indexing blocks {start_block}..{safe_latest} (latest={latest}, confirmations={CONFIRMATIONS})"
     )
 
-    total = sync_range(
+    snap_n, tx_n = sync_range(
         w3,
         router,
         sb,
@@ -281,7 +382,10 @@ def run_backfill_once(
         safe_latest,
         persist_state=not dry_run,
     )
-    print(f"Done. Rows upserted: {total}. State file: {STATE_PATH} (updated={not dry_run})")
+    print(
+        f"Done. pool_price_snapshots: {snap_n}, transactions: {tx_n}. "
+        f"State file: {STATE_PATH} (updated={not dry_run})"
+    )
 
 
 def parse_head_number(head: dict[str, Any]) -> int:
@@ -293,19 +397,22 @@ def parse_head_number(head: dict[str, Any]) -> int:
     return int(n)
 
 
-def process_blocks_range(sb, from_b: int, to_b: int) -> int:
-    """Sync: index [from_b, to_b] inclusive. Returns rows written."""
+def process_blocks_range(sb, from_b: int, to_b: int) -> tuple[int, int]:
+    """Sync: index [from_b, to_b] inclusive. Returns (snapshot rows, transaction rows) written."""
     if from_b > to_b:
-        return 0
+        return 0, 0
     w3 = connect_w3_http()
     router = build_router_contract(w3)
-    n = 0
+    n_snap = 0
+    n_tx = 0
     for b in range(from_b, to_b + 1):
-        rows = collect_snapshots(w3, router, b, b)
-        if rows:
-            n += upsert_snapshot_rows(sb, rows)
+        snap_rows, tx_rows = collect_trade_index_rows(w3, router, b, b)
+        if snap_rows:
+            n_snap += upsert_snapshot_rows(sb, snap_rows)
+        if tx_rows:
+            n_tx += upsert_transaction_rows(sb, tx_rows)
         save_state(b)
-    return n
+    return n_snap, n_tx
 
 
 def process_confirmed_head(sb, head_block_number: int) -> None:
