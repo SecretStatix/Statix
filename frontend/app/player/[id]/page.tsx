@@ -524,12 +524,7 @@ export default function PlayerProfilePage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Trading panel + News — left */}
         <div className="lg:col-span-1 order-first lg:order-none space-y-6">
-          <PlayerTradingPanel
-            playerIndex={player.index}
-            playerId={player.id}
-            playerName={player.name}
-            price={price}
-          />
+          <PlayerTradingPanel playerIndex={player.index} price={price} />
 
           {/* News Section */}
           <div className="rounded-xl border border-white/[0.06] bg-card overflow-hidden">

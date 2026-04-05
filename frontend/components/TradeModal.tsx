@@ -15,7 +15,6 @@ import {
   useDBucksAllowance,
   useHoldings,
 } from '@/hooks/useContracts';
-import { logTransaction } from '@/lib/api';
 
 interface TradeModalProps {
   isOpen: boolean;
@@ -52,19 +51,14 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
   }, [isOpen, initialMode]);
 
   useEffect(() => {
+    // Closing modal
     if (bought || sold) {
-      const txHash = bought ? buyHash : sellHash;
-      const info = tradeInfoRef.current;
-      if (txHash && address && info) {
-        logTransaction(address, player.index, info.side, info.shares, info.total, txHash).catch(console.error);
-      }
       setTimeout(() => onClose(), 2000);
     }
   }, [bought, sold, buyHash, sellHash, address, player.index, onClose]);
-
   if (!isOpen) return null;
-
   // FIXME: under no scenario should there be a fallback towards frontend data, when blockchain doesn't respond.
+  // FIXME: should display error instead.
   let quote: { cost: number; fee: number; total: number; newPrice: number } | null = null;
 
   if (mode === 'buy' && buyQuoteData && shares > 0) {

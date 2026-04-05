@@ -63,30 +63,6 @@ export async function getQuote(playerIndex: number, shares: number, side: "buy" 
   });
 }
 
-export async function logTransaction(
-  walletAddress: string,
-  playerIndex: number,
-  side: string,
-  shares: number,
-  cost: number,
-  txHash: string,
-  playerName?: string
-) {
-  if (DEMO) return { success: true };
-  return fetchAPI("/api/trading/log-transaction", {
-    method: "POST",
-    body: JSON.stringify({
-      wallet_address: walletAddress,
-      player_index: playerIndex,
-      side,
-      shares,
-      cost,
-      tx_hash: txHash,
-      player_name: playerName,
-    }),
-  });
-}
-
 // Dividends (used by dividends page; leaderboard uses getLeaderboard)
 export async function getDividendConfig() {
   return fetchAPI("/api/dividends/config");
