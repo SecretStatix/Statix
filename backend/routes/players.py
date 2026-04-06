@@ -13,6 +13,7 @@ from pathlib import Path
 
 from nba_stats import fetch_top_players, calculate_fantasy_points, fetch_player_game_log, fetch_player_season_stats, generate_player_id
 from chain import get_deployment
+from db import get_supabase
 import logging
 
 logger = logging.getLogger(__name__)
