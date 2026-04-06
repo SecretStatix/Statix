@@ -294,18 +294,6 @@ def upsert_transaction_rows(sb, rows: list[dict]) -> int:
     return total
 
 
-def upsert_transaction_rows(sb, rows: list[dict]) -> int:
-    """Insert/update `transactions` from chain events (unique on tx_hash)."""
-    if not rows:
-        return 0
-    total = 0
-    for i in range(0, len(rows), UPSERT_BATCH):
-        batch = rows[i : i + UPSERT_BATCH]
-        sb.table("transactions").upsert(batch, on_conflict="tx_hash").execute()
-        total += len(batch)
-    return total
-
-
 def sync_range(
     w3: Web3,
     router,
