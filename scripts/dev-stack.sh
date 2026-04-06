@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Open three terminal windows: backend (uvicorn), deploy contracts to Base Sepolia, frontend (next dev).
+# Open four terminal windows: backend (uvicorn), chain indexer (StatixRouter logs → Supabase),
+# deploy contracts to Base Sepolia, frontend (next dev).
 # Usage: ./scripts/dev-stack.sh   (from repo root, or anywhere)
 #
 # Deploy uses: cd blockchain && npm run deploy:sepolia
@@ -18,6 +19,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 BACKEND_CMD="cd $(printf '%q' "$ROOT/backend") && ( [ -f venv/bin/activate ] && . venv/bin/activate; exec uvicorn main:app --reload --host 0.0.0.0 --port 8000 )"
+# HTTP poll every 3s — public Base RPC has no reliable WebSocket. Requires SUPABASE_SERVICE_ROLE_KEY in backend/.env.
+INDEXER_CMD="cd $(printf '%q' "$ROOT/backend") && ( [ -f venv/bin/activate ] && . venv/bin/activate; exec python index_statix_router_ws.py --poll-seconds 3 )"
 CHAIN_CMD="cd $(printf '%q' "$ROOT/blockchain") && set -e && echo '' && echo '==> Deploying to Base Sepolia (chain 84532)' && echo '    Needs: PRIVATE_KEY in .env here, and Sepolia ETH on that wallet for gas.' && echo '' && npm run deploy:sepolia && echo '' && echo '==> Done. deployments.json updated. In the app: switch wallet to Base Sepolia, then mint DBucks / trade.'"
 FRONTEND_CMD="cd $(printf '%q' "$ROOT/frontend") && exec npm run dev"
 
@@ -44,7 +47,7 @@ if [[ -z "$TERMINAL" ]]; then
   fi
 fi
 
-launch_three() {
+launch_stack() {
   case "$TERMINAL" in
     Terminal.app|terminal.app|macos)
       # Each "do script" opens a new Terminal window. Use bash -lc like Linux (venv activate is bash-friendly).
@@ -56,12 +59,16 @@ launch_three() {
       sleep 0.2
       macos_do_script "$BACKEND_CMD"
       sleep 0.3
+      macos_do_script "$INDEXER_CMD"
+      sleep 0.3
       macos_do_script "$CHAIN_CMD"
       sleep 0.3
       macos_do_script "$FRONTEND_CMD"
       ;;
     kitty)
       kitty -T "Statix — Backend" -d "$ROOT/backend" bash -lc "$BACKEND_CMD" &
+      sleep 0.3
+      kitty -T "Statix — Indexer" -d "$ROOT/backend" bash -lc "$INDEXER_CMD" &
       sleep 0.3
       kitty -T "Statix — Deploy Base Sepolia" -d "$ROOT/blockchain" bash -lc "$CHAIN_CMD" &
       sleep 0.3
@@ -74,6 +81,10 @@ launch_three() {
         --working-directory "$ROOT/backend" \
         -- bash -lc "$BACKEND_CMD" \
         --window \
+        --title "Statix — Indexer" \
+        --working-directory "$ROOT/backend" \
+        -- bash -lc "$INDEXER_CMD" \
+        --window \
         --title "Statix — Deploy Base Sepolia" \
         --working-directory "$ROOT/blockchain" \
         -- bash -lc "$CHAIN_CMD" \
@@ -85,6 +96,8 @@ launch_three() {
     konsole)
       konsole --separate --title "Statix — Backend" -e bash -lc "$BACKEND_CMD" &
       sleep 0.5
+      konsole --separate --title "Statix — Indexer" -e bash -lc "$INDEXER_CMD" &
+      sleep 0.5
       konsole --separate --title "Statix — Deploy Base Sepolia" -e bash -lc "$CHAIN_CMD" &
       sleep 0.5
       konsole --separate --title "Statix — Frontend" -e bash -lc "$FRONTEND_CMD" &
@@ -92,12 +105,15 @@ launch_three() {
     xfce4-terminal)
       xfce4-terminal --title "Statix — Backend" --working-directory "$ROOT/backend" -e bash -lc "$BACKEND_CMD" &
       sleep 0.3
+      xfce4-terminal --title "Statix — Indexer" --working-directory "$ROOT/backend" -e bash -lc "$INDEXER_CMD" &
+      sleep 0.3
       xfce4-terminal --title "Statix — Deploy Base Sepolia" --working-directory "$ROOT/blockchain" -e bash -lc "$CHAIN_CMD" &
       sleep 0.3
       xfce4-terminal --title "Statix — Frontend" --working-directory "$ROOT/frontend" -e bash -lc "$FRONTEND_CMD" &
       ;;
     xterm)
       xterm -title "Statix — Backend" -e bash -lc "$BACKEND_CMD" &
+      xterm -title "Statix — Indexer" -e bash -lc "$INDEXER_CMD" &
       xterm -title "Statix — Deploy Base Sepolia" -e bash -lc "$CHAIN_CMD" &
       xterm -title "Statix — Frontend" -e bash -lc "$FRONTEND_CMD" &
       ;;
@@ -107,9 +123,10 @@ launch_three() {
   esac
 }
 
-if launch_three; then
+if launch_stack; then
   echo "Launched stack with: $TERMINAL"
   echo "  Backend:    http://127.0.0.1:8000"
+  echo "  Indexer:    StatixRouter → pool_price_snapshots + transactions (needs SUPABASE_SERVICE_ROLE_KEY in backend/.env)"
   echo "  Deploy:     Base Sepolia (84532) — run completes, then use app on same chain"
   echo "  Frontend:   http://localhost:3000 (default Next port)"
   exit 0
@@ -121,16 +138,20 @@ No supported terminal found.
   Linux: install one of kitty, gnome-terminal, konsole, xfce4-terminal, xterm,
          or set TERMINAL to a command that accepts: -e bash -lc 'CMD'
 
-Run manually in three terminals:
+Run manually in four terminals:
 
   Terminal 1 — backend:
     cd $ROOT/backend && source venv/bin/activate 2>/dev/null || true
     uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-  Terminal 2 — deploy Base Sepolia:
+  Terminal 2 — indexer (chain → Supabase):
+    cd $ROOT/backend && source venv/bin/activate 2>/dev/null || true
+    python index_statix_router_ws.py --poll-seconds 3
+
+  Terminal 3 — deploy Base Sepolia:
     cd $ROOT/blockchain && npm run deploy:sepolia
 
-  Terminal 3 — frontend:
+  Terminal 4 — frontend:
     cd $ROOT/frontend && npm run dev
 EOF
 exit 1
