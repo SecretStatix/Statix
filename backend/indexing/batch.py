@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import sys
 import time
@@ -35,6 +36,11 @@ def main() -> None:
         help="Start from this block (overrides saved state; upserts dedupe)",
     )
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+    )
 
     if args.reset_state and STATE_PATH.exists():
         STATE_PATH.unlink()

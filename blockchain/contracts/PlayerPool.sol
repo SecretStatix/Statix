@@ -70,7 +70,6 @@ contract PlayerPool is IPlayerPool {
     }
 
     // ============== CONSTRUCTOR ==============
-
     constructor(
         address _paymentToken,
         address _router,

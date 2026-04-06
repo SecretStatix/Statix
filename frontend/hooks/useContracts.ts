@@ -246,7 +246,7 @@ export function useFaucetDBucks() {
       gas: GAS_FAUCET,
     });
   };
-
+  
   return { faucet, hash, isPending, isConfirming, isSuccess };
 }
 
