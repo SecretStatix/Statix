@@ -74,9 +74,13 @@ async def run_ws_loop(sb, *, fallback_poll: float) -> None:
         except Exception as e:
             logger.warning("WebSocket disconnected: %s — gap fill, reconnect in 5s", e)
             try:
-                n = await asyncio.to_thread(catch_up_gap, sb)
-                if n:
-                    logger.info("Gap fill: %s row(s) upserted", n)
+                snap_n, tx_n = await asyncio.to_thread(catch_up_gap, sb)
+                if snap_n or tx_n:
+                    logger.info(
+                        "Gap fill: %s snapshot(s), %s transaction(s) upserted",
+                        snap_n,
+                        tx_n,
+                    )
             except Exception:
                 logger.exception("catch_up_gap failed")
             await asyncio.sleep(5)

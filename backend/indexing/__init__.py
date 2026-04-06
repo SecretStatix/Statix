@@ -1,4 +1,4 @@
-"""StatixRouter chain indexer: snapshots → Supabase."""
+"""StatixRouter chain indexer: pool_price_snapshots + transactions → Supabase."""
 
 from .common import (
     STATE_PATH,
