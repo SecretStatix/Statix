@@ -9,7 +9,7 @@ Modular 6-contract system deployed via `scripts/deploy-statix.js`:
 - **PlayerPool.sol** — Per-player AMM pool (constant product x*y=k, virtual shares/cash)
 - **PoolFactory.sol** — Deploys and registers PlayerPool contracts
 - **StatixRouter.sol** — Single entry point for buy/sell, fees, pause, blacklist, allowlist, kill switch
-- **DividendHub.sol** — Weekly dividend distribution (20% base / 80% outperformer) and claims
+- **DividendHub.sol** — Periodic dividend distribution (20% base / 80% top 10 fantasy scorers) and claims
 - **DBucks.sol** — USDC-backed payment token with faucet mode for testnet
 - **MockUSDC.sol** — Test USDC (6 decimals)
 - **IPlayerPool.sol** — Interface for pool interactions
@@ -34,7 +34,7 @@ FastAPI server with 4 route groups:
 ## Key Technical Details
 - AMM: constant product (x*y=k), 1000 virtual shares, $10,000 virtual cash, $10/share starting price
 - Fees: 1.5% per trade → 67% to DividendHub, 33% to protocol
-- Dividends: 20% base (all holders), 80% outperformer (players beating projections)
+- Dividends: 20% base (all holders), 80% top performer pool (top 10 players by absolute fantasy points)
 - Token decimals: 6 (matching USDC)
 - Network: Base Sepolia (chain ID 84532)
 

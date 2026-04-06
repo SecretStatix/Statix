@@ -15,7 +15,7 @@ DIVIDEND_CONFIG = {
     "dividend_pool_pct": 0.67,   # 67% of fees to dividends
     "company_pct": 0.33,         # 33% to protocol
     "base_pct": 0.20,            # 20% of dividend pool to all holders
-    "outperformer_pct": 0.80,    # 80% to outperformer holders
+    "top_performer_pct": 0.80,   # 80% to top 10 fantasy point scorers' holders
 }
 
 

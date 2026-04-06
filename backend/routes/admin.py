@@ -9,7 +9,7 @@ from typing import List, Optional
 import hmac
 import os
 
-from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points, get_next_week_projection
+from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points
 from chain import get_deployment
 from db import get_supabase, get_store
 
@@ -41,8 +41,8 @@ class ManualPerformance(BaseModel):
 @router.post("/update-weekly-stats")
 async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
     """
-    Pull real NBA stats for the week and calculate fantasy points.
-    Returns data ready to be submitted on-chain.
+    Pull real NBA stats for the week and calculate actual fantasy points.
+    Returns data ready to be submitted on-chain (absolute FPts, no projections).
     """
     deployment = get_deployment()
     if not deployment:
@@ -58,14 +58,7 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
 
         try:
             weekly = get_weekly_actuals(nba_id, update.week_start, update.week_end)
-            weekly_projection = p.get("weekly_projection", 0)
             actual_points = weekly["total_fantasy_points"]
-
-            outperformance = 0
-            if weekly_projection > 0:
-                outperformance = (actual_points - weekly_projection) / weekly_projection
-
-            next_week_proj = get_next_week_projection(nba_id, p)
 
             results.append({
                 "player_index": p["index"],
@@ -73,9 +66,6 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
                 "nba_id": nba_id,
                 "games_played": weekly["games_played"],
                 "actual_points": round(actual_points, 2),
-                "projected_points": round(weekly_projection, 2),
-                "next_week_projected": round(next_week_proj, 2),
-                "outperformance": round(outperformance, 4),
             })
         except Exception as e:
             results.append({
@@ -93,18 +83,14 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
                     "week": update.week,
                     "player_index": r["player_index"],
                     "actual_points": r["actual_points"],
-                    "projected_points": r["projected_points"],
-                    "outperformance": r["outperformance"],
                     "games_played": r["games_played"],
                 }).execute()
 
-    # Format for on-chain submission (weekly fantasy points scaled 1e6, same units as actuals)
+    # Format for on-chain submission (fantasy points scaled 1e6)
     ok = [r for r in results if "error" not in r]
     on_chain_data = {
         "player_indices": [r["player_index"] for r in ok],
         "actual_points_scaled": [int(r["actual_points"] * 1e6) for r in ok],
-        "this_week_projected_scaled": [int(r["projected_points"] * 1e6) for r in ok],
-        "next_week_projected_scaled": [int(r["next_week_projected"] * 1e6) for r in ok],
     }
 
     return {

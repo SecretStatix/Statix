@@ -5,9 +5,9 @@
  *   WEEK_START=2025-02-10 WEEK_END=2025-02-16 npx hardhat run scripts/distribute-dividends.js --network base-sepolia
  *
  * Steps:
- *   1. Fetches actual NBA stats from backend API (aborts if unavailable)
+ *   1. Fetches actual NBA fantasy points from backend API (aborts if unavailable)
  *   2. Pauses trading via Router
- *   3. Submits performance data on-chain via DividendHub
+ *   3. Submits actual FPts on-chain, selects top 10 by absolute fantasy points
  *   4. Checks Hub balance
  *   5. Distributes dividends via DividendHub
  *   6. Advances to next week, unpauses trading
@@ -121,53 +121,38 @@ async function main() {
   console.log("   Trading paused.");
 
   try {
-    // 3. First distribution: pools start with projectedPoints=0 — seed this week's projections from backend
-    const pool0Addr = await factory.pools(0);
-    const pool0 = await hre.ethers.getContractAt("IPlayerPool", pool0Addr);
-    const firstProj = await pool0.projectedPoints();
-    const thisWeekScaled = onChainData.this_week_projected_scaled;
-
-    if (firstProj === 0n && Array.isArray(thisWeekScaled) && thisWeekScaled.length > 0) {
-      console.log("\n3a. Seeding weekly projections for this scoring week (first run)...");
-      const seedTx = await hub.setNextWeekProjectionsBatch(
-        onChainData.player_indices.map((i) => BigInt(i)),
-        thisWeekScaled.map((v) => BigInt(v))
-      );
-      await seedTx.wait();
-      console.log("   Projections set on pools.");
-    }
-
-    // 3b. Submit performance on-chain via Hub (actual vs pool.projectedPoints for this week)
-    console.log("\n3b. Submitting performance data on-chain...");
+    // 3. Submit actual fantasy points on-chain
+    console.log("\n3a. Submitting actual fantasy points on-chain...");
     const setBatchTx = await hub.setWeeklyPerformanceBatch(
       onChainData.player_indices.map((i) => BigInt(i)),
       onChainData.actual_points_scaled.map((v) => BigInt(v))
     );
     await setBatchTx.wait();
-    console.log("   Performance set!");
+    console.log("   Fantasy points set!");
 
-    // 3c. Pick the top N outperformers using on-chain outperformance (matches contract math)
+    // 3b. Rank all players by absolute fantasy points, select top N
     const TOP_N = 10;
-    console.log(`\n3c. Selecting top ${TOP_N} outperformers...`);
-    const outperformers = [];
-    for (const idx of onChainData.player_indices) {
-      const perf = await hub.weeklyPerformance(currentWeek, idx);
-      if (perf.outperformance > 0n) {
-        outperformers.push({ index: idx, outperf: perf.outperformance });
+    console.log(`\n3b. Selecting top ${TOP_N} performers by absolute fantasy points...`);
+    const players = [];
+    for (let i = 0; i < onChainData.player_indices.length; i++) {
+      const idx = onChainData.player_indices[i];
+      const fpts = BigInt(onChainData.actual_points_scaled[i]);
+      if (fpts > 0n) {
+        players.push({ index: idx, fpts });
       }
     }
 
-    outperformers.sort((a, b) => (a.outperf < b.outperf ? 1 : a.outperf > b.outperf ? -1 : 0));
-    const eligible = outperformers.slice(0, TOP_N);
+    players.sort((a, b) => (a.fpts < b.fpts ? 1 : a.fpts > b.fpts ? -1 : 0));
+    const eligible = players.slice(0, TOP_N);
 
-    console.log(`   ${outperformers.length} outperformers total, top ${eligible.length} eligible:`);
-    eligible.forEach((e) =>
-      console.log(`     Player #${e.index}: outperformance=${e.outperf.toString()} (1e18 scale)`)
+    console.log(`   ${players.length} active players, top ${eligible.length} eligible:`);
+    eligible.forEach((e, rank) =>
+      console.log(`     #${rank + 1} Player #${e.index}: ${hre.ethers.formatUnits(e.fpts, 6)} FPts`)
     );
 
-    const eligibleTx = await hub.setOutperformerEligible(eligible.map((e) => e.index));
+    const eligibleTx = await hub.setTopPerformerEligible(eligible.map((e) => e.index));
     await eligibleTx.wait();
-    console.log("   Eligible list submitted on-chain!");
+    console.log("   Top performers submitted on-chain!");
 
     // 4. Check Hub balance (accumulated fees from pools)
     const dbucksAddress = deployments.contracts.DBucks;
@@ -196,21 +181,6 @@ async function main() {
     await advanceTx.wait();
     const newWeek = await hub.currentWeek();
     console.log(`   Now on week ${newWeek}`);
-
-    const nextScaled = onChainData.next_week_projected_scaled;
-    if (Array.isArray(nextScaled) && nextScaled.length === onChainData.player_indices.length) {
-      console.log("\n6b. Setting next week's projected points on pools...");
-      const projTx = await hub.setNextWeekProjectionsBatch(
-        onChainData.player_indices.map((i) => BigInt(i)),
-        nextScaled.map((v) => BigInt(v))
-      );
-      await projTx.wait();
-      console.log("   Next week projections updated.");
-    } else {
-      console.warn(
-        "\n   Warning: next_week_projected_scaled missing or wrong length — run hub.setNextWeekProjectionsBatch manually before the next week."
-      );
-    }
 
     // Unpause trading
     const unpauseTx = await router.setTradingPaused(false);

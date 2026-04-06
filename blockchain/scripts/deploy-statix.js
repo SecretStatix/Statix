@@ -104,16 +104,13 @@ async function main() {
     const names = batch.map((p) => p.name);
     const symbols = batch.map((p) => p.symbol);
     const playerIds = batch.map((p) => p.id);
-    // Weekly projections are set off-chain each week via DividendHub.setNextWeekProjectionsBatch
-    // (see distribute-dividends.js). Deploy with 0.
-    const projections = batch.map(() => 0n);
 
     process.stdout.write(
       `   Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.map((p) => p.symbol).join(", ")}...`
     );
 
     gas = await getGasOverrides(deployer);
-    const tx = await factory.createPoolsBatch(names, symbols, playerIds, projections, gas);
+    const tx = await factory.createPoolsBatch(names, symbols, playerIds, gas);
     await tx.wait();
     console.log(" done");
     await delay(3000);

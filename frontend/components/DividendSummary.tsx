@@ -88,8 +88,8 @@ export function DividendSummary() {
             <span className="font-medium text-foreground">20% base pool</span> — shared across all shareholders by stake.
           </p>
           <p>
-            <span className="font-medium text-foreground">80% outperformer pool</span> — extra for holdings in players
-            who beat projections.
+            <span className="font-medium text-foreground">80% top performer pool</span> — extra for holdings in the top 10
+            fantasy point scorers each period.
           </p>
           <p className="text-xs text-muted-foreground/90 pt-1">
             Trading fees (1.5% on each trade; 67% to the dividend pool) fund distributions. Claims settle on-chain via

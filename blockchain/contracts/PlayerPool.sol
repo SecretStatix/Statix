@@ -36,8 +36,6 @@ contract PlayerPool is IPlayerPool {
     string public override name;
     string public override symbol;
     string public override playerId;
-    /// @notice Weekly fantasy projection (1e6 scale) for the week being scored; updated each cycle via DividendHub.
-    uint256 public override projectedPoints;
 
     uint256 public override virtualShares;
     uint256 public override virtualCash;
@@ -78,7 +76,6 @@ contract PlayerPool is IPlayerPool {
         string memory _name,
         string memory _symbol,
         string memory _playerId,
-        uint256 _projectedPoints,
         uint256 _initialShares,
         uint256 _initialCash
     ) {
@@ -88,15 +85,10 @@ contract PlayerPool is IPlayerPool {
         name = _name;
         symbol = _symbol;
         playerId = _playerId;
-        projectedPoints = _projectedPoints;
         virtualShares = _initialShares;
         virtualCash = _initialCash;
         totalLiquidity = _initialCash;
         active = true;
-    }
-
-    function setProjectedPoints(uint256 _projectedPoints) external override onlyHub {
-        projectedPoints = _projectedPoints;
     }
 
     // ============== FEE READS ==============

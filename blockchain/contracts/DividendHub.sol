@@ -15,6 +15,8 @@ import "./PoolFactory.sol";
  *         Accumulates fees from pools, manages weekly performance data,
  *         distributes dividends, and handles claims.
  *
+ * Top performers are determined by absolute fantasy points scored in the period.
+ * The top N players by total FPts receive the outperformer pool, weighted by their FPts.
  * Base/outperformer split is configurable via setBasePoolBps().
  */
 contract DividendHub is Ownable, ReentrancyGuard {
@@ -22,16 +24,14 @@ contract DividendHub is Ownable, ReentrancyGuard {
 
     // ============== STRUCTS ==============
     struct WeeklyPerformance {
-        uint256 actualPoints;    // Actual fantasy points (scaled 1e6)
-        uint256 projectedPoints; // Weekly projection (scaled 1e6)
-        int256 outperformance;   // (actual - projected) / projected (scaled 1e18)
+        uint256 actualPoints;    // Actual fantasy points scored in the period (scaled 1e6)
     }
 
     struct WeeklyDividend {
         uint256 totalPool;
         uint256 basePool;            // basePoolBps% of total
         uint256 outperformerPool;    // remainder
-        uint256 totalPositiveOutperf;
+        uint256 totalTopFpts;        // sum of actualPoints for eligible top performers
         bool distributed;
     }
 
@@ -94,6 +94,11 @@ contract DividendHub is Ownable, ReentrancyGuard {
     }
 
     // ============== ADMIN: PERFORMANCE ==============
+
+    /**
+     * @notice Submit actual fantasy points for each player in the current period.
+     *         No projections needed — top performers are ranked by absolute FPts.
+     */
     function setWeeklyPerformanceBatch(
         uint256[] calldata _poolIdxs,
         uint256[] calldata _actualPoints
@@ -105,40 +110,17 @@ contract DividendHub is Ownable, ReentrancyGuard {
             address poolAddr = factory.pools(idx);
             require(poolAddr != address(0), "Invalid pool");
 
-            IPlayerPool pool = IPlayerPool(poolAddr);
-            uint256 weeklyProjection = pool.projectedPoints();
-
-            int256 outperformance = 0;
-            if (weeklyProjection > 0) {
-                outperformance = (int256(_actualPoints[i]) - int256(weeklyProjection)) * 1e18 / int256(weeklyProjection);
-            }
-
             weeklyPerformance[currentWeek][idx] = WeeklyPerformance({
-                actualPoints: _actualPoints[i],
-                projectedPoints: weeklyProjection,
-                outperformance: outperformance
+                actualPoints: _actualPoints[i]
             });
         }
     }
 
     /**
-     * @notice After each week, set each pool's projection for the *next* scoring week (1e6 scale).
-     *         Pools are created with 0; seed before the first setWeeklyPerformanceBatch or via this call.
+     * @notice Mark the top N players (by absolute fantasy points) as eligible
+     *         for the outperformer dividend pool this period.
      */
-    function setNextWeekProjectionsBatch(
-        uint256[] calldata _poolIdxs,
-        uint256[] calldata _projectedWeeklyPointsScaled
-    ) external onlyOwner {
-        require(_poolIdxs.length == _projectedWeeklyPointsScaled.length, "Length mismatch");
-        for (uint256 i = 0; i < _poolIdxs.length; i++) {
-            uint256 idx = _poolIdxs[i];
-            address poolAddr = factory.pools(idx);
-            require(poolAddr != address(0), "Invalid pool");
-            IPlayerPool(poolAddr).setProjectedPoints(_projectedWeeklyPointsScaled[i]);
-        }
-    }
-
-    function setOutperformerEligible(uint256[] calldata _poolIdxs) external onlyOwner {
+    function setTopPerformerEligible(uint256[] calldata _poolIdxs) external onlyOwner {
         for (uint256 i = 0; i < _poolIdxs.length; i++) {
             outperformerEligible[currentWeek][_poolIdxs[i]] = true;
         }
@@ -158,7 +140,7 @@ contract DividendHub is Ownable, ReentrancyGuard {
         wd.basePool = (totalFees * basePoolBps) / BPS;
         wd.outperformerPool = totalFees - wd.basePool;
 
-        uint256 totalPositive = 0;
+        uint256 totalTopFpts = 0;
         uint256 count = factory.poolCount();
 
         for (uint256 i = 0; i < count; i++) {
@@ -169,13 +151,13 @@ contract DividendHub is Ownable, ReentrancyGuard {
             uint256 ts = IPlayerPool(poolAddr).snapshotTotalShares();
             weekEndTotalShares[currentWeek][i] = ts;
 
-            int256 op = weeklyPerformance[currentWeek][i].outperformance;
-            if (op > 0 && outperformerEligible[currentWeek][i]) {
-                totalPositive += uint256(op);
+            // Sum absolute FPts for eligible top performers (weight for pool share)
+            if (outperformerEligible[currentWeek][i]) {
+                totalTopFpts += weeklyPerformance[currentWeek][i].actualPoints;
             }
         }
 
-        wd.totalPositiveOutperf = totalPositive;
+        wd.totalTopFpts = totalTopFpts;
         wd.distributed = true;
 
         emit DividendsDistributed(currentWeek, wd.totalPool, wd.basePool, wd.outperformerPool);
@@ -212,19 +194,21 @@ contract DividendHub is Ownable, ReentrancyGuard {
         return pool.holdings(_user);
     }
 
-    function _calcOutperformerDiv(
+    function _calcTopPerformerDiv(
         uint256 _week,
         uint256 _poolIdx,
         uint256 _userShares,
         uint256 _outperformerPool,
-        uint256 _totalPositiveOutperf
+        uint256 _totalTopFpts
     ) internal view returns (uint256) {
-        if (_totalPositiveOutperf == 0 || _userShares == 0) return 0;
+        if (_totalTopFpts == 0 || _userShares == 0) return 0;
+        if (!outperformerEligible[_week][_poolIdx]) return 0;
         uint256 playerTotal = weekEndTotalShares[_week][_poolIdx];
         if (playerTotal == 0) return 0;
-        int256 op = weeklyPerformance[_week][_poolIdx].outperformance;
-        if (op <= 0 || !outperformerEligible[_week][_poolIdx]) return 0;
-        uint256 playerPool = (_outperformerPool * uint256(op)) / _totalPositiveOutperf;
+        uint256 fpts = weeklyPerformance[_week][_poolIdx].actualPoints;
+        if (fpts == 0) return 0;
+        // Player's share of the pool, weighted by their absolute fantasy points
+        uint256 playerPool = (_outperformerPool * fpts) / _totalTopFpts;
         return (playerPool * _userShares) / playerTotal;
     }
 
@@ -232,7 +216,7 @@ contract DividendHub is Ownable, ReentrancyGuard {
         WeeklyDividend storage wd = weeklyDividends[_week];
         if (!wd.distributed || wd.totalPool == 0) return 0;
 
-        uint256 outperformerDividend = 0;
+        uint256 topPerformerDividend = 0;
         uint256 totalUserShares = 0;
         uint256 totalAllShares = 0;
         uint256 count = factory.poolCount();
@@ -244,8 +228,8 @@ contract DividendHub is Ownable, ReentrancyGuard {
             totalUserShares += userShares;
             totalAllShares += playerTotal;
 
-            outperformerDividend += _calcOutperformerDiv(
-                _week, i, userShares, wd.outperformerPool, wd.totalPositiveOutperf
+            topPerformerDividend += _calcTopPerformerDiv(
+                _week, i, userShares, wd.outperformerPool, wd.totalTopFpts
             );
         }
 
@@ -254,7 +238,7 @@ contract DividendHub is Ownable, ReentrancyGuard {
             baseDividend = (wd.basePool * totalUserShares) / totalAllShares;
         }
 
-        return baseDividend + outperformerDividend;
+        return baseDividend + topPerformerDividend;
     }
 
     function claimDividend(uint256 _week) external nonReentrant {

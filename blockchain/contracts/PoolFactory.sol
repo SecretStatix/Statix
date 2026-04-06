@@ -59,38 +59,34 @@ contract PoolFactory is Ownable {
     function createPool(
         string calldata _name,
         string calldata _symbol,
-        string calldata _playerId,
-        uint256 _projectedPoints
+        string calldata _playerId
     ) external onlyOwner returns (address pool) {
-        return _createPool(_name, _symbol, _playerId, _projectedPoints, defaultInitialShares, defaultInitialCash);
+        return _createPool(_name, _symbol, _playerId, defaultInitialShares, defaultInitialCash);
     }
 
     function createPoolWithParams(
         string calldata _name,
         string calldata _symbol,
         string calldata _playerId,
-        uint256 _projectedPoints,
         uint256 _initialShares,
         uint256 _initialCash
     ) external onlyOwner returns (address pool) {
-        return _createPool(_name, _symbol, _playerId, _projectedPoints, _initialShares, _initialCash);
+        return _createPool(_name, _symbol, _playerId, _initialShares, _initialCash);
     }
 
     function createPoolsBatch(
         string[] calldata _names,
         string[] calldata _symbols,
-        string[] calldata _playerIds,
-        uint256[] calldata _projectedPoints
+        string[] calldata _playerIds
     ) external onlyOwner {
         require(
             _names.length == _symbols.length &&
-            _names.length == _playerIds.length &&
-            _names.length == _projectedPoints.length,
+            _names.length == _playerIds.length,
             "Array length mismatch"
         );
 
         for (uint256 i = 0; i < _names.length; i++) {
-            _createPool(_names[i], _symbols[i], _playerIds[i], _projectedPoints[i], defaultInitialShares, defaultInitialCash);
+            _createPool(_names[i], _symbols[i], _playerIds[i], defaultInitialShares, defaultInitialCash);
         }
     }
 
@@ -98,7 +94,6 @@ contract PoolFactory is Ownable {
         string memory _name,
         string memory _symbol,
         string memory _playerId,
-        uint256 _projectedPoints,
         uint256 _initialShares,
         uint256 _initialCash
     ) internal returns (address pool) {
@@ -113,7 +108,6 @@ contract PoolFactory is Ownable {
             _name,
             _symbol,
             _playerId,
-            _projectedPoints,
             _initialShares,
             _initialCash
         );

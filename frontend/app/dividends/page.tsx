@@ -12,7 +12,7 @@ export default function DividendsPage() {
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Dividends</p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Weekly distributions</h1>
         <p className="max-w-lg text-sm text-muted-foreground">
-          Claim your share of fee-funded pools — base allocation plus outperform bonuses.
+          Claim your share of fee-funded pools — base allocation plus top performer bonuses.
         </p>
       </header>
 

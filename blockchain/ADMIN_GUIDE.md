@@ -11,7 +11,7 @@ All contract parameters are now configurable by the owner wallet without redeplo
 | `feeBps` | 150 (1.5%) | StatixRouter | Total fee charged per trade |
 | `dividendFeeBps` | 6700 (67%) | StatixRouter | % of fee that goes to dividend pool (rest goes to protocol) |
 | `protocolFeeRecipient` | deployer | StatixRouter | Wallet that receives protocol fees |
-| `basePoolBps` | 2000 (20%) | DividendHub | % of dividends split to all holders (rest goes to outperformers) |
+| `basePoolBps` | 2000 (20%) | DividendHub | % of dividends split to all holders (rest goes to top 10 performers) |
 | `faucetMode` | true (testnet) | DBucks | Whether free minting is enabled |
 | `faucetLimit` | 100,000 DBucks | DBucks | Max free mint per address |
 | `defaultInitialShares` | 1,000 | PoolFactory | Starting shares for new player pools |
@@ -59,7 +59,7 @@ const deployments = require("../deployments.json");
 async function main() {
   const hub = await hre.ethers.getContractAt("DividendHub", deployments.contracts.DividendHub);
 
-  // Change to 30% base pool, 70% outperformer pool
+  // Change to 30% base pool, 70% top performer pool
   await (await hub.setBasePoolBps(3000)).wait();
   console.log("Dividend split updated to 30/70");
 }
@@ -98,14 +98,10 @@ const deployments = require("../deployments.json");
 async function main() {
   const factory = await hre.ethers.getContractAt("PoolFactory", deployments.contracts.PoolFactory);
 
-  // seasonProjection scaled by 1e6
-  const projectedPoints = BigInt(Math.round(1800 * 1e6));
-
   await (await factory.createPool(
     "Victor Wembanyama",  // name
     "VW1",                // symbol
     "wembanyama_1",       // unique player ID
-    projectedPoints
   )).wait();
 
   console.log("Player added. New pool count:", (await factory.poolCount()).toString());
@@ -202,10 +198,10 @@ A protected page in the existing Next.js frontend at `/admin`. Uses the same Pri
 │   └── Protocol fee recipient: 0x... [input] [Update]
 │
 ├── Dividend Config
-│   └── Base/Outperformer split: 20/80 [input] [Update]
+│   └── Base/Top Performer split: 20/80 [input] [Update]
 │
 ├── Player Management
-│   ├── Add Player [form: name, symbol, id, projection]
+│   ├── Add Player [form: name, symbol, id]
 │   ├── Deactivate Player [dropdown] [Toggle]
 │   └── Reset Pool [dropdown, shares, cash] [Reset]
 │
@@ -320,8 +316,8 @@ After this, your deployer wallet loses all admin access. All changes go through 
 | Change trade fee | `setFeeBps(uint256)` | StatixRouter |
 | Change dividend/protocol split | `setDividendFeeBps(uint256)` | StatixRouter |
 | Change fee recipient | `setProtocolFeeRecipient(address)` | StatixRouter |
-| Change base/outperformer split | `setBasePoolBps(uint256)` | DividendHub |
-| Add a player | `createPool(name, symbol, id, points)` | PoolFactory |
+| Change base/top-performer split | `setBasePoolBps(uint256)` | DividendHub |
+| Add a player | `createPool(name, symbol, id)` | PoolFactory |
 | Remove a player | `setPlayerActive(index, false)` | StatixRouter |
 | Pause all trading | `setTradingPaused(true)` | StatixRouter |
 | Ban a user | `setBlacklist(address, true)` | StatixRouter |
