@@ -8,12 +8,9 @@ import logging
 
 from websockets.exceptions import InvalidStatus
 
-from .common import (
-    catch_up_gap,
-    parse_head_number,
-    process_confirmed_head,
-    websocket_url_for_indexer,
-)
+from .rpc import websocket_url_for_indexer
+from .sync import catch_up_gap, process_confirmed_head
+from .transform import parse_head_number
 from .poll import run_poll_loop
 
 logger = logging.getLogger("statix_indexer.websocket")

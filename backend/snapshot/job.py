@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from db import create_supabase_service_client
-from indexing.common import connect_w3_http
+from indexing.rpc import connect_w3_http
 
 from .chain_read import compute_wallet_nav
 

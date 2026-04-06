@@ -7,13 +7,9 @@ import logging
 import os
 import sys
 import time
-from pathlib import Path
 
-from dotenv import load_dotenv
-
-load_dotenv(Path(__file__).parent.parent / ".env")
-
-from .common import STATE_PATH, run_backfill_once
+from .config import STATE_PATH
+from .sync import run_backfill_once
 
 
 def main() -> None:

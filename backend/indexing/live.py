@@ -7,13 +7,8 @@ import asyncio
 import logging
 import os
 import sys
-from pathlib import Path
 
-from dotenv import load_dotenv
-
-load_dotenv(Path(__file__).parent.parent / ".env")
-
-from .common import run_backfill_once
+from .sync import run_backfill_once
 from .poll import run_poll_loop
 from .websocket import run_ws_loop
 
@@ -23,7 +18,7 @@ DEFAULT_POLL_SECONDS = float(os.getenv("INDEXER_POLL_SECONDS", "0"))
 POLL_FALLBACK_SECONDS = float(os.getenv("INDEXER_POLL_FALLBACK_SECONDS", "3"))
 
 
-async def  run_live_indexer(
+async def run_live_indexer(
     sb,
     *,
     poll_seconds: float | None,

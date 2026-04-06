@@ -8,7 +8,7 @@ from typing import Tuple
 from web3 import Web3
 
 from chain import get_abi, get_deployment
-from indexing.common import connect_w3_http
+from indexing.rpc import connect_w3_http
 
 logger = logging.getLogger("statix_snapshot.chain_read")
 
@@ -18,7 +18,7 @@ USDC_DECIMALS = 6
 def compute_wallet_nav(w3: Web3, wallet_address: str) -> Tuple[float, float, float] | None:
     """
     Returns (net_worth, cash_dbucks, positions_value) in human float DBucks, or None on failure.
-    Caller supplies a connected Web3 (use indexing.common.connect_w3_http() for RPC fallback).
+    Caller supplies a connected Web3 (use indexing.rpc.connect_w3_http() for RPC fallback).
     """
     deployment = get_deployment()
     if not deployment or not deployment.get("contracts"):

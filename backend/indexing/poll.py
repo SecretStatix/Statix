@@ -5,7 +5,10 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from .common import CONFIRMATIONS, connect_w3_http, load_state, process_blocks_range
+from .config import CONFIRMATIONS
+from .rpc import connect_w3_http
+from .state import last_processed_block, load_state
+from .sync import process_blocks_range
 
 logger = logging.getLogger("statix_indexer.poll")
 
@@ -19,11 +22,7 @@ async def run_poll_loop(sb, interval: float) -> None:
             latest = w3.eth.block_number
             safe = latest - CONFIRMATIONS
             st = load_state()
-            last = (
-                int(st["last_processed_block"])
-                if st.get("last_processed_block") is not None
-                else -1
-            )
+            last = last_processed_block(st)
             if safe <= last:
                 continue
             await asyncio.to_thread(process_blocks_range, sb, last + 1, safe)
