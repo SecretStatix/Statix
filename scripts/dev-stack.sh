@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Open four terminal windows: backend (uvicorn), chain indexer, deploy to Base Sepolia, frontend.
+# Open four terminal windows: backend (uvicorn), chain indexer (StatixRouter logs → Supabase),
+# deploy contracts to Base Sepolia, frontend (next dev).
 # Usage: ./scripts/dev-stack.sh   (from repo root, or anywhere)
 #
 # Deploy uses: cd blockchain && npm run deploy:sepolia
@@ -26,6 +27,7 @@ INDEXER_CMD="cd $(printf '%q' "$ROOT/backend") && ( [ -f venv/bin/activate ] && 
 CHAIN_CMD="cd $(printf '%q' "$ROOT/blockchain") && set -e && echo '' && echo '==> Deploying to Base Sepolia (chain 84532)' && echo '    Needs: PRIVATE_KEY in .env here, and Sepolia ETH on that wallet for gas.' && echo '' && npm run deploy:sepolia && echo '' && echo '==> Done. deployments.json updated. In the app: switch wallet to Base Sepolia, then mint DBucks / trade.'"
 FRONTEND_CMD="cd $(printf '%q' "$ROOT/frontend") && exec npm run dev"
 
+# Escape a string for use inside AppleScript double quotes (Terminal.app "do script").
 escape_for_applescript() {
   printf '%s' "$1" | perl -pe 's/\\/\\\\/g; s/"/\\"/g'
 }
@@ -51,6 +53,7 @@ fi
 launch_stack() {
   case "$TERMINAL" in
     Terminal.app|terminal.app|macos)
+      # Each "do script" opens a new Terminal window. Use bash -lc like Linux (venv activate is bash-friendly).
       macos_do_script() {
         local full="bash -lc $(printf '%q' "$1")"
         osascript -e "tell application \"Terminal\" to do script \"$(escape_for_applescript "$full")\""
@@ -126,7 +129,7 @@ launch_stack() {
 if launch_stack; then
   echo "Launched stack with: $TERMINAL"
   echo "  Backend:    http://127.0.0.1:8000"
-  echo "  Indexer:    StatixRouter → Supabase (needs SUPABASE_SERVICE_ROLE_KEY in backend/.env)"
+  echo "  Indexer:    StatixRouter → pool_price_snapshots + transactions (needs SUPABASE_SERVICE_ROLE_KEY in backend/.env)"
   echo "  Deploy:     Base Sepolia (84532) — run completes, then use app on same chain"
   echo "  Frontend:   http://localhost:3000 (default Next port)"
   exit 0
@@ -144,7 +147,7 @@ Run manually in four terminals:
     cd $ROOT/backend && source venv/bin/activate 2>/dev/null || true
     uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-  Terminal 2 — indexer:
+  Terminal 2 — indexer (chain → Supabase):
     cd $ROOT/backend && source venv/bin/activate 2>/dev/null || true
     python index_statix_router_ws.py --poll-seconds 3
 

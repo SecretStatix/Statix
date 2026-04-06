@@ -23,7 +23,7 @@ DEFAULT_POLL_SECONDS = float(os.getenv("INDEXER_POLL_SECONDS", "0"))
 POLL_FALLBACK_SECONDS = float(os.getenv("INDEXER_POLL_FALLBACK_SECONDS", "3"))
 
 
-async def run_live_indexer(
+async def  run_live_indexer(
     sb,
     *,
     poll_seconds: float | None,

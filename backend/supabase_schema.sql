@@ -95,6 +95,7 @@ CREATE POLICY "Public read" ON users FOR SELECT USING (true);
 
 -- Service role write policies (only backend with service_role key can write)
 CREATE POLICY "Service insert" ON transactions FOR INSERT WITH CHECK (auth.role() = 'service_role');
+-- Required for chain indexer upserts (ON CONFLICT UPDATE) into `transactions`
 DROP POLICY IF EXISTS "Service update" ON transactions;
 CREATE POLICY "Service update" ON transactions FOR UPDATE USING (auth.role() = 'service_role');
 CREATE POLICY "Service insert" ON dividend_claims FOR INSERT WITH CHECK (auth.role() = 'service_role');
@@ -131,3 +132,25 @@ CREATE INDEX IF NOT EXISTS idx_pool_price_snapshots_pool_time
 ALTER TABLE pool_price_snapshots ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read" ON pool_price_snapshots FOR SELECT USING (true);
 CREATE POLICY "Service insert" ON pool_price_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
+
+-- ============================================================
+-- Wallet portfolio snapshots (cron job: hourly NAV per wallet)
+-- net_worth = cash_dbucks + positions_value (all DBucks, 6dp on-chain → float here)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS wallet_portfolio_snapshots (
+    id BIGSERIAL PRIMARY KEY,
+    wallet_address TEXT NOT NULL,
+    snapshot_at TIMESTAMPTZ NOT NULL,
+    net_worth NUMERIC NOT NULL,
+    cash_dbucks NUMERIC NOT NULL,
+    positions_value NUMERIC NOT NULL,
+    UNIQUE (wallet_address, snapshot_at)
+);
+
+CREATE INDEX IF NOT EXISTS idx_wallet_portfolio_snapshots_wallet_time
+    ON wallet_portfolio_snapshots (wallet_address, snapshot_at DESC);
+
+ALTER TABLE wallet_portfolio_snapshots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read" ON wallet_portfolio_snapshots FOR SELECT USING (true);
+CREATE POLICY "Service insert" ON wallet_portfolio_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
+CREATE POLICY "Service update" ON wallet_portfolio_snapshots FOR UPDATE USING (auth.role() = 'service_role');

@@ -166,9 +166,7 @@ export function PortfolioCharts({ totalValue, seedKey, allocation }: PortfolioCh
           </div>
         </div>
 
-        <p className="mt-1 px-5 text-[10px] text-muted-foreground/50 sm:px-8">
-          Not historical performance — derived from your current balance.
-        </p>
+  
 
         <div className="relative mx-5 mb-5 mt-3 h-[260px] overflow-hidden rounded-xl bg-[#0c0d11] sm:mx-8 sm:mb-6">
           {totalValue <= 0 ? (

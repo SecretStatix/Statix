@@ -7,6 +7,7 @@ Shared StatixRouter indexer: RPC, logs → pool_price_snapshots + transactions, 
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 from datetime import datetime, timezone
@@ -22,6 +23,8 @@ from web3 import Web3
 
 from chain import get_abi, get_deployment
 
+logger = logging.getLogger("statix_indexer.common")
+
 BACKEND_DIR = Path(__file__).parent.parent.resolve()
 STATE_PATH = BACKEND_DIR / "indexer_state.json"
 
@@ -35,7 +38,7 @@ FIRST_LOOKBACK = int(os.getenv("INDEXER_FIRST_LOOKBACK", "50000"))
 FROM_BLOCK_ENV = os.getenv("INDEXER_FROM_BLOCK")
 UPSERT_BATCH = int(os.getenv("INDEXER_UPSERT_BATCH", "100"))
 
-# DBucks / share amounts on-chain use 6 decimals (StatixRouter + DBucks).
+# DBucks / share amounts on-chain use 6 decimals (match StatixRouter + DBucks).
 TOKEN_DECIMALS = 6
 _TOKEN_SCALE = Decimal(10) ** TOKEN_DECIMALS
 
@@ -158,8 +161,10 @@ def collect_trade_index_rows(
 ) -> tuple[list[dict], list[dict]]:
     """
     Fetch Buy/Sell logs in one pass. Build:
-    - pool_price_snapshots (AMM line chart)
-    - transactions (activity feed; unique on tx_hash)
+    - pool_price_snapshots rows (AMM line chart)
+    - transactions rows (activity feed / history; unique on tx_hash)
+
+    Buy `cost` column = total DBucks paid (cost + fee). Sell `cost` = net revenue to seller.
     """
     buy_logs = list(router.events.Buy.get_logs(from_block=from_block, to_block=to_block))
     sell_logs = list(
@@ -262,6 +267,29 @@ def upsert_snapshot_rows(sb, rows: list[dict]) -> int:
             batch,
             on_conflict="block_number,log_index",
         ).execute()
+        logger.info(
+            "Upserted %d row(s) into pool_price_snapshots (blocks %s–%s)",
+            len(batch),
+            batch[0]["block_number"],
+            batch[-1]["block_number"],
+        )
+        total += len(batch)
+    return total
+
+
+def upsert_transaction_rows(sb, rows: list[dict]) -> int:
+    """Insert/update `transactions` from chain events (unique on tx_hash)."""
+    if not rows:
+        return 0
+    total = 0
+    for i in range(0, len(rows), UPSERT_BATCH):
+        batch = rows[i : i + UPSERT_BATCH]
+        sb.table("transactions").upsert(batch, on_conflict="tx_hash").execute()
+        logger.info(
+            "Upserted %d row(s) into transactions (tx hashes e.g. %s…)",
+            len(batch),
+            batch[0]["tx_hash"][:18],
+        )
         total += len(batch)
     return total
 
@@ -396,7 +424,7 @@ def parse_head_number(head: dict[str, Any]) -> int:
 
 
 def process_blocks_range(sb, from_b: int, to_b: int) -> tuple[int, int]:
-    """Sync: index [from_b, to_b] inclusive. Returns (snapshot rows, tx rows) written."""
+    """Sync: index [from_b, to_b] inclusive. Returns (snapshot rows, transaction rows) written."""
     if from_b > to_b:
         return 0, 0
     w3 = connect_w3_http()
