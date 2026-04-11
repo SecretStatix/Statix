@@ -77,7 +77,7 @@ export function Portfolio() {
     if (totalValue <= 0) return [];
     const rows: AllocationSlice[] = [];
     if (balance > 0) {
-      rows.push({ name: 'Cash (D-Bucks)', value: balance, pct: (balance / totalValue) * 100 });
+      rows.push({ name: 'Cash (V-Bucks)', value: balance, pct: (balance / totalValue) * 100 });
     }
     holdings.forEach((h) => {
       rows.push({ name: h.name, value: h.value, pct: (h.value / totalValue) * 100 });
@@ -125,7 +125,7 @@ export function Portfolio() {
                 ? 'Minting...'
                 : minted
                   ? 'Got it!'
-                  : `Get ${FAUCET_UI_MINT_AMOUNT.toLocaleString()} D-Bucks`}
+                  : `Get ${FAUCET_UI_MINT_AMOUNT.toLocaleString()} V-Bucks`}
             </button>
             {capReached && (
               <p className="max-w-[14rem] text-right text-[11px] text-muted-foreground">

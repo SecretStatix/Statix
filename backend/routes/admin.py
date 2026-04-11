@@ -33,6 +33,13 @@ class WeeklyUpdate(BaseModel):
     week_end: str    # YYYY-MM-DD
 
 
+class RoundUpdate(BaseModel):
+    round: int
+    round_start: str  # YYYY-MM-DD
+    round_end: str    # YYYY-MM-DD
+    top_n: int = 10
+
+
 class ManualPerformance(BaseModel):
     week: int
     performances: List[dict]  # [{player_index, actual_points}]
@@ -96,6 +103,78 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
     return {
         "week": update.week,
         "players_updated": len([r for r in results if "error" not in r]),
+        "errors": len([r for r in results if "error" in r]),
+        "results": results,
+        "on_chain_data": on_chain_data,
+    }
+
+
+@router.post("/update-round-stats")
+async def update_round_stats(update: RoundUpdate, _=Depends(verify_admin)):
+    """
+    Pull real NBA stats for a playoff round window and compute per-game avg FPts.
+    Returns data ready for on-chain submission via setRoundPerformanceBatch.
+    Minimum 2 games played required; players below threshold return avg_fpts=0.
+    """
+    deployment = get_deployment()
+    if not deployment:
+        raise HTTPException(status_code=503, detail="Not deployed")
+
+    players = deployment.get("players", [])
+    results = []
+
+    for p in players:
+        nba_id = p.get("nba_id")
+        if not nba_id:
+            continue
+
+        try:
+            weekly = get_weekly_actuals(nba_id, update.round_start, update.round_end)
+            games_played = weekly["games_played"]
+            total_fpts = weekly["total_fantasy_points"]
+            avg_fpts = round(total_fpts / games_played, 4) if games_played >= 1 else 0.0
+
+            results.append({
+                "player_index": p["index"],
+                "name": p["name"],
+                "nba_id": nba_id,
+                "games_played": games_played,
+                "total_fpts": round(total_fpts, 2),
+                "avg_fpts": avg_fpts,
+            })
+        except Exception as e:
+            results.append({
+                "player_index": p["index"],
+                "name": p["name"],
+                "error": str(e),
+            })
+
+    # Save to Supabase if available
+    supabase = get_supabase()
+    if supabase:
+        for r in results:
+            if "error" not in r:
+                supabase.table("round_performance").upsert({
+                    "round": update.round,
+                    "player_index": r["player_index"],
+                    "games_played": r["games_played"],
+                    "avg_fpts": r["avg_fpts"],
+                }).execute()
+
+    # Format for on-chain (avg FPts scaled 1e6, 0 for players below min games)
+    ok = [r for r in results if "error" not in r]
+    on_chain_data = {
+        "player_indices": [r["player_index"] for r in ok],
+        "avg_fpts_scaled": [int(r["avg_fpts"] * 1e6) for r in ok],
+        "games_played": [r["games_played"] for r in ok],
+    }
+
+    return {
+        "round": update.round,
+        "round_start": update.round_start,
+        "round_end": update.round_end,
+        "top_n": update.top_n,
+        "players_updated": len(ok),
         "errors": len([r for r in results if "error" in r]),
         "results": results,
         "on_chain_data": on_chain_data,

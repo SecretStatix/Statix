@@ -22,12 +22,12 @@ export function DividendSummary() {
   const unclaimed = unclaimedData
     ? parseFloat(formatUnits((unclaimedData as [bigint, bigint])[0], 6))
     : 0;
-  const weekCount = unclaimedData ? Number((unclaimedData as [bigint, bigint])[1]) : 0;
-  const currentWeek = currentWeekData ? Number(currentWeekData) : 1;
+  const roundCount = unclaimedData ? Number((unclaimedData as [bigint, bigint])[1]) : 0;
+  const currentRound = currentWeekData ? Number(currentWeekData) : 1;
 
   const handleClaimAll = () => {
-    const weeks = Array.from({ length: currentWeek }, (_, i) => i + 1);
-    claimAll(weeks);
+    const rounds = Array.from({ length: currentRound }, (_, i) => i + 1);
+    claimAll(rounds);
   };
 
   return (
@@ -41,12 +41,12 @@ export function DividendSummary() {
             <p className="text-xs font-medium text-muted-foreground">Unclaimed dividends</p>
             <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-success">${unclaimed.toFixed(2)}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {weekCount} week{weekCount !== 1 ? 's' : ''} pending
+              {roundCount} round{roundCount !== 1 ? 's' : ''} pending
             </p>
           </div>
           <div className="flex-1 sm:px-10">
-            <p className="text-xs font-medium text-muted-foreground">Current week</p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">Week {currentWeek}</p>
+            <p className="text-xs font-medium text-muted-foreground">Current round</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">Round {currentRound}</p>
           </div>
           <div className="flex-1 sm:pl-10">
             <p className="text-xs font-medium text-muted-foreground">Active positions</p>
@@ -74,7 +74,7 @@ export function DividendSummary() {
             disabled={claiming}
             className="w-full rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/15 transition hover:bg-primary-600 disabled:opacity-50"
           >
-            {claiming ? 'Claiming...' : claimed ? 'Claimed!' : `Claim all (${weekCount} week${weekCount !== 1 ? 's' : ''})`}
+            {claiming ? 'Claiming...' : claimed ? 'Claimed!' : `Claim all (${roundCount} round${roundCount !== 1 ? 's' : ''})`}
           </button>
         ) : (
           <p className="text-center text-sm text-muted-foreground">No dividends to claim yet.</p>

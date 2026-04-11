@@ -250,28 +250,37 @@ export function useFaucetDBucks() {
   return { faucet, hash, isPending, isConfirming, isSuccess };
 }
 
-// Read current week (from DividendHub)
+// Read trading paused state (from StatixRouter)
+export function useTradingPaused() {
+  return useReadContract({
+    address: CONTRACTS.StatixRouter as `0x${string}`,
+    abi: StatixRouterABI,
+    functionName: "tradingPaused",
+  });
+}
+
+// Read current round (from DividendHub)
 export function useCurrentWeek() {
   return useReadContract({
     address: CONTRACTS.DividendHub as `0x${string}`,
     abi: DividendHubABI,
-    functionName: "currentWeek",
+    functionName: "currentRound",
   });
 }
 
-// Write: Claim dividends for multiple weeks (via DividendHub)
+// Write: Claim dividends for multiple rounds (via DividendHub)
 export function useClaimMultipleWeeks() {
   const { writeContract, data: hash, isPending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
   useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
-  const claimAll = (weeks: number[]) => {
+  const claimAll = (rounds: number[]) => {
     writeContract({
       chainId: CHAIN_ID,
       address: CONTRACTS.DividendHub as `0x${string}`,
       abi: DividendHubABI,
-      functionName: "claimMultipleWeeks",
-      args: [weeks.map((w) => BigInt(w))],
+      functionName: "claimMultipleRounds",
+      args: [rounds.map((r) => BigInt(r))],
       gas: GAS_CLAIM_WEEKS,
     });
   };

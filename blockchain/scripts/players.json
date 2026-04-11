@@ -1,21 +1,5 @@
 [
   {
-    "id": "nikola_jokic",
-    "nba_id": 203999,
-    "name": "Nikola Jokic",
-    "team": "DEN",
-    "position": "C",
-    "symbol": "JOKIN"
-  },
-  {
-    "id": "luka_doncic",
-    "nba_id": 1629029,
-    "name": "Luka Doncic",
-    "team": "LAL",
-    "position": "PG",
-    "symbol": "DONCL"
-  },
-  {
     "id": "shai_gilgeous_alexander",
     "nba_id": 1628983,
     "name": "Shai Gilgeous-Alexander",
@@ -24,12 +8,20 @@
     "symbol": "GILS"
   },
   {
-    "id": "giannis_antetokounmpo",
-    "nba_id": 203507,
-    "name": "Giannis Antetokounmpo",
-    "team": "MIL",
-    "position": "PF",
-    "symbol": "ANTEG"
+    "id": "jalen_williams",
+    "nba_id": 1631114,
+    "name": "Jalen Williams",
+    "team": "OKC",
+    "position": "SG",
+    "symbol": "WILLJW"
+  },
+  {
+    "id": "chet_holmgren",
+    "nba_id": 1631096,
+    "name": "Chet Holmgren",
+    "team": "OKC",
+    "position": "C",
+    "symbol": "HOLMC"
   },
   {
     "id": "victor_wembanyama",
@@ -40,118 +32,6 @@
     "symbol": "WEMBV"
   },
   {
-    "id": "anthony_edwards",
-    "nba_id": 1630162,
-    "name": "Anthony Edwards",
-    "team": "MIN",
-    "position": "SG",
-    "symbol": "EDWAA"
-  },
-  {
-    "id": "jaylen_brown",
-    "nba_id": 1627759,
-    "name": "Jaylen Brown",
-    "team": "BOS",
-    "position": "SG",
-    "symbol": "BROWJ"
-  },
-  {
-    "id": "tyrese_maxey",
-    "nba_id": 1630178,
-    "name": "Tyrese Maxey",
-    "team": "PHI",
-    "position": "PG",
-    "symbol": "MAXET"
-  },
-  {
-    "id": "donovan_mitchell",
-    "nba_id": 1628378,
-    "name": "Donovan Mitchell",
-    "team": "CLE",
-    "position": "SG",
-    "symbol": "MITCD"
-  },
-  {
-    "id": "kevin_durant",
-    "nba_id": 201142,
-    "name": "Kevin Durant",
-    "team": "HOU",
-    "position": "SF",
-    "symbol": "DURK"
-  },
-  {
-    "id": "jalen_brunson",
-    "nba_id": 1628973,
-    "name": "Jalen Brunson",
-    "team": "NYK",
-    "position": "PG",
-    "symbol": "BRUNJ"
-  },
-  {
-    "id": "cade_cunningham",
-    "nba_id": 1630595,
-    "name": "Cade Cunningham",
-    "team": "DET",
-    "position": "PG",
-    "symbol": "CUNNC"
-  },
-  {
-    "id": "jalen_johnson",
-    "nba_id": 1630552,
-    "name": "Jalen Johnson",
-    "team": "ATL",
-    "position": "PF",
-    "symbol": "JOHNJ"
-  },
-  {
-    "id": "jayson_tatum",
-    "nba_id": 1628369,
-    "name": "Jayson Tatum",
-    "team": "BOS",
-    "position": "SF",
-    "symbol": "TATUJ"
-  },
-  {
-    "id": "lebron_james",
-    "nba_id": 2544,
-    "name": "LeBron James",
-    "team": "LAL",
-    "position": "SF",
-    "symbol": "JAMEL"
-  },
-  {
-    "id": "stephen_curry",
-    "nba_id": 201939,
-    "name": "Stephen Curry",
-    "team": "GSW",
-    "position": "PG",
-    "symbol": "CURRS"
-  },
-  {
-    "id": "trae_young",
-    "nba_id": 1629027,
-    "name": "Trae Young",
-    "team": "ATL",
-    "position": "PG",
-    "symbol": "YOUNT"
-  },
-  {
-    "id": "devin_booker",
-    "nba_id": 1626164,
-    "name": "Devin Booker",
-    "team": "PHX",
-    "position": "SG",
-    "symbol": "BOOKD"
-  },
-  {
-    "id": "scottie_barnes",
-    "nba_id": 1630567,
-    "name": "Scottie Barnes",
-    "team": "TOR",
-    "position": "SF",
-    "symbol": "BARNS"
-  },
-  {
     "id": "de_aaron_fox",
     "nba_id": 1628368,
     "name": "De'Aaron Fox",
@@ -160,12 +40,20 @@
     "symbol": "FOXD"
   },
   {
-    "id": "ja_morant",
-    "nba_id": 1629630,
-    "name": "Ja Morant",
-    "team": "MEM",
+    "id": "dylan_harper",
+    "nba_id": 1642844,
+    "name": "Dylan Harper",
+    "team": "SAS",
     "position": "PG",
-    "symbol": "MORJ"
+    "symbol": "HARPD"
+  },
+  {
+    "id": "nikola_jokic",
+    "nba_id": 203999,
+    "name": "Nikola Jokic",
+    "team": "DEN",
+    "position": "C",
+    "symbol": "JOKIN"
   },
   {
     "id": "jamal_murray",
@@ -176,108 +64,20 @@
     "symbol": "MURRJ"
   },
   {
-    "id": "damian_lillard",
-    "nba_id": 203081,
-    "name": "Damian Lillard",
-    "team": "MIL",
+    "id": "luka_doncic",
+    "nba_id": 1629029,
+    "name": "Luka Doncic",
+    "team": "LAL",
     "position": "PG",
-    "symbol": "LILLD"
+    "symbol": "DONCL"
   },
   {
-    "id": "anthony_davis",
-    "nba_id": 203076,
-    "name": "Anthony Davis",
-    "team": "WAS",
-    "position": "PF",
-    "symbol": "DAVIA"
-  },
-  {
-    "id": "james_harden",
-    "nba_id": 201935,
-    "name": "James Harden",
-    "team": "CLE",
-    "position": "PG",
-    "symbol": "HARDJ"
-  },
-  {
-    "id": "domantas_sabonis",
-    "nba_id": 1627734,
-    "name": "Domantas Sabonis",
-    "team": "SAC",
-    "position": "C",
-    "symbol": "SABOD"
-  },
-  {
-    "id": "bam_adebayo",
-    "nba_id": 1628389,
-    "name": "Bam Adebayo",
-    "team": "MIA",
-    "position": "C",
-    "symbol": "ADEBB"
-  },
-  {
-    "id": "pascal_siakam",
-    "nba_id": 1627783,
-    "name": "Pascal Siakam",
-    "team": "IND",
-    "position": "PF",
-    "symbol": "SIAKP"
-  },
-  {
-    "id": "alperen_sengun",
-    "nba_id": 1630578,
-    "name": "Alperen Sengun",
-    "team": "HOU",
-    "position": "C",
-    "symbol": "SENGA"
-  },
-  {
-    "id": "joel_embiid",
-    "nba_id": 203954,
-    "name": "Joel Embiid",
-    "team": "PHI",
-    "position": "C",
-    "symbol": "EMBIJ"
-  },
-  {
-    "id": "tyrese_haliburton",
-    "nba_id": 1630169,
-    "name": "Tyrese Haliburton",
-    "team": "IND",
-    "position": "PG",
-    "symbol": "HALIT"
-  },
-  {
-    "id": "franz_wagner",
-    "nba_id": 1630532,
-    "name": "Franz Wagner",
-    "team": "ORL",
+    "id": "lebron_james",
+    "nba_id": 2544,
+    "name": "LeBron James",
+    "team": "LAL",
     "position": "SF",
-    "symbol": "WAGNF"
-  },
-  {
-    "id": "jaren_jackson_jr",
-    "nba_id": 1628991,
-    "name": "Jaren Jackson Jr.",
-    "team": "MEM",
-    "position": "PF",
-    "symbol": "JACKJ"
-  },
-  {
-    "id": "evan_mobley",
-    "nba_id": 1630596,
-    "name": "Evan Mobley",
-    "team": "CLE",
-    "position": "PF",
-    "symbol": "MOBLE"
-  },
-  {
-    "id": "tyler_herro",
-    "nba_id": 1629639,
-    "name": "Tyler Herro",
-    "team": "MIA",
-    "position": "SG",
-    "symbol": "HERRT"
+    "symbol": "JAMEL"
   },
   {
     "id": "austin_reaves",
@@ -288,28 +88,36 @@
     "symbol": "REAVA"
   },
   {
-    "id": "lamelo_ball",
-    "nba_id": 1630163,
-    "name": "LaMelo Ball",
-    "team": "CHA",
-    "position": "PG",
-    "symbol": "BALLL"
+    "id": "alperen_sengun",
+    "nba_id": 1630578,
+    "name": "Alperen Sengun",
+    "team": "HOU",
+    "position": "C",
+    "symbol": "SENGA"
   },
   {
-    "id": "kawhi_leonard",
-    "nba_id": 202695,
-    "name": "Kawhi Leonard",
-    "team": "LAC",
+    "id": "amen_thompson",
+    "nba_id": 1641731,
+    "name": "Amen Thompson",
+    "team": "HOU",
     "position": "SF",
-    "symbol": "LEONK"
+    "symbol": "THOMA"
   },
   {
-    "id": "zion_williamson",
-    "nba_id": 1629627,
-    "name": "Zion Williamson",
-    "team": "NOP",
-    "position": "PF",
-    "symbol": "WILLZ"
+    "id": "kevin_durant",
+    "nba_id": 201142,
+    "name": "Kevin Durant",
+    "team": "HOU",
+    "position": "SF",
+    "symbol": "DURK"
+  },
+  {
+    "id": "anthony_edwards",
+    "nba_id": 1630162,
+    "name": "Anthony Edwards",
+    "team": "MIN",
+    "position": "SG",
+    "symbol": "EDWAA"
   },
   {
     "id": "julius_randle",
@@ -320,44 +128,12 @@
     "symbol": "RANDJ"
   },
   {
-    "id": "cooper_flagg",
-    "nba_id": 1642843,
-    "name": "Cooper Flagg",
-    "team": "DAL",
-    "position": "SF",
-    "symbol": "FLAGC"
-  },
-  {
-    "id": "kon_knueppel",
-    "nba_id": 1642851,
-    "name": "Kon Knueppel",
-    "team": "CHA",
+    "id": "devin_booker",
+    "nba_id": 1626164,
+    "name": "Devin Booker",
+    "team": "PHX",
     "position": "SG",
-    "symbol": "KNUEK"
-  },
-  {
-    "id": "keyonte_george",
-    "nba_id": 1641718,
-    "name": "Keyonte George",
-    "team": "UTA",
-    "position": "PG",
-    "symbol": "GEORK"
-  },
-  {
-    "id": "michael_porter_jr",
-    "nba_id": 1629008,
-    "name": "Michael Porter Jr.",
-    "team": "BKN",
-    "position": "SF",
-    "symbol": "PORTM"
-  },
-  {
-    "id": "kristaps_porzingis",
-    "nba_id": 204001,
-    "name": "Kristaps Porzingis",
-    "team": "GSW",
-    "position": "C",
-    "symbol": "PORZK"
+    "symbol": "BOOKD"
   },
   {
     "id": "jalen_green",
@@ -368,12 +144,108 @@
     "symbol": "GREEJ"
   },
   {
+    "id": "kawhi_leonard",
+    "nba_id": 202695,
+    "name": "Kawhi Leonard",
+    "team": "LAC",
+    "position": "SF",
+    "symbol": "LEONK"
+  },
+  {
+    "id": "ivica_zubac",
+    "nba_id": 1627826,
+    "name": "Ivica Zubac",
+    "team": "LAC",
+    "position": "C",
+    "symbol": "ZUBAI"
+  },
+  {
+    "id": "deni_avdija",
+    "nba_id": 1629656,
+    "name": "Deni Avdija",
+    "team": "POR",
+    "position": "SF",
+    "symbol": "AVDID"
+  },
+  {
+    "id": "stephen_curry",
+    "nba_id": 201939,
+    "name": "Stephen Curry",
+    "team": "GSW",
+    "position": "PG",
+    "symbol": "CURRS"
+  },
+  {
+    "id": "kristaps_porzingis",
+    "nba_id": 204001,
+    "name": "Kristaps Porzingis",
+    "team": "GSW",
+    "position": "C",
+    "symbol": "PORZK"
+  },
+  {
+    "id": "cade_cunningham",
+    "nba_id": 1630595,
+    "name": "Cade Cunningham",
+    "team": "DET",
+    "position": "PG",
+    "symbol": "CUNNC"
+  },
+  {
+    "id": "jalen_duren",
+    "nba_id": 1631107,
+    "name": "Jalen Duren",
+    "team": "DET",
+    "position": "C",
+    "symbol": "DUREJ"
+  },
+  {
+    "id": "jaylen_brown",
+    "nba_id": 1627759,
+    "name": "Jaylen Brown",
+    "team": "BOS",
+    "position": "SG",
+    "symbol": "BROWJ"
+  },
+  {
+    "id": "jayson_tatum",
+    "nba_id": 1628369,
+    "name": "Jayson Tatum",
+    "team": "BOS",
+    "position": "SF",
+    "symbol": "TATUJ"
+  },
+  {
     "id": "derrick_white",
     "nba_id": 1628401,
     "name": "Derrick White",
     "team": "BOS",
     "position": "SG",
     "symbol": "WHITD"
+  },
+  {
+    "id": "nikola_vucevic",
+    "nba_id": 202696,
+    "name": "Nikola Vucevic",
+    "team": "BOS",
+    "position": "C",
+    "symbol": "VUCEN"
+  },
+  {
+    "id": "jalen_brunson",
+    "nba_id": 1628973,
+    "name": "Jalen Brunson",
+    "team": "NYK",
+    "position": "PG",
+    "symbol": "BRUNJ"
+  },
+  {
+    "id": "karl_anthony_towns",
+    "nba_id": 1626157,
+    "name": "Karl-Anthony Towns",
+    "team": "NYK",
+    "position": "C",
+    "symbol": "TOWNK"
   },
   {
     "id": "mikal_bridges",
@@ -384,6 +256,94 @@
     "symbol": "BRIDM"
   },
   {
+    "id": "donovan_mitchell",
+    "nba_id": 1628378,
+    "name": "Donovan Mitchell",
+    "team": "CLE",
+    "position": "SG",
+    "symbol": "MITCD"
+  },
+  {
+    "id": "evan_mobley",
+    "nba_id": 1630596,
+    "name": "Evan Mobley",
+    "team": "CLE",
+    "position": "PF",
+    "symbol": "MOBLE"
+  },
+  {
+    "id": "james_harden",
+    "nba_id": 201935,
+    "name": "James Harden",
+    "team": "CLE",
+    "position": "PG",
+    "symbol": "HARDJ"
+  },
+  {
+    "id": "jarrett_allen",
+    "nba_id": 1628386,
+    "name": "Jarrett Allen",
+    "team": "CLE",
+    "position": "C",
+    "symbol": "ALLENJ"
+  },
+  {
+    "id": "jalen_johnson",
+    "nba_id": 1630552,
+    "name": "Jalen Johnson",
+    "team": "ATL",
+    "position": "PF",
+    "symbol": "JOHNJ"
+  },
+  {
+    "id": "nickeil_alexander_walker",
+    "nba_id": 1629638,
+    "name": "Nickeil Alexander-Walker",
+    "team": "ATL",
+    "position": "SG",
+    "symbol": "ALEXN"
+  },
+  {
+    "id": "scottie_barnes",
+    "nba_id": 1630567,
+    "name": "Scottie Barnes",
+    "team": "TOR",
+    "position": "SF",
+    "symbol": "BARNS"
+  },
+  {
+    "id": "rj_barrett",
+    "nba_id": 1629628,
+    "name": "RJ Barrett",
+    "team": "TOR",
+    "position": "SG",
+    "symbol": "BARRR"
+  },
+  {
+    "id": "brandon_ingram",
+    "nba_id": 1627742,
+    "name": "Brandon Ingram",
+    "team": "TOR",
+    "position": "SF",
+    "symbol": "INGRB"
+  },
+  {
+    "id": "franz_wagner",
+    "nba_id": 1630532,
+    "name": "Franz Wagner",
+    "team": "ORL",
+    "position": "SF",
+    "symbol": "WAGNF"
+  },
+  {
+    "id": "paolo_banchero",
+    "nba_id": 1631094,
+    "name": "Paolo Banchero",
+    "team": "ORL",
+    "position": "PF",
+    "symbol": "BANCP"
+  },
+  {
     "id": "desmond_bane",
     "nba_id": 1630217,
     "name": "Desmond Bane",
@@ -392,11 +352,59 @@
     "symbol": "BANED"
   },
   {
-    "id": "nikola_vucevic",
-    "nba_id": 202696,
-    "name": "Nikola Vucevic",
-    "team": "BOS",
+    "id": "lamelo_ball",
+    "nba_id": 1630163,
+    "name": "LaMelo Ball",
+    "team": "CHA",
+    "position": "PG",
+    "symbol": "BALLL"
+  },
+  {
+    "id": "brandon_miller",
+    "nba_id": 1641715,
+    "name": "Brandon Miller",
+    "team": "CHA",
+    "position": "SF",
+    "symbol": "MILLB"
+  },
+  {
+    "id": "kon_knueppel",
+    "nba_id": 1642851,
+    "name": "Kon Knueppel",
+    "team": "CHA",
+    "position": "SG",
+    "symbol": "KNUEK"
+  },
+  {
+    "id": "tyrese_maxey",
+    "nba_id": 1630178,
+    "name": "Tyrese Maxey",
+    "team": "PHI",
+    "position": "PG",
+    "symbol": "MAXET"
+  },
+  {
+    "id": "joel_embiid",
+    "nba_id": 203954,
+    "name": "Joel Embiid",
+    "team": "PHI",
     "position": "C",
-    "symbol": "VUCEN"
+    "symbol": "EMBIJ"
+  },
+  {
+    "id": "bam_adebayo",
+    "nba_id": 1628389,
+    "name": "Bam Adebayo",
+    "team": "MIA",
+    "position": "C",
+    "symbol": "ADEBB"
+  },
+  {
+    "id": "tyler_herro",
+    "nba_id": 1629639,
+    "name": "Tyler Herro",
+    "team": "MIA",
+    "position": "SG",
+    "symbol": "HERRT"
   }
 ]

@@ -11,11 +11,6 @@ interface IPlayerPool {
     function executeBuy(address buyer, uint256 sharesOut, uint256 maxCost) external returns (uint256 totalCost, uint256 dividendFee, uint256 protocolFee);
     function executeSell(address seller, uint256 sharesIn, uint256 minRevenue) external returns (uint256 netRevenue, uint256 dividendFee, uint256 protocolFee);
 
-    // --- Snapshots (called by DividendHub) ---
-    function snapshotTotalShares() external returns (uint256);
-    function snapshotUserHoldings(uint256 week, address user) external;
-
-
     // --- Liquidity (called by Router) ---
     function addLiquidity(uint256 cashAmount) external returns (uint256 lpTokensMinted);
     function removeLiquidity(uint256 lpTokens) external returns (uint256 cashOut);
@@ -41,6 +36,4 @@ interface IPlayerPool {
     function name() external view returns (string memory);
     function symbol() external view returns (string memory);
     function playerId() external view returns (string memory);
-    function weekEndHoldings(uint256 week, address user) external view returns (uint256);
-    function lastSnapshotWeek(address user) external view returns (uint256);
 }

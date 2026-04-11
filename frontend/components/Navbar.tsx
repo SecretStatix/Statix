@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
-import { TrendingUp, BarChart3, User as UserIcon, Info, Search } from 'lucide-react';
+import { TrendingUp, BarChart3, User as UserIcon, Info, BookOpen, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfileMenu } from '@/components/ProfileMenu';
 
@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: '/portfolio', label: 'Portfolio', icon: UserIcon },
   { href: '/dividends', label: 'Dividends', icon: BarChart3 },
   { href: '/leaderboard', label: 'Leaderboard', icon: Info },
+  { href: '/rules', label: 'Rules', icon: BookOpen },
 ];
 
 export function Navbar() {

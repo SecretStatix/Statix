@@ -6,15 +6,13 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../IPlayerPool.sol";
 
 /**
- * @notice Minimal mock that acts as both Router (fee config) and Hub (currentWeek)
- *         for unit-testing PlayerPool in isolation.
+ * @notice Minimal mock that acts as Router (fee config) for unit-testing PlayerPool in isolation.
  */
 contract MockRouterHub {
     using SafeERC20 for IERC20;
 
-    uint256 public feeBps = 150;
+    uint256 public feeBps = 200;
     uint256 public dividendFeeBps = 6700;
-    uint256 public currentWeek = 1;
 
     IERC20 public token;
 
@@ -24,7 +22,6 @@ contract MockRouterHub {
 
     function setFeeBps(uint256 _val) external { feeBps = _val; }
     function setDividendFeeBps(uint256 _val) external { dividendFeeBps = _val; }
-    function setCurrentWeek(uint256 _val) external { currentWeek = _val; }
 
     // ---- Forward calls to PlayerPool (msg.sender = this contract = "router"/"hub") ----
 
@@ -47,14 +44,6 @@ contract MockRouterHub {
 
     function callRemoveLiquidity(address pool, uint256 lpTokens) external returns (uint256) {
         return IPlayerPool(pool).removeLiquidity(lpTokens);
-    }
-
-    function callSnapshotTotalShares(address pool) external returns (uint256) {
-        return IPlayerPool(pool).snapshotTotalShares();
-    }
-
-    function callSnapshotUserHoldings(address pool, uint256 week, address user) external {
-        IPlayerPool(pool).snapshotUserHoldings(week, user);
     }
 
     function callEmergencyExitUser(address pool, address user) external returns (uint256) {

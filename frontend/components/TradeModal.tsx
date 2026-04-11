@@ -197,7 +197,7 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
                 <span className="font-semibold text-foreground">${quote.total.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Fee (1.5%)</span>
+                <span>Fee (2%)</span>
                 <span>${quote.fee.toFixed(2)}</span>
               </div>
               {slippage > 1 && (
@@ -226,7 +226,7 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
                 : isSuccess
                 ? 'Done!'
                 : needsApproval
-                ? 'Approve D-Bucks'
+                ? 'Approve V-Bucks'
                 : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} shares`}
             </button>
           ) : (

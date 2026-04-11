@@ -10,9 +10,9 @@ export default function DividendsPage() {
     <div className="space-y-10 pb-12">
       <header className="space-y-1">
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Dividends</p>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Weekly distributions</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Playoff distributions</h1>
         <p className="max-w-lg text-sm text-muted-foreground">
-          Claim your share of fee-funded pools — base allocation plus top performer bonuses.
+          Claim your share of fee-funded pools each playoff round — base allocation plus top performer bonuses.
         </p>
       </header>
 

@@ -24,9 +24,12 @@ SCORING = {
     "PTS": 1.0,
     "REB": 1.2,
     "AST": 1.5,
-    "STL": 3.0,
-    "BLK": 3.0,
-    "TOV": -1.0,
+    "STL": 2.0,
+    "BLK": 2.0,
+    "FG3M": 0.5,
+    "TOV": -1.5,
+    "DD_BONUS": 2.0,
+    "TD_BONUS": 5.0,
 }
 
 CACHE_FILE = os.path.join(os.path.dirname(__file__), "player_cache.json")
@@ -36,15 +39,24 @@ PLAYERS_JSON = os.path.join(
 
 
 def calculate_fantasy_points(stats: dict) -> float:
-    """Calculate fantasy points from a stat line."""
-    return (
+    """Calculate fantasy points from a stat line (per-game basis)."""
+    base = (
         stats.get("PTS", 0) * SCORING["PTS"]
         + stats.get("REB", 0) * SCORING["REB"]
         + stats.get("AST", 0) * SCORING["AST"]
         + stats.get("STL", 0) * SCORING["STL"]
         + stats.get("BLK", 0) * SCORING["BLK"]
+        + stats.get("FG3M", 0) * SCORING["FG3M"]
         + stats.get("TOV", 0) * SCORING["TOV"]
     )
+    # Double-double / triple-double bonuses (threshold: 10+ in a category)
+    dd_cats = ["PTS", "REB", "AST", "STL", "BLK"]
+    doubles = sum(1 for cat in dd_cats if stats.get(cat, 0) >= 10)
+    if doubles >= 3:
+        base += SCORING["TD_BONUS"]
+    elif doubles >= 2:
+        base += SCORING["DD_BONUS"]
+    return base
 
 
 def _current_nba_season() -> str:
@@ -83,9 +95,19 @@ def fetch_player_season_stats(nba_id: int, season: str = None) -> Optional[dict]
         "AST": round(float(df["AST"].mean()), 1),
         "STL": round(float(df["STL"].mean()), 1),
         "BLK": round(float(df["BLK"].mean()), 1),
+        "FG3M": round(float(df["FG3M"].mean()), 1) if "FG3M" in df.columns else 0.0,
         "TOV": round(float(df["TOV"].mean()), 1),
     }
-    avg_fpts = calculate_fantasy_points(avg_stats)
+    # Compute FPts per game (with DD/TD bonuses per game) then average
+    def _row_fpts(row):
+        return calculate_fantasy_points({
+            "PTS": row.get("PTS", 0), "REB": row.get("REB", 0),
+            "AST": row.get("AST", 0), "STL": row.get("STL", 0),
+            "BLK": row.get("BLK", 0),
+            "FG3M": row.get("FG3M", 0) if "FG3M" in df.columns else 0,
+            "TOV": row.get("TOV", 0),
+        })
+    avg_fpts = round(float(df.apply(_row_fpts, axis=1).mean()), 2)
 
     return {
         "nba_id": nba_id,
