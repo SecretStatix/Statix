@@ -12,11 +12,6 @@ describe("DividendHub (unit tests)", function () {
   const INIT_CASH = 10_000n * SCALE;
   const BPS = 10000n;
 
-  // Weekly fantasy projections (1e6 scale), stored on-chain per pool — not season/17
-  const PROJ_A = 100n * SCALE;
-  const PROJ_B = 200n * SCALE;
-  const PROJ_C = 300n * SCALE;
-
   const SHARES_BUY = 10n * SCALE;
 
   async function deployFixture() {
@@ -48,9 +43,9 @@ describe("DividendHub (unit tests)", function () {
     await factory.setRouter(mockRouterAddr);
     await factory.setDividendHub(hubAddr);
 
-    await factory.createPool("Player A", "PLRA", "player_a", PROJ_A);
-    await factory.createPool("Player B", "PLRB", "player_b", PROJ_B);
-    await factory.createPool("Player C", "PLRC", "player_c", PROJ_C);
+    await factory.createPool("Player A", "PLRA", "player_a");
+    await factory.createPool("Player B", "PLRB", "player_b");
+    await factory.createPool("Player C", "PLRC", "player_c");
 
     pool0Addr = await factory.pools(0);
     pool1Addr = await factory.pools(1);
@@ -71,13 +66,17 @@ describe("DividendHub (unit tests)", function () {
     await token.mint(hubAddr, amount);
   }
 
-  // Run the full weekly flow: set performance, mark eligible, distribute
-  async function runDistribution(poolIdxs, actualPoints, eligibleIdxs) {
-    await hub.setWeeklyPerformanceBatch(poolIdxs, actualPoints);
+  async function runDistribution(poolIdxs, avgFpts, eligibleIdxs) {
+    await hub.setRoundPerformanceBatch(poolIdxs, avgFpts);
     if (eligibleIdxs && eligibleIdxs.length > 0) {
-      await hub.setOutperformerEligible(eligibleIdxs);
+      await hub.setTopPerformerEligible(eligibleIdxs);
     }
-    await hub.distributeDividends();
+    const poolCount = Number(await factory.poolCount());
+    const allIdx = Array.from({ length: poolCount }, (_, i) => BigInt(i));
+    for (const u of [alice, bob, carol, outsider]) {
+      await hub.snapshotUserHoldings(u.address, allIdx);
+    }
+    await hub.distributeDividends(10n);
   }
 
   // --------------------------------------------------------------------------
@@ -85,7 +84,7 @@ describe("DividendHub (unit tests)", function () {
   // --------------------------------------------------------------------------
   describe("Constructor", function () {
     it("should initialise state correctly", async function () {
-      expect(await hub.currentWeek()).to.equal(1);
+      expect(await hub.currentRound()).to.equal(1);
       expect(await hub.basePoolBps()).to.equal(2000);
       expect(await hub.paymentToken()).to.equal(await token.getAddress());
       expect(await hub.factory()).to.equal(factoryAddr);
@@ -126,93 +125,68 @@ describe("DividendHub (unit tests)", function () {
   });
 
   // --------------------------------------------------------------------------
-  //  setWeeklyPerformanceBatch
+  //  setRoundPerformanceBatch
   // --------------------------------------------------------------------------
-  describe("setWeeklyPerformanceBatch", function () {
-    it("stores correct performance data for outperforming pool", async function () {
-      const actual = 150n * SCALE; // weekly projection for pool 0 = 100*SCALE
-      await hub.setWeeklyPerformanceBatch([0], [actual]);
+  describe("setRoundPerformanceBatch", function () {
+    it("stores per-game average FPts per pool", async function () {
+      const avg = 150n * SCALE;
+      await hub.setRoundPerformanceBatch([0], [avg]);
 
-      const perf = await hub.weeklyPerformance(1, 0);
-      expect(perf.actualPoints).to.equal(actual);
-      expect(perf.projectedPoints).to.equal(100n * SCALE);
-      // outperformance = (150 - 100) / 100 = 0.5 = 5e17
-      expect(perf.outperformance).to.equal(5n * 10n ** 17n);
-    });
-
-    it("stores negative outperformance for underperforming pool", async function () {
-      const actual = 100n * SCALE; // weekly projection for pool 1 = 200*SCALE
-      await hub.setWeeklyPerformanceBatch([1], [actual]);
-
-      const perf = await hub.weeklyPerformance(1, 1);
-      expect(perf.outperformance).to.be.lt(0);
-      // (100 - 200) / 200 = -0.5
-      expect(perf.outperformance).to.equal(-5n * 10n ** 17n);
-    });
-
-    it("stores zero outperformance when actual equals projection", async function () {
-      const actual = 100n * SCALE; // exactly matches pool 0 weekly projection
-      await hub.setWeeklyPerformanceBatch([0], [actual]);
-
-      const perf = await hub.weeklyPerformance(1, 0);
-      expect(perf.outperformance).to.equal(0);
+      const perf = await hub.roundPerformance(1, 0);
+      expect(perf).to.equal(avg);
     });
 
     it("handles batch of multiple pools", async function () {
-      await hub.setWeeklyPerformanceBatch(
+      await hub.setRoundPerformanceBatch(
         [0, 1, 2],
         [150n * SCALE, 100n * SCALE, 450n * SCALE]
       );
 
-      const p0 = await hub.weeklyPerformance(1, 0);
-      const p1 = await hub.weeklyPerformance(1, 1);
-      const p2 = await hub.weeklyPerformance(1, 2);
-
-      expect(p0.actualPoints).to.equal(150n * SCALE);
-      expect(p1.actualPoints).to.equal(100n * SCALE);
-      expect(p2.actualPoints).to.equal(450n * SCALE);
+      expect(await hub.roundPerformance(1, 0)).to.equal(150n * SCALE);
+      expect(await hub.roundPerformance(1, 1)).to.equal(100n * SCALE);
+      expect(await hub.roundPerformance(1, 2)).to.equal(450n * SCALE);
     });
 
     it("reverts on length mismatch", async function () {
       await expect(
-        hub.setWeeklyPerformanceBatch([0, 1], [150n * SCALE])
+        hub.setRoundPerformanceBatch([0, 1], [150n * SCALE])
       ).to.be.revertedWith("Length mismatch");
     });
 
     it("reverts on invalid pool index", async function () {
       await expect(
-        hub.setWeeklyPerformanceBatch([99], [100n * SCALE])
+        hub.setRoundPerformanceBatch([99], [100n * SCALE])
       ).to.be.revertedWith("Invalid pool");
     });
 
     it("reverts for non-owner", async function () {
       await expect(
-        hub.connect(outsider).setWeeklyPerformanceBatch([0], [100n * SCALE])
+        hub.connect(outsider).setRoundPerformanceBatch([0], [100n * SCALE])
       ).to.be.reverted;
     });
   });
 
   // --------------------------------------------------------------------------
-  //  setOutperformerEligible
+  //  setTopPerformerEligible
   // --------------------------------------------------------------------------
-  describe("setOutperformerEligible", function () {
+  describe("setTopPerformerEligible", function () {
     it("marks specified pools as eligible", async function () {
-      await hub.setOutperformerEligible([0, 2]);
+      await hub.setTopPerformerEligible([0, 2]);
 
-      expect(await hub.outperformerEligible(1, 0)).to.be.true;
-      expect(await hub.outperformerEligible(1, 1)).to.be.false;
-      expect(await hub.outperformerEligible(1, 2)).to.be.true;
+      expect(await hub.topPerformerEligible(1, 0)).to.be.true;
+      expect(await hub.topPerformerEligible(1, 1)).to.be.false;
+      expect(await hub.topPerformerEligible(1, 2)).to.be.true;
     });
 
     it("is scoped to the current week", async function () {
-      await hub.setOutperformerEligible([0]);
-      expect(await hub.outperformerEligible(1, 0)).to.be.true;
-      expect(await hub.outperformerEligible(2, 0)).to.be.false;
+      await hub.setTopPerformerEligible([0]);
+      expect(await hub.topPerformerEligible(1, 0)).to.be.true;
+      expect(await hub.topPerformerEligible(2, 0)).to.be.false;
     });
 
     it("reverts for non-owner", async function () {
       await expect(
-        hub.connect(outsider).setOutperformerEligible([0])
+        hub.connect(outsider).setTopPerformerEligible([0])
       ).to.be.reverted;
     });
   });
@@ -228,57 +202,56 @@ describe("DividendHub (unit tests)", function () {
     });
 
     it("splits fees into base and outperformer pools (default 20/80)", async function () {
-      await hub.setWeeklyPerformanceBatch(
+      await hub.setRoundPerformanceBatch(
         [0, 1, 2],
         [150n * SCALE, 100n * SCALE, 450n * SCALE]
       );
-      await hub.setOutperformerEligible([0, 2]);
-      await hub.distributeDividends();
+      await hub.setTopPerformerEligible([0, 2]);
+      await hub.distributeDividends(10n);
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       expect(wd.totalPool).to.equal(10_000n * SCALE);
       expect(wd.basePool).to.equal(2_000n * SCALE);
-      expect(wd.outperformerPool).to.equal(8_000n * SCALE);
+      expect(wd.topPerformerPool).to.equal(8_000n * SCALE);
       expect(wd.distributed).to.be.true;
     });
 
     it("snapshots totalShares for each pool", async function () {
-      await hub.setWeeklyPerformanceBatch([0, 1, 2], [100n * SCALE, 200n * SCALE, 300n * SCALE]);
-      await hub.distributeDividends();
+      await hub.setRoundPerformanceBatch([0, 1, 2], [100n * SCALE, 200n * SCALE, 300n * SCALE]);
+      await hub.distributeDividends(10n);
 
-      expect(await hub.weekEndTotalShares(1, 0)).to.equal(SHARES_BUY);
-      expect(await hub.weekEndTotalShares(1, 1)).to.equal(0);
-      expect(await hub.weekEndTotalShares(1, 2)).to.equal(SHARES_BUY);
+      expect(await hub.roundEndPoolTotalShares(1, 0)).to.equal(SHARES_BUY);
+      expect(await hub.roundEndPoolTotalShares(1, 1)).to.equal(0);
+      expect(await hub.roundEndPoolTotalShares(1, 2)).to.equal(SHARES_BUY);
     });
 
-    it("calculates totalPositiveOutperf from eligible outperformers only", async function () {
-      await hub.setWeeklyPerformanceBatch(
+    it("records totalTopAvgFpts from eligible pools only", async function () {
+      await hub.setRoundPerformanceBatch(
         [0, 1, 2],
         [150n * SCALE, 100n * SCALE, 450n * SCALE]
       );
-      // Only mark pool 0 as eligible (pool 2 outperforms but is not eligible)
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      // Only mark pool 0 as eligible (pool 2 has higher avg but is not eligible)
+      await hub.setTopPerformerEligible([0]);
+      await hub.distributeDividends(10n);
 
-      const wd = await hub.weeklyDividends(1);
-      // Only pool 0's outperformance counts (0.5e18)
-      expect(wd.totalPositiveOutperf).to.equal(5n * 10n ** 17n);
+      const wd = await hub.roundDividends(1);
+      expect(wd.totalTopAvgFpts).to.equal(150n * SCALE);
     });
 
     it("emits DividendsDistributed event", async function () {
-      await hub.setWeeklyPerformanceBatch([0], [150n * SCALE]);
-      await hub.setOutperformerEligible([0]);
+      await hub.setRoundPerformanceBatch([0], [150n * SCALE]);
+      await hub.setTopPerformerEligible([0]);
 
-      await expect(hub.distributeDividends())
+      await expect(hub.distributeDividends(10n))
         .to.emit(hub, "DividendsDistributed")
-        .withArgs(1, 10_000n * SCALE, 2_000n * SCALE, 8_000n * SCALE);
+        .withArgs(1, 10_000n * SCALE, 2_000n * SCALE, 8_000n * SCALE, 10n);
     });
 
     it("reverts when already distributed", async function () {
-      await hub.setWeeklyPerformanceBatch([0], [100n * SCALE]);
-      await hub.distributeDividends();
+      await hub.setRoundPerformanceBatch([0], [100n * SCALE]);
+      await hub.distributeDividends(10n);
 
-      await expect(hub.distributeDividends()).to.be.revertedWith(
+      await expect(hub.distributeDividends(10n)).to.be.revertedWith(
         "Already distributed"
       );
     });
@@ -292,102 +265,102 @@ describe("DividendHub (unit tests)", function () {
         mockRouterAddr
       );
 
-      await expect(emptyHub.distributeDividends()).to.be.revertedWith(
+      await expect(emptyHub.distributeDividends(10n)).to.be.revertedWith(
         "No fees"
       );
     });
 
     it("reverts for non-owner", async function () {
       await expect(
-        hub.connect(outsider).distributeDividends()
+        hub.connect(outsider).distributeDividends(10n)
       ).to.be.reverted;
     });
 
     it("respects custom basePoolBps split", async function () {
       await hub.setBasePoolBps(5000); // 50/50 split
-      await hub.setWeeklyPerformanceBatch([0], [150n * SCALE]);
-      await hub.distributeDividends();
+      await hub.setRoundPerformanceBatch([0], [150n * SCALE]);
+      await hub.distributeDividends(10n);
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       expect(wd.basePool).to.equal(5_000n * SCALE);
-      expect(wd.outperformerPool).to.equal(5_000n * SCALE);
+      expect(wd.topPerformerPool).to.equal(5_000n * SCALE);
     });
   });
 
   // --------------------------------------------------------------------------
-  //  advanceWeek
+  //  advanceRound
   // --------------------------------------------------------------------------
-  describe("advanceWeek", function () {
+  describe("advanceRound", function () {
     it("increments currentWeek after distribution", async function () {
       await buyShares(pool0Addr, alice, SHARES_BUY);
       await fundHub(1000n * SCALE);
-      await hub.setWeeklyPerformanceBatch([0], [100n * SCALE]);
-      await hub.distributeDividends();
+      await hub.setRoundPerformanceBatch([0], [100n * SCALE]);
+      await hub.distributeDividends(10n);
 
-      await hub.advanceWeek();
-      expect(await hub.currentWeek()).to.equal(2);
+      await hub.advanceRound();
+      expect(await hub.currentRound()).to.equal(2);
     });
 
-    it("emits WeekAdvanced event", async function () {
+    it("emits RoundAdvanced event", async function () {
       await buyShares(pool0Addr, alice, SHARES_BUY);
       await fundHub(1000n * SCALE);
-      await hub.setWeeklyPerformanceBatch([0], [100n * SCALE]);
-      await hub.distributeDividends();
+      await hub.setRoundPerformanceBatch([0], [100n * SCALE]);
+      await hub.distributeDividends(10n);
 
-      await expect(hub.advanceWeek())
-        .to.emit(hub, "WeekAdvanced")
+      await expect(hub.advanceRound())
+        .to.emit(hub, "RoundAdvanced")
         .withArgs(2);
     });
 
     it("reverts when not yet distributed", async function () {
-      await expect(hub.advanceWeek()).to.be.revertedWith("Distribute first");
+      await expect(hub.advanceRound()).to.be.revertedWith("Distribute first");
     });
 
     it("reverts for non-owner", async function () {
-      await expect(hub.connect(outsider).advanceWeek()).to.be.reverted;
+      await expect(hub.connect(outsider).advanceRound()).to.be.reverted;
     });
   });
 
   // --------------------------------------------------------------------------
-  //  skipWeek
+  //  skipRound
   // --------------------------------------------------------------------------
-  describe("skipWeek", function () {
+  describe("skipRound", function () {
     it("marks week as distributed with zero payout and advances", async function () {
       await fundHub(5000n * SCALE);
-      await hub.skipWeek();
+      await hub.skipRound();
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       expect(wd.distributed).to.be.true;
       expect(wd.totalPool).to.equal(0);
-      expect(await hub.currentWeek()).to.equal(2);
+      expect(await hub.currentRound()).to.equal(2);
     });
 
     it("preserves hub balance for the next week", async function () {
       await fundHub(5000n * SCALE);
       const balBefore = await token.balanceOf(hubAddr);
 
-      await hub.skipWeek();
+      await hub.skipRound();
 
       expect(await token.balanceOf(hubAddr)).to.equal(balBefore);
     });
 
-    it("emits WeekAdvanced event", async function () {
-      await expect(hub.skipWeek()).to.emit(hub, "WeekAdvanced").withArgs(2);
+    it("emits RoundAdvanced event", async function () {
+      await expect(hub.skipRound()).to.emit(hub, "RoundAdvanced").withArgs(2);
     });
 
     it("can skip an already-distributed week", async function () {
       await buyShares(pool0Addr, alice, SHARES_BUY);
       await fundHub(1000n * SCALE);
-      await hub.setWeeklyPerformanceBatch([0], [100n * SCALE]);
-      await hub.distributeDividends();
+      await hub.setRoundPerformanceBatch([0], [100n * SCALE]);
+      await hub.distributeDividends(10n);
 
-      // skipWeek on an already-distributed week just advances
-      await hub.skipWeek();
-      expect(await hub.currentWeek()).to.equal(2);
+      // skipRound on an already-distributed week just advances
+      await hub.skipRound();
+      expect(await hub.currentRound()).to.equal(2);
     });
 
     it("reverts for non-owner", async function () {
-      await expect(hub.connect(outsider).skipWeek()).to.be.reverted;
+      await expect(hub.connect(outsider).skipRound()).to.be.reverted;
     });
   });
 
@@ -417,19 +390,16 @@ describe("DividendHub (unit tests)", function () {
       await buyShares(pool2Addr, bob, SHARES_BUY);
       await fundHub(10_000n * SCALE);
 
-      // All pools at projection — no outperformance, no eligible pools
-      await hub.setWeeklyPerformanceBatch(
+      // No top-performer eligibility — only base pool pays out
+      await runDistribution(
         [0, 1, 2],
-        [100n * SCALE, 200n * SCALE, 300n * SCALE]
+        [100n * SCALE, 200n * SCALE, 300n * SCALE],
+        []
       );
-      await hub.distributeDividends();
 
       const aliceDiv = await hub.calculateDividend(1, alice.address);
       const bobDiv = await hub.calculateDividend(1, bob.address);
 
-      // With no outperformers, only base pool matters (2000 * SCALE)
-      // Alice and Bob each hold 50% of total shares → each gets 50% of base
-      // base = 2000 * SCALE, outperformer = 8000 * SCALE (but no one qualifies)
       const basePool = 2_000n * SCALE;
       const expectedEach = basePool / 2n;
       expect(aliceDiv).to.equal(expectedEach);
@@ -453,22 +423,20 @@ describe("DividendHub (unit tests)", function () {
       const aliceDiv = await hub.calculateDividend(1, alice.address);
       const bobDiv = await hub.calculateDividend(1, bob.address);
 
-      // base = 2000 each gets 1000
-      // outperformer = 8000, 50/50 split → each pool gets 4000
-      // Alice owns 100% of pool 0 → 4000, Bob owns 100% of pool 2 → 4000
-      expect(aliceDiv).to.equal(1_000n * SCALE + 4_000n * SCALE);
-      expect(bobDiv).to.equal(1_000n * SCALE + 4_000n * SCALE);
+      // base = 2000 each gets 1000; top pool split by avg FPts 150 : 450
+      const top = 8_000n * SCALE;
+      const w0 = 150n * SCALE;
+      const w2 = 450n * SCALE;
+      const wSum = w0 + w2;
+      expect(aliceDiv).to.equal(1_000n * SCALE + (top * w0) / wSum);
+      expect(bobDiv).to.equal(1_000n * SCALE + (top * w2) / wSum);
     });
 
-    it("higher outperformance gets larger share of outperformer pool", async function () {
+    it("higher avg FPts gets larger share of top-performer pool", async function () {
       await buyShares(pool0Addr, alice, SHARES_BUY);
       await buyShares(pool2Addr, bob, SHARES_BUY);
       await fundHub(10_000n * SCALE);
 
-      // Pool 0: actual 200, projection 100 → +100% (1e18)
-      // Pool 2: actual 450, projection 300 → +50%  (5e17)
-      // totalPositiveOutperf = 1.5e18
-      // Pool 0 gets 1e18/1.5e18 = 2/3, Pool 2 gets 1/3
       await runDistribution(
         [0, 1, 2],
         [200n * SCALE, 100n * SCALE, 450n * SCALE],
@@ -479,12 +447,11 @@ describe("DividendHub (unit tests)", function () {
       const bobDiv = await hub.calculateDividend(1, bob.address);
 
       const outPool = 8_000n * SCALE;
-      const op0 = 1n * 10n ** 18n;
-      const op2 = 5n * 10n ** 17n;
-      const totalOp = op0 + op2;
-
-      const pool0Share = (outPool * op0) / totalOp;
-      const pool2Share = (outPool * op2) / totalOp;
+      const avg0 = 200n * SCALE;
+      const avg2 = 450n * SCALE;
+      const totalAvg = avg0 + avg2;
+      const pool0Share = (outPool * avg0) / totalAvg;
+      const pool2Share = (outPool * avg2) / totalAvg;
       const base = 2_000n * SCALE / 2n;
 
       expect(aliceDiv).to.equal(base + pool0Share);
@@ -513,21 +480,19 @@ describe("DividendHub (unit tests)", function () {
       expect(bobDiv).to.equal(base);
     });
 
-    it("underperforming eligible pool gets no outperformer dividend", async function () {
+    it("eligible pool with zero avg FPts gets no top-performer dividend", async function () {
       await buyShares(pool0Addr, alice, SHARES_BUY);
       await buyShares(pool1Addr, bob, SHARES_BUY);
       await fundHub(10_000n * SCALE);
 
-      // Pool 0: outperforms, pool 1: underperforms. Both marked eligible.
       await runDistribution(
         [0, 1, 2],
-        [150n * SCALE, 100n * SCALE, 300n * SCALE],
+        [150n * SCALE, 0n, 300n * SCALE],
         [0, 1]
       );
 
       const bobDiv = await hub.calculateDividend(1, bob.address);
       const base = 2_000n * SCALE / 2n;
-      // Bob's pool 1 is eligible but underperformed → base only
       expect(bobDiv).to.equal(base);
     });
 
@@ -640,9 +605,9 @@ describe("DividendHub (unit tests)", function () {
   });
 
   // --------------------------------------------------------------------------
-  //  claimMultipleWeeks
+  //  claimMultipleRounds
   // --------------------------------------------------------------------------
-  describe("claimMultipleWeeks", function () {
+  describe("claimMultipleRounds", function () {
     beforeEach(async function () {
       // Week 1: Alice and Bob hold shares
       await buyShares(pool0Addr, alice, SHARES_BUY);
@@ -655,7 +620,7 @@ describe("DividendHub (unit tests)", function () {
         [150n * SCALE, 100n * SCALE, 450n * SCALE],
         [0, 2]
       );
-      await hub.advanceWeek();
+      await hub.advanceRound();
 
       // Week 2 distribution
       await fundHub(10_000n * SCALE);
@@ -671,14 +636,14 @@ describe("DividendHub (unit tests)", function () {
       const div2 = await hub.calculateDividend(2, alice.address);
 
       const balBefore = await token.balanceOf(alice.address);
-      await hub.connect(alice).claimMultipleWeeks([1, 2]);
+      await hub.connect(alice).claimMultipleRounds([1, 2]);
       const balAfter = await token.balanceOf(alice.address);
 
       expect(balAfter - balBefore).to.equal(div1 + div2);
     });
 
     it("marks each week as claimed", async function () {
-      await hub.connect(alice).claimMultipleWeeks([1, 2]);
+      await hub.connect(alice).claimMultipleRounds([1, 2]);
 
       expect(await hub.hasClaimed(1, alice.address)).to.be.true;
       expect(await hub.hasClaimed(2, alice.address)).to.be.true;
@@ -688,7 +653,7 @@ describe("DividendHub (unit tests)", function () {
       const div1 = await hub.calculateDividend(1, alice.address);
       const div2 = await hub.calculateDividend(2, alice.address);
 
-      await expect(hub.connect(alice).claimMultipleWeeks([1, 2]))
+      await expect(hub.connect(alice).claimMultipleRounds([1, 2]))
         .to.emit(hub, "DividendClaimed")
         .withArgs(1, alice.address, div1)
         .and.to.emit(hub, "DividendClaimed")
@@ -700,7 +665,7 @@ describe("DividendHub (unit tests)", function () {
       const div2 = await hub.calculateDividend(2, alice.address);
 
       const balBefore = await token.balanceOf(alice.address);
-      await hub.connect(alice).claimMultipleWeeks([1, 2]);
+      await hub.connect(alice).claimMultipleRounds([1, 2]);
       const balAfter = await token.balanceOf(alice.address);
 
       // Only week 2 paid out
@@ -718,7 +683,7 @@ describe("DividendHub (unit tests)", function () {
       if (drainAmount > 0n) {
         // Transfer directly isn't possible without the hub, so we test the natural flow
         // Instead, have bob claim his share first to reduce balance
-        await hub.connect(bob).claimMultipleWeeks([1, 2]);
+        await hub.connect(bob).claimMultipleRounds([1, 2]);
 
         // Now alice claims — hub may not have enough for both her weeks
         const remainingBal = await token.balanceOf(hubAddr);
@@ -727,7 +692,7 @@ describe("DividendHub (unit tests)", function () {
 
         if (remainingBal < aliceDiv1 + aliceDiv2) {
           const balBefore = await token.balanceOf(alice.address);
-          await hub.connect(alice).claimMultipleWeeks([1, 2]);
+          await hub.connect(alice).claimMultipleRounds([1, 2]);
           const balAfter = await token.balanceOf(alice.address);
           // Got less than full amount — some weeks were skipped
           expect(balAfter - balBefore).to.be.lte(aliceDiv1 + aliceDiv2);
@@ -737,7 +702,7 @@ describe("DividendHub (unit tests)", function () {
 
     it("reverts when no dividends at all for the user", async function () {
       await expect(
-        hub.connect(outsider).claimMultipleWeeks([1, 2])
+        hub.connect(outsider).claimMultipleRounds([1, 2])
       ).to.be.revertedWith("No dividends");
     });
   });
@@ -781,7 +746,7 @@ describe("DividendHub (unit tests)", function () {
       await fundHub(10_000n * SCALE);
       await runDistribution([0, 1, 2], [150n * SCALE, 200n * SCALE, 300n * SCALE], [0]);
       const div1 = await hub.calculateDividend(1, alice.address);
-      await hub.advanceWeek();
+      await hub.advanceRound();
 
       await fundHub(10_000n * SCALE);
       await runDistribution([0, 1, 2], [150n * SCALE, 200n * SCALE, 300n * SCALE], [0]);
@@ -824,33 +789,35 @@ describe("DividendHub (unit tests)", function () {
       );
 
       // Verify base pool math
-      const wd1 = await hub.weeklyDividends(1);
+      const wd1 = await hub.roundDividends(1);
       expect(wd1.basePool).to.equal((hubFund * 2000n) / BPS);
-      expect(wd1.outperformerPool).to.equal(hubFund - wd1.basePool);
+      expect(wd1.topPerformerPool).to.equal(hubFund - wd1.basePool);
 
-      // base: 6000 * SCALE each user gets 1/3 = 2000 * SCALE
-      // outperformer (24000 * SCALE): pool 0 and 2 each get 50% = 12000
-      // Alice (pool 0): 2000 + 12000 = 14000
-      // Bob   (pool 1): 2000 + 0     = 2000
-      // Carol (pool 2): 2000 + 12000 = 14000
+      // Base split 3 ways; top pool split by avg FPts (150 vs 450) for eligible pools 0 and 2
       const baseThird = wd1.basePool / 3n;
-      const outHalf = wd1.outperformerPool / 2n;
+      const top = wd1.topPerformerPool;
+      const w0 = 150n * SCALE;
+      const w2 = 450n * SCALE;
+      const wSum = w0 + w2;
 
-      expect(await hub.calculateDividend(1, alice.address)).to.equal(baseThird + outHalf);
+      const aliceExpected = baseThird + (top * w0) / wSum;
+      const carolExpected = baseThird + (top * w2) / wSum;
+
+      expect(await hub.calculateDividend(1, alice.address)).to.equal(aliceExpected);
       expect(await hub.calculateDividend(1, bob.address)).to.equal(baseThird);
-      expect(await hub.calculateDividend(1, carol.address)).to.equal(baseThird + outHalf);
+      expect(await hub.calculateDividend(1, carol.address)).to.equal(carolExpected);
 
       // Claims
       const aliceBefore = await token.balanceOf(alice.address);
       await hub.connect(alice).claimDividend(1);
-      expect(await token.balanceOf(alice.address) - aliceBefore).to.equal(baseThird + outHalf);
+      expect(await token.balanceOf(alice.address) - aliceBefore).to.equal(aliceExpected);
 
       await hub.connect(bob).claimDividend(1);
       await hub.connect(carol).claimDividend(1);
 
       // ===== WEEK 2 =====
-      await hub.advanceWeek();
-      expect(await hub.currentWeek()).to.equal(2);
+      await hub.advanceRound();
+      expect(await hub.currentRound()).to.equal(2);
 
       await fundHub(15_000n * SCALE);
 
@@ -862,12 +829,12 @@ describe("DividendHub (unit tests)", function () {
         [1]
       );
 
-      const wd2 = await hub.weeklyDividends(2);
+      const wd2 = await hub.roundDividends(2);
       const base2Third = wd2.basePool / 3n;
 
       // Only Bob gets outperformer this week
       expect(await hub.calculateDividend(2, alice.address)).to.equal(base2Third);
-      expect(await hub.calculateDividend(2, bob.address)).to.equal(base2Third + wd2.outperformerPool);
+      expect(await hub.calculateDividend(2, bob.address)).to.equal(base2Third + wd2.topPerformerPool);
       expect(await hub.calculateDividend(2, carol.address)).to.equal(base2Third);
     });
 
@@ -875,8 +842,8 @@ describe("DividendHub (unit tests)", function () {
       await buyShares(pool0Addr, alice, SHARES_BUY);
       await fundHub(5_000n * SCALE);
 
-      await hub.skipWeek();
-      expect(await hub.currentWeek()).to.equal(2);
+      await hub.skipRound();
+      expect(await hub.currentRound()).to.equal(2);
 
       // Balance should still be there
       expect(await token.balanceOf(hubAddr)).to.equal(5_000n * SCALE);
@@ -884,12 +851,14 @@ describe("DividendHub (unit tests)", function () {
       // Week 1 has no dividend for anyone
       expect(await hub.calculateDividend(1, alice.address)).to.equal(0);
 
-      // Now fund and distribute week 2 — uses accumulated balance
-      await hub.setWeeklyPerformanceBatch([0, 1, 2], [150n * SCALE, 200n * SCALE, 300n * SCALE]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      // Round 2 distribution — uses accumulated balance
+      await runDistribution(
+        [0, 1, 2],
+        [150n * SCALE, 200n * SCALE, 300n * SCALE],
+        [0]
+      );
 
-      const wd2 = await hub.weeklyDividends(2);
+      const wd2 = await hub.roundDividends(2);
       expect(wd2.totalPool).to.equal(5_000n * SCALE);
       expect(await hub.calculateDividend(2, alice.address)).to.be.gt(0);
     });
@@ -904,7 +873,7 @@ describe("DividendHub (unit tests)", function () {
       );
 
       // Advance to week 2
-      await hub.advanceWeek();
+      await hub.advanceRound();
 
       // Alice sells all shares in week 2 — triggers snapshot of week 1 holdings
       await mockRouter.callExecuteSell(pool0Addr, alice.address, SHARES_BUY, 0);
@@ -940,16 +909,14 @@ describe("DividendHub (unit tests)", function () {
   //  EDGE CASES
   // --------------------------------------------------------------------------
   describe("Edge cases", function () {
-    it("pool with zero projected points has zero outperformance", async function () {
-      // Create a pool with 0 projected points
-      await factory.createPool("Zero", "ZERO", "zero_player", 0);
+    it("pool can record zero avg FPts", async function () {
+      await factory.createPool("Zero", "ZERO", "zero_player");
       const pool3Addr = await factory.pools(3);
       await buyShares(pool3Addr, alice, SHARES_BUY);
       await fundHub(1_000n * SCALE);
 
-      await hub.setWeeklyPerformanceBatch([3], [100n * SCALE]);
-      const perf = await hub.weeklyPerformance(1, 3);
-      expect(perf.outperformance).to.equal(0);
+      await hub.setRoundPerformanceBatch([3], [0n]);
+      expect(await hub.roundPerformance(1, 3)).to.equal(0n);
     });
 
     it("100% base split gives entire pool as base dividend", async function () {
@@ -958,9 +925,9 @@ describe("DividendHub (unit tests)", function () {
       await fundHub(10_000n * SCALE);
       await runDistribution([0, 1, 2], [150n * SCALE, 200n * SCALE, 300n * SCALE], [0]);
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       expect(wd.basePool).to.equal(10_000n * SCALE);
-      expect(wd.outperformerPool).to.equal(0);
+      expect(wd.topPerformerPool).to.equal(0);
 
       // Alice gets 100% of base (only holder)
       expect(await hub.calculateDividend(1, alice.address)).to.equal(10_000n * SCALE);
@@ -972,9 +939,9 @@ describe("DividendHub (unit tests)", function () {
       await fundHub(10_000n * SCALE);
       await runDistribution([0, 1, 2], [150n * SCALE, 200n * SCALE, 300n * SCALE], [0]);
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       expect(wd.basePool).to.equal(0);
-      expect(wd.outperformerPool).to.equal(10_000n * SCALE);
+      expect(wd.topPerformerPool).to.equal(10_000n * SCALE);
 
       // Alice gets 100% outperformer (only eligible holder)
       expect(await hub.calculateDividend(1, alice.address)).to.equal(10_000n * SCALE);
@@ -998,7 +965,7 @@ describe("DividendHub (unit tests)", function () {
 
     it("claiming from a skipped week reverts (no dividend)", async function () {
       await buyShares(pool0Addr, alice, SHARES_BUY);
-      await hub.skipWeek();
+      await hub.skipRound();
 
       // Week 1 was skipped — distributed = true but totalPool = 0
       await expect(

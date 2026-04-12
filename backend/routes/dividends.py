@@ -11,11 +11,11 @@ router = APIRouter()
 
 # Dividend config (mirrors on-chain constants) FIXME: make a source of truth
 DIVIDEND_CONFIG = {
-    "fee_rate": 0.015,          # 1.5% per trade
+    "fee_rate": 0.02,           # 2% per trade
     "dividend_pool_pct": 0.67,   # 67% of fees to dividends
     "company_pct": 0.33,         # 33% to protocol
     "base_pct": 0.20,            # 20% of dividend pool to all holders
-    "outperformer_pct": 0.80,    # 80% to outperformer holders
+    "top_performer_pct": 0.80,   # 80% to top 10 fantasy point scorers' holders
 }
 
 

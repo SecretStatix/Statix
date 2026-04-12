@@ -9,7 +9,7 @@ from typing import List, Optional
 import hmac
 import os
 
-from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points, get_next_week_projection
+from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points
 from chain import get_deployment
 from db import get_supabase, get_store
 
@@ -33,6 +33,13 @@ class WeeklyUpdate(BaseModel):
     week_end: str    # YYYY-MM-DD
 
 
+class RoundUpdate(BaseModel):
+    round: int
+    round_start: str  # YYYY-MM-DD
+    round_end: str    # YYYY-MM-DD
+    top_n: int = 10
+
+
 class ManualPerformance(BaseModel):
     week: int
     performances: List[dict]  # [{player_index, actual_points}]
@@ -41,8 +48,8 @@ class ManualPerformance(BaseModel):
 @router.post("/update-weekly-stats")
 async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
     """
-    Pull real NBA stats for the week and calculate fantasy points.
-    Returns data ready to be submitted on-chain.
+    Pull real NBA stats for the week and calculate actual fantasy points.
+    Returns data ready to be submitted on-chain (absolute FPts, no projections).
     """
     deployment = get_deployment()
     if not deployment:
@@ -58,14 +65,7 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
 
         try:
             weekly = get_weekly_actuals(nba_id, update.week_start, update.week_end)
-            weekly_projection = p.get("weekly_projection", 0)
             actual_points = weekly["total_fantasy_points"]
-
-            outperformance = 0
-            if weekly_projection > 0:
-                outperformance = (actual_points - weekly_projection) / weekly_projection
-
-            next_week_proj = get_next_week_projection(nba_id, p)
 
             results.append({
                 "player_index": p["index"],
@@ -73,9 +73,6 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
                 "nba_id": nba_id,
                 "games_played": weekly["games_played"],
                 "actual_points": round(actual_points, 2),
-                "projected_points": round(weekly_projection, 2),
-                "next_week_projected": round(next_week_proj, 2),
-                "outperformance": round(outperformance, 4),
             })
         except Exception as e:
             results.append({
@@ -93,23 +90,91 @@ async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
                     "week": update.week,
                     "player_index": r["player_index"],
                     "actual_points": r["actual_points"],
-                    "projected_points": r["projected_points"],
-                    "outperformance": r["outperformance"],
                     "games_played": r["games_played"],
                 }).execute()
 
-    # Format for on-chain submission (weekly fantasy points scaled 1e6, same units as actuals)
+    # Format for on-chain submission (fantasy points scaled 1e6)
     ok = [r for r in results if "error" not in r]
     on_chain_data = {
         "player_indices": [r["player_index"] for r in ok],
         "actual_points_scaled": [int(r["actual_points"] * 1e6) for r in ok],
-        "this_week_projected_scaled": [int(r["projected_points"] * 1e6) for r in ok],
-        "next_week_projected_scaled": [int(r["next_week_projected"] * 1e6) for r in ok],
     }
 
     return {
         "week": update.week,
         "players_updated": len([r for r in results if "error" not in r]),
+        "errors": len([r for r in results if "error" in r]),
+        "results": results,
+        "on_chain_data": on_chain_data,
+    }
+
+
+@router.post("/update-round-stats")
+async def update_round_stats(update: RoundUpdate, _=Depends(verify_admin)):
+    """
+    Pull real NBA stats for a playoff round window and compute per-game avg FPts.
+    Returns data ready for on-chain submission via setRoundPerformanceBatch.
+    Minimum 2 games played required; players below threshold return avg_fpts=0.
+    """
+    deployment = get_deployment()
+    if not deployment:
+        raise HTTPException(status_code=503, detail="Not deployed")
+
+    players = deployment.get("players", [])
+    results = []
+
+    for p in players:
+        nba_id = p.get("nba_id")
+        if not nba_id:
+            continue
+
+        try:
+            weekly = get_weekly_actuals(nba_id, update.round_start, update.round_end)
+            games_played = weekly["games_played"]
+            total_fpts = weekly["total_fantasy_points"]
+            avg_fpts = round(total_fpts / games_played, 4) if games_played >= 1 else 0.0
+
+            results.append({
+                "player_index": p["index"],
+                "name": p["name"],
+                "nba_id": nba_id,
+                "games_played": games_played,
+                "total_fpts": round(total_fpts, 2),
+                "avg_fpts": avg_fpts,
+            })
+        except Exception as e:
+            results.append({
+                "player_index": p["index"],
+                "name": p["name"],
+                "error": str(e),
+            })
+
+    # Save to Supabase if available
+    supabase = get_supabase()
+    if supabase:
+        for r in results:
+            if "error" not in r:
+                supabase.table("round_performance").upsert({
+                    "round": update.round,
+                    "player_index": r["player_index"],
+                    "games_played": r["games_played"],
+                    "avg_fpts": r["avg_fpts"],
+                }).execute()
+
+    # Format for on-chain (avg FPts scaled 1e6, 0 for players below min games)
+    ok = [r for r in results if "error" not in r]
+    on_chain_data = {
+        "player_indices": [r["player_index"] for r in ok],
+        "avg_fpts_scaled": [int(r["avg_fpts"] * 1e6) for r in ok],
+        "games_played": [r["games_played"] for r in ok],
+    }
+
+    return {
+        "round": update.round,
+        "round_start": update.round_start,
+        "round_end": update.round_end,
+        "top_n": update.top_n,
+        "players_updated": len(ok),
         "errors": len([r for r in results if "error" in r]),
         "results": results,
         "on_chain_data": on_chain_data,

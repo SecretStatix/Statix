@@ -1,8 +1,8 @@
-# Dividend Fantasy: The Math
+# Statix: The Math
 
 ## Overview
 
-Users trade player shares via an AMM. Trading fees fund weekly dividends paid to shareholders of outperforming players.
+Users trade player shares via an AMM. Trading fees fund periodic dividends paid to shareholders of the top 10 fantasy point scorers.
 
 ---
 
@@ -65,26 +65,32 @@ Fee Split:
 
 ---
 
-## 3. Dividend Distribution
+## 3. Fantasy Points
+
+```
+FPts = PTS×1 + REB×1.2 + AST×1.5 + STL×3 + BLK×3 - TOV×1
+```
+
+Each period (weekly or bi-weekly), we sum each player's total fantasy points across all games played.
+
+---
+
+## 4. Dividend Distribution
 
 ### Step 1: Split the Dividend Pool
 
 ```
 Dividend Pool Split:
 ├── 20% → Base Dividend (ALL shareholders)
-└── 80% → Outperformer Dividend (only outperforming players)
+└── 80% → Top Performer Dividend (top 10 players by absolute FPts)
 ```
 
-### Step 2: Calculate Outperformance
+### Step 2: Rank Players by Absolute Fantasy Points
 
-```
-outperformance = (actual_points - projected_points) / projected_points
-```
+All 50 players are ranked by their total fantasy points scored in the period.
+The top 10 are eligible for the top performer pool.
 
-Example:
-- Projected: 20 points
-- Actual: 28 points
-- Outperformance = (28 - 20) / 20 = **+40%**
+No projections. No outperformance calculations. Just absolute performance.
 
 ### Step 3: Distribute Base Dividend
 
@@ -94,12 +100,12 @@ base_dividend_per_share = base_pool / total_shares_held_by_all_users
 user_base_dividend = user_total_shares × base_dividend_per_share
 ```
 
-### Step 4: Distribute Outperformer Dividend
+### Step 4: Distribute Top Performer Dividend
 
-Only players with positive outperformance qualify.
+The 80% pool is split among the top 10 players, weighted by their actual fantasy points.
 
 ```
-player_share_of_pool = (player_outperformance / sum_of_all_positive_outperformance) × outperformer_pool
+player_share_of_pool = (player_fpts / sum_of_top10_fpts) × top_performer_pool
 
 dividend_per_share = player_share_of_pool / total_shares_of_player
 
@@ -109,46 +115,48 @@ user_dividend_from_player = user_shares_of_player × dividend_per_share
 ### Step 5: Total User Dividend
 
 ```
-user_total_dividend = base_dividend + sum(outperformer_dividends_from_each_player)
+user_total_dividend = base_dividend + sum(top_performer_dividends_from_each_player)
 ```
 
 ---
 
-## 4. Worked Example
+## 5. Worked Example
 
 ### Setup
 
 - Weekly fees collected: **$1,000**
 - Dividend pool (67%): **$670**
   - Base pool (20%): **$134**
-  - Outperformer pool (80%): **$536**
+  - Top performer pool (80%): **$536**
 
-### Players
+### Players (Top 3 of 10 shown)
 
-| Player | Outperformance | Qualifies? |
-|--------|----------------|------------|
-| Mahomes | +30% | Yes |
-| Kelce | +15% | Yes |
-| Hill | -10% | No |
+| Player | Fantasy Points | In Top 10? |
+|--------|---------------|------------|
+| Jokic | 220 FPts | Yes |
+| Wemby | 195 FPts | Yes |
+| Luka | 180 FPts | Yes |
+| ... | ... | ... |
 
-Total positive outperformance: 30% + 15% = **45%**
+Sum of top 10 FPts: **1,800** (for this example)
 
-### Outperformer Pool Distribution
+### Top Performer Pool Distribution (top 3 shown)
 
 | Player | Share of Pool | Amount |
 |--------|---------------|--------|
-| Mahomes | 30/45 = 66.7% | $357.33 |
-| Kelce | 15/45 = 33.3% | $178.67 |
+| Jokic | 220/1800 = 12.2% | $65.42 |
+| Wemby | 195/1800 = 10.8% | $58.09 |
+| Luka | 180/1800 = 10.0% | $53.56 |
 
 ### Shareholders
 
 | Player | Alice | Bob | Carol | Total |
 |--------|-------|-----|-------|-------|
-| Mahomes | 50 | 30 | 20 | 100 |
-| Kelce | 40 | 0 | 60 | 100 |
-| Hill | 0 | 80 | 20 | 100 |
+| Jokic | 50 | 30 | 20 | 100 |
+| Wemby | 40 | 0 | 60 | 100 |
+| Luka | 0 | 80 | 20 | 100 |
 
-Total shares: **300**
+Total shares across all 50 players: **300** (simplified)
 
 ### Alice's Dividend
 
@@ -159,14 +167,14 @@ Base per share: $134 / 300 = $0.447
 Alice base: 90 × $0.447 = $40.20
 ```
 
-**Outperformer dividend:**
+**Top performer dividend:**
 ```
-From Mahomes: $357.33 × (50/100) = $178.67
-From Kelce: $178.67 × (40/100) = $71.47
-Total outperformer: $250.14
+From Jokic: $65.42 × (50/100) = $32.71
+From Wemby: $58.09 × (40/100) = $23.24
+Total top performer: $55.95
 ```
 
-**Alice's total: $40.20 + $250.14 = $290.34**
+**Alice's total: $40.20 + $55.95 = $96.15**
 
 ### Bob's Dividend
 
@@ -176,47 +184,18 @@ Bob's shares: 30 + 0 + 80 = 110
 Bob base: 110 × $0.447 = $49.13
 ```
 
-**Outperformer dividend:**
+**Top performer dividend:**
 ```
-From Mahomes: $357.33 × (30/100) = $107.20
-From Kelce: $0 (Bob owns none)
-Total outperformer: $107.20
-```
-
-**Bob's total: $49.13 + $107.20 = $156.33**
-
-### Carol's Dividend
-
-**Base dividend:**
-```
-Carol's shares: 20 + 60 + 20 = 100
-Carol base: 100 × $0.447 = $44.67
+From Jokic: $65.42 × (30/100) = $19.63
+From Luka: $53.56 × (80/100) = $42.85
+Total top performer: $62.48
 ```
 
-**Outperformer dividend:**
-```
-From Mahomes: $357.33 × (20/100) = $71.47
-From Kelce: $178.67 × (60/100) = $107.20
-Total outperformer: $178.67
-```
-
-**Carol's total: $44.67 + $178.67 = $223.34**
-
-### Verification
-
-| User | Dividend |
-|------|----------|
-| Alice | $290.34 |
-| Bob | $156.33 |
-| Carol | $223.34 |
-| **Total** | **$670.01** |
-
-Company revenue: $330.00
-Total: $1,000.01 ✓ (rounding)
+**Bob's total: $49.13 + $62.48 = $111.61**
 
 ---
 
-## 5. Key Formulas Summary
+## 6. Key Formulas Summary
 
 ```
 AMM Price:
@@ -225,15 +204,26 @@ price = cash / shares
 Buy Cost:
 cost = (k / (shares - n)) - cash
 
-Outperformance:
-outperformance = (actual - projected) / projected
+Fantasy Points:
+FPts = PTS×1 + REB×1.2 + AST×1.5 + STL×3 + BLK×3 - TOV×1
 
-Player Dividend Share:
-player_pool = (player_op / total_positive_op) × outperformer_pool
+Player Dividend Share (top 10 only):
+player_pool = (player_fpts / total_top10_fpts) × top_performer_pool
 
 User Dividend from Player:
 user_div = player_pool × (user_shares / total_player_shares)
 
 Total User Dividend:
-total = base_div + Σ(outperformer_divs)
+total = base_div + Σ(top_performer_divs)
 ```
+
+---
+
+## 7. Why Absolute Rankings?
+
+The system uses absolute fantasy points rather than "beat your projection" because:
+
+1. **Stock market feel** — top performers' share prices naturally rise as investors hold long-term
+2. **No projection gaming** — no need to predict matchups or exploit schedule advantages
+3. **Simpler** — rank by total FPts, distribute. No outperformance ratios needed
+4. **Real investment narrative** — "I bought Wemby early" is more compelling than "I knew the Spurs had an easy schedule this week"

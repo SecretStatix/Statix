@@ -36,8 +36,6 @@ contract PlayerPool is IPlayerPool {
     string public override name;
     string public override symbol;
     string public override playerId;
-    /// @notice Weekly fantasy projection (1e6 scale) for the week being scored; updated each cycle via DividendHub.
-    uint256 public override projectedPoints;
 
     uint256 public override virtualShares;
     uint256 public override virtualCash;
@@ -52,20 +50,11 @@ contract PlayerPool is IPlayerPool {
     // Holdings: user => shares (scaled 1e6)
     mapping(address => uint256) public override holdings;
 
-    // Snapshots: week => user => shares at end of that week
-    mapping(uint256 => mapping(address => uint256)) public override weekEndHoldings;
-    // user => last week that was snapshotted
-    mapping(address => uint256) public override lastSnapshotWeek;
 
     // ============== MODIFIERS ==============
 
     modifier onlyRouter() {
         require(msg.sender == router, "Only router");
-        _;
-    }
-
-    modifier onlyHub() {
-        require(msg.sender == dividendHub, "Only hub");
         _;
     }
 
@@ -77,7 +66,6 @@ contract PlayerPool is IPlayerPool {
         string memory _name,
         string memory _symbol,
         string memory _playerId,
-        uint256 _projectedPoints,
         uint256 _initialShares,
         uint256 _initialCash
     ) {
@@ -87,15 +75,10 @@ contract PlayerPool is IPlayerPool {
         name = _name;
         symbol = _symbol;
         playerId = _playerId;
-        projectedPoints = _projectedPoints;
         virtualShares = _initialShares;
         virtualCash = _initialCash;
         totalLiquidity = _initialCash;
         active = true;
-    }
-
-    function setProjectedPoints(uint256 _projectedPoints) external override onlyHub {
-        projectedPoints = _projectedPoints;
     }
 
     // ============== FEE READS ==============
@@ -106,20 +89,6 @@ contract PlayerPool is IPlayerPool {
 
     function _dividendFeeBps() internal view returns (uint256) {
         return IFeeConfig(router).dividendFeeBps();
-    }
-
-    // ============== SNAPSHOT (lazy) ==============
-
-    function _snapshotHoldings(address _user, uint256 _currentWeek) internal {
-        uint256 snapped = lastSnapshotWeek[_user];
-        uint256 upTo = _currentWeek - 1;
-        if (snapped < upTo && _currentWeek > 1) {
-            uint256 currentHolding = holdings[_user];
-            for (uint256 w = snapped + 1; w <= upTo; w++) {
-                weekEndHoldings[w][_user] = currentHolding;
-            }
-            lastSnapshotWeek[_user] = upTo;
-        }
     }
 
     // ============== VIEWS ==============
@@ -164,10 +133,6 @@ contract PlayerPool is IPlayerPool {
         dividendFee = (fee * currentDividendFeeBps) / BPS;
         protocolFee = fee - dividendFee;
 
-        // Read currentWeek from hub for snapshot
-        uint256 currentWeek = IDividendHubWeek(dividendHub).currentWeek();
-        _snapshotHoldings(buyer, currentWeek);
-
         // Update AMM
         virtualShares -= sharesOut;
         virtualCash += cost;
@@ -208,10 +173,6 @@ contract PlayerPool is IPlayerPool {
 
         dividendFee = (fee * currentDividendFeeBps) / BPS;
         protocolFee = fee - dividendFee;
-
-        // Read currentWeek from hub for snapshot
-        uint256 currentWeek = IDividendHubWeek(dividendHub).currentWeek();
-        _snapshotHoldings(seller, currentWeek);
 
         // Update AMM
         virtualShares += sharesIn;
@@ -276,16 +237,6 @@ contract PlayerPool is IPlayerPool {
         paymentToken.safeTransfer(router, cashOut);
     }
 
-    // ============== SNAPSHOTS (Hub only) ==============
-
-    function snapshotTotalShares() external override onlyHub returns (uint256) {
-        return totalShares;
-    }
-
-    function snapshotUserHoldings(uint256 week, address user) external override onlyHub {
-        _snapshotHoldings(user, week + 1); // +1 because _snapshotHoldings snapshots up to week-1
-    }
-
     // ============== EMERGENCY (Router only) ==============
 
     function emergencyExitUser(address user) external override onlyRouter returns (uint256 refund) {
@@ -311,10 +262,6 @@ contract PlayerPool is IPlayerPool {
     function forceLiquidate(address user) external override onlyRouter returns (uint256 shares, uint256 refund) {
         shares = holdings[user];
         require(shares > 0, "No holdings");
-
-        // Read currentWeek from hub for snapshot
-        uint256 currentWeek = IDividendHubWeek(dividendHub).currentWeek();
-        _snapshotHoldings(user, currentWeek);
 
         uint256 newShares = virtualShares + shares;
         refund = (virtualCash * shares) / newShares;
@@ -351,11 +298,6 @@ contract PlayerPool is IPlayerPool {
             paymentToken.safeTransfer(to, amount);
         }
     }
-}
-
-// Minimal interface to read currentWeek from DividendHub
-interface IDividendHubWeek {
-    function currentWeek() external view returns (uint256);
 }
 
 // Minimal interface to read fee config from StatixRouter

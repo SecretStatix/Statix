@@ -9,8 +9,6 @@ describe("StatixRouter (unit tests)", function () {
   const SCALE = 10n ** 6n;
   const BPS = 10000n;
   const SHARES = 10n * SCALE;
-  const PROJ = 1700n * SCALE;
-
   async function deployFixture() {
     [deployer, alice, bob, feeRecipient, outsider] = await ethers.getSigners();
 
@@ -44,8 +42,8 @@ describe("StatixRouter (unit tests)", function () {
     await factory.setRouter(routerAddr);
     await factory.setDividendHub(hubAddr);
 
-    await factory.createPool("Player A", "PLRA", "player_a", PROJ);
-    await factory.createPool("Player B", "PLRB", "player_b", PROJ);
+    await factory.createPool("Player A", "PLRA", "player_a");
+    await factory.createPool("Player B", "PLRB", "player_b");
 
     pool0Addr = await factory.pools(0);
     pool1Addr = await factory.pools(1);
@@ -74,7 +72,7 @@ describe("StatixRouter (unit tests)", function () {
       expect(await router.paymentToken()).to.equal(await token.getAddress());
       expect(await router.factory()).to.equal(factoryAddr);
       expect(await router.protocolFeeRecipient()).to.equal(feeRecipient.address);
-      expect(await router.feeBps()).to.equal(150);
+      expect(await router.feeBps()).to.equal(200);
       expect(await router.dividendFeeBps()).to.equal(6700);
       expect(await router.killed()).to.be.false;
       expect(await router.tradingPaused()).to.be.false;
@@ -89,7 +87,7 @@ describe("StatixRouter (unit tests)", function () {
       it("updates feeBps and emits event", async function () {
         await expect(router.setFeeBps(300))
           .to.emit(router, "FeeBpsUpdated")
-          .withArgs(150, 300);
+          .withArgs(200, 300);
         expect(await router.feeBps()).to.equal(300);
       });
 
@@ -199,7 +197,7 @@ describe("StatixRouter (unit tests)", function () {
 
       const p = await pool(pool0Addr);
       const rawCost = await p.getBuyCost(SHARES);
-      const fee = (rawCost * 150n) / BPS;
+      const fee = (rawCost * 200n) / BPS;
       const expectedDivFee = (fee * 6700n) / BPS;
       const expectedProtocolFee = fee - expectedDivFee;
 
@@ -687,7 +685,7 @@ describe("StatixRouter (unit tests)", function () {
 
         const p = await pool(pool0Addr);
         const expectedCost = await p.getBuyCost(SHARES);
-        const expectedFee = (expectedCost * 150n) / BPS;
+        const expectedFee = (expectedCost * 200n) / BPS;
 
         expect(cost).to.equal(expectedCost);
         expect(fee).to.equal(expectedFee);
@@ -708,7 +706,7 @@ describe("StatixRouter (unit tests)", function () {
 
         const p = await pool(pool0Addr);
         const expectedRevenue = await p.getSellRevenue(SHARES);
-        const expectedFee = (expectedRevenue * 150n) / BPS;
+        const expectedFee = (expectedRevenue * 200n) / BPS;
 
         expect(revenue).to.equal(expectedRevenue);
         expect(fee).to.equal(expectedFee);

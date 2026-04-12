@@ -152,6 +152,25 @@ export const StatixRouterABI = [
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldBps",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newBps",
+        "type": "uint256"
+      }
+    ],
+    "name": "DividendFeeBpsUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "to",
@@ -197,6 +216,25 @@ export const StatixRouterABI = [
       }
     ],
     "name": "EmergencyShutdown",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldBps",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newBps",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeeBpsUpdated",
     "type": "event"
   },
   {
@@ -272,6 +310,25 @@ export const StatixRouterABI = [
       }
     ],
     "name": "PlayerPoolReset",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "oldRecipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "newRecipient",
+        "type": "address"
+      }
+    ],
+    "name": "ProtocolFeeRecipientUpdated",
     "type": "event"
   },
   {
@@ -399,6 +456,19 @@ export const StatixRouterABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "dividendFeeBps",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -439,6 +509,19 @@ export const StatixRouterABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "feeBps",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -459,6 +542,45 @@ export const StatixRouterABI = [
   {
     "inputs": [],
     "name": "getAllPlayers",
+    "outputs": [
+      {
+        "internalType": "string[]",
+        "name": "names",
+        "type": "string[]"
+      },
+      {
+        "internalType": "string[]",
+        "name": "symbols",
+        "type": "string[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "prices",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "totalSharesArr",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_limit",
+        "type": "uint256"
+      }
+    ],
+    "name": "getAllPlayersPaginated",
     "outputs": [
       {
         "internalType": "string[]",
@@ -570,6 +692,45 @@ export const StatixRouterABI = [
       {
         "internalType": "uint256[]",
         "name": "values",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_offset",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_limit",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPortfolioPaginated",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "poolIdxs",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "sharesArr",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "valuesArr",
         "type": "uint256[]"
       }
     ],
@@ -810,6 +971,32 @@ export const StatixRouterABI = [
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "_dividendFeeBps",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDividendFeeBps",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_feeBps",
+        "type": "uint256"
+      }
+    ],
+    "name": "setFeeBps",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "_poolIndex",
         "type": "uint256"
       },
@@ -820,6 +1007,19 @@ export const StatixRouterABI = [
       }
     ],
     "name": "setPlayerActive",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_recipient",
+        "type": "address"
+      }
+    ],
+    "name": "setProtocolFeeRecipient",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -929,9 +1129,28 @@ export const DividendHubABI = [
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldBps",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newBps",
+        "type": "uint256"
+      }
+    ],
+    "name": "BasePoolBpsUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "uint256",
-        "name": "week",
+        "name": "round",
         "type": "uint256"
       },
       {
@@ -956,7 +1175,7 @@ export const DividendHubABI = [
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "week",
+        "name": "round",
         "type": "uint256"
       },
       {
@@ -974,7 +1193,13 @@ export const DividendHubABI = [
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "outperformerPool",
+        "name": "topPerformerPool",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "topN",
         "type": "uint256"
       }
     ],
@@ -1005,25 +1230,12 @@ export const DividendHubABI = [
     "inputs": [
       {
         "indexed": false,
-        "internalType": "bool",
-        "name": "paused",
-        "type": "bool"
-      }
-    ],
-    "name": "TradingPaused",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "uint256",
-        "name": "newWeek",
+        "name": "newRound",
         "type": "uint256"
       }
     ],
-    "name": "WeekAdvanced",
+    "name": "RoundAdvanced",
     "type": "event"
   },
   {
@@ -1041,16 +1253,29 @@ export const DividendHubABI = [
   },
   {
     "inputs": [],
-    "name": "advanceWeek",
+    "name": "advanceRound",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "basePoolBps",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_week",
+        "name": "_round",
         "type": "uint256"
       },
       {
@@ -1074,7 +1299,7 @@ export const DividendHubABI = [
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_week",
+        "name": "_round",
         "type": "uint256"
       }
     ],
@@ -1087,18 +1312,18 @@ export const DividendHubABI = [
     "inputs": [
       {
         "internalType": "uint256[]",
-        "name": "_weeks",
+        "name": "_rounds",
         "type": "uint256[]"
       }
     ],
-    "name": "claimMultipleWeeks",
+    "name": "claimMultipleRounds",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "currentWeek",
+    "name": "currentRound",
     "outputs": [
       {
         "internalType": "uint256",
@@ -1110,7 +1335,13 @@ export const DividendHubABI = [
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_topN",
+        "type": "uint256"
+      }
+    ],
     "name": "distributeDividends",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -1146,7 +1377,7 @@ export const DividendHubABI = [
       },
       {
         "internalType": "uint256",
-        "name": "weekCount",
+        "name": "roundCount",
         "type": "uint256"
       }
     ],
@@ -1167,30 +1398,6 @@ export const DividendHubABI = [
       }
     ],
     "name": "hasClaimed",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "outperformerEligible",
     "outputs": [
       {
         "internalType": "bool",
@@ -1235,6 +1442,117 @@ export const DividendHubABI = [
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundDividends",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "topN",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalPool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "basePool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "topPerformerPool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalTopAvgFpts",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "distributed",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundEndPoolTotalShares",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundEndTotalAllShares",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundPerformance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "avgFptsScaled",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "router",
     "outputs": [
@@ -1250,12 +1568,12 @@ export const DividendHubABI = [
   {
     "inputs": [
       {
-        "internalType": "uint256[]",
-        "name": "_poolIdxs",
-        "type": "uint256[]"
+        "internalType": "uint256",
+        "name": "_basePoolBps",
+        "type": "uint256"
       }
     ],
-    "name": "setOutperformerEligible",
+    "name": "setBasePoolBps",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1269,20 +1587,75 @@ export const DividendHubABI = [
       },
       {
         "internalType": "uint256[]",
-        "name": "_actualPoints",
+        "name": "_avgFpts",
         "type": "uint256[]"
       }
     ],
-    "name": "setWeeklyPerformanceBatch",
+    "name": "setRoundPerformanceBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_poolIdxs",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "setTopPerformerEligible",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "skipWeek",
+    "name": "skipRound",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_poolIdxs",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "snapshotUserHoldings",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "topPerformerEligible",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1309,87 +1682,19 @@ export const DividendHubABI = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
-    "name": "weekEndTotalShares",
+    "name": "userRoundHoldings",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "weeklyDividends",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "totalPool",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "basePool",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "outperformerPool",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "totalPositiveOutperf",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "distributed",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "weeklyPerformance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "actualPoints",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "projectedPoints",
-        "type": "uint256"
-      },
-      {
-        "internalType": "int256",
-        "name": "outperformance",
-        "type": "int256"
       }
     ],
     "stateMutability": "view",
@@ -2004,27 +2309,11 @@ export const DBucksABI = [
   }
 ] as const;
 
-// Contract addresses loaded from deployments.json (written by deploy script)
-// Falls back to zero addresses if not yet deployed
-let _contracts = {
-  MockUSDC: "0x0000000000000000000000000000000000000000",
-  DBucks: "0x0000000000000000000000000000000000000000",
-  PoolFactory: "0x0000000000000000000000000000000000000000",
-  StatixRouter: "0x0000000000000000000000000000000000000000",
-  DividendHub: "0x0000000000000000000000000000000000000000",
+
+
+export const CONTRACTS = {
+  StatixRouter: "0xEcf00aefb5fFC1DC8B415098b1538fF92d70b876",
+  DividendHub: "0x8308293da57F8D17e947ebaE55546Ab1E49860C5",
+  DBucks: "0x0054198B8E85423b15E08De2D2f48C1Af51297cD",
+  PoolFactory: "0x9aa3E38674519521B811b73E3a2f85eAed1a77D8",
 };
-let _chainId = 84532; // Default to Base Sepolia
-
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const d = require("../deployments.json");
-  if (d?.contracts) {
-    _contracts = d.contracts;
-    _chainId = d.chainId || 84532;
-  }
-} catch {
-  // deployments.json not found — contracts not deployed yet
-}
-
-export const CONTRACTS = _contracts;
-export const CHAIN_ID = _chainId;

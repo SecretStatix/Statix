@@ -24,7 +24,7 @@ contract StatixRouter is Ownable, ReentrancyGuard {
     address public protocolFeeRecipient;
 
     // Configurable fee parameters (readable by pools)
-    uint256 public feeBps = 150;            // 1.5% total fee (max 500 = 5%)
+    uint256 public feeBps = 200;            // 2% total fee (max 500 = 5%)
     uint256 public dividendFeeBps = 6700;   // 67% of fee to dividends (max 10000 = 100%)
 
     // Global controls

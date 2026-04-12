@@ -152,7 +152,7 @@ async def get_quote(req: QuoteRequest):
     virtual_shares, virtual_cash = _get_pool_state(req.player_index)
 
     shares = req.shares
-    fee_rate = 0.015  # 1.5%
+    fee_rate = 0.02  # 2%
 
     if req.side == "buy":
         if shares >= virtual_shares / 2:
