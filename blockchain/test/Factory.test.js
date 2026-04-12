@@ -1,6 +1,20 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
+/** Performance + optional eligibility + holder snapshots + distribute (round-based hub). */
+async function finishRound(hub, factory, signers, poolIdxs, avgFpts, eligibleIdxs) {
+  await hub.setRoundPerformanceBatch(poolIdxs, avgFpts);
+  if (eligibleIdxs && eligibleIdxs.length > 0) {
+    await hub.setTopPerformerEligible(eligibleIdxs);
+  }
+  const poolCount = Number(await factory.poolCount());
+  const allIdx = Array.from({ length: poolCount }, (_, i) => BigInt(i));
+  for (const u of signers) {
+    await hub.snapshotUserHoldings(u.address, allIdx);
+  }
+  await hub.distributeDividends(10n);
+}
+
 describe("Factory Pattern (Router + Pool + Hub)", function () {
   let deployer, user1, user2, feeRecipient;
   let usdc, dbucks, factory, router, hub;
@@ -51,7 +65,7 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
     await factory.setDividendHub(await hub.getAddress());
 
     // Create a test player pool
-    await factory.createPool("LeBron James", "LBJ", "lebron_1", 5000n * 10n ** 6n);
+    await factory.createPool("LeBron James", "LBJ", "lebron_1");
 
     // Give users DBucks via faucet
     await dbucks.connect(user1).faucet(FAUCET_LIMIT);
@@ -82,8 +96,7 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       await factory.createPoolsBatch(
         ["Stephen Curry", "Kevin Durant"],
         ["SC30", "KD35"],
-        ["curry_1", "durant_1"],
-        [4500n * 10n ** 6n, 4800n * 10n ** 6n]
+        ["curry_1", "durant_1"]
       );
 
       expect(await factory.poolCount()).to.equal(3); // 1 from beforeEach + 2
@@ -91,7 +104,7 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
 
     it("should reject duplicate player IDs", async function () {
       await expect(
-        factory.createPool("LeBron Copy", "LBJ2", "lebron_1", 5000n * 10n ** 6n)
+        factory.createPool("LeBron Copy", "LBJ2", "lebron_1")
       ).to.be.revertedWith("Player already exists");
     });
 
@@ -101,7 +114,7 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       await factory2.waitForDeployment();
 
       await expect(
-        factory2.createPool("Test", "TST", "test_1", 1000n * 10n ** 6n)
+        factory2.createPool("Test", "TST", "test_1")
       ).to.be.revertedWith("Router not set");
     });
   });
@@ -225,8 +238,8 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
   });
 
   describe("Configurable Fees", function () {
-    it("should have default fee of 150 bps", async function () {
-      expect(await router.feeBps()).to.equal(150);
+    it("should have default fee of 200 bps", async function () {
+      expect(await router.feeBps()).to.equal(200);
       expect(await router.dividendFeeBps()).to.equal(6700);
     });
 
@@ -314,15 +327,13 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       // Change to 50/50 split
       await hub.setBasePoolBps(5000);
 
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       // basePool should be ~50% of totalPool
       const expectedBase = (wd.totalPool * 5000n) / 10000n;
       expect(wd.basePool).to.equal(expectedBase);
-      expect(wd.outperformerPool).to.equal(wd.totalPool - expectedBase);
+      expect(wd.topPerformerPool).to.equal(wd.totalPool - expectedBase);
     });
   });
 
@@ -336,31 +347,25 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       await router.connect(user2).buy(0, BUY_SHARES, quote2.total);
     });
 
-    it("should set weekly performance", async function () {
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
+    it("should set round performance", async function () {
+      await hub.setRoundPerformanceBatch([0], [400n * 10n ** 6n]);
 
-      const perf = await hub.weeklyPerformance(1, 0);
-      expect(perf.actualPoints).to.equal(400n * 10n ** 6n);
+      expect(await hub.roundPerformance(1, 0)).to.equal(400n * 10n ** 6n);
     });
 
     it("should distribute dividends", async function () {
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-
       const hubBal = await dbucks.balanceOf(await hub.getAddress());
       expect(hubBal).to.be.gt(0);
 
-      await hub.distributeDividends();
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       expect(wd.distributed).to.equal(true);
       expect(wd.totalPool).to.be.gt(0);
     });
 
     it("should allow users to claim dividends", async function () {
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
 
       const dividend = await hub.calculateDividend(1, user1.address);
       expect(dividend).to.be.gt(0);
@@ -372,48 +377,40 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       expect(balAfter - balBefore).to.equal(dividend);
     });
 
-    it("should advance week after distribution", async function () {
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+    it("should advance round after distribution", async function () {
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
 
-      expect(await hub.currentWeek()).to.equal(1);
-      await hub.advanceWeek();
-      expect(await hub.currentWeek()).to.equal(2);
+      expect(await hub.currentRound()).to.equal(1);
+      await hub.advanceRound();
+      expect(await hub.currentRound()).to.equal(2);
     });
 
-    it("should skip week", async function () {
-      await hub.skipWeek();
-      expect(await hub.currentWeek()).to.equal(2);
+    it("should skip round", async function () {
+      await hub.skipRound();
+      expect(await hub.currentRound()).to.equal(2);
     });
 
-    it("should claim multiple weeks", async function () {
-      // Week 1
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
-      await hub.advanceWeek();
+    it("should claim multiple rounds", async function () {
+      // Round 1
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
+      await hub.advanceRound();
 
-      // Generate more fees for week 2
+      // Generate more fees for round 2
       const quote3 = await router.getBuyQuote(0, 5n * 10n ** 6n);
       await router.connect(user1).buy(0, 5n * 10n ** 6n, quote3.total);
 
-      // Week 2
-      await hub.setWeeklyPerformanceBatch([0], [350n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      // Round 2
+      await finishRound(hub, factory, [user1, user2], [0], [350n * 10n ** 6n], [0]);
 
       const balBefore = await dbucks.balanceOf(user1.address);
-      await hub.connect(user1).claimMultipleWeeks([1, 2]);
+      await hub.connect(user1).claimMultipleRounds([1, 2]);
       const balAfter = await dbucks.balanceOf(user1.address);
 
       expect(balAfter).to.be.gt(balBefore);
     });
 
     it("should prevent double-claiming", async function () {
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
 
       await hub.connect(user1).claimDividend(1);
 
@@ -422,31 +419,27 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       ).to.be.revertedWith("Already claimed");
     });
 
-    it("should stop multi-week claim when balance runs out (no silent loss)", async function () {
-      // Week 1: both users buy, generating fees
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
-      await hub.advanceWeek();
+    it("should stop multi-round claim when balance runs out (no silent loss)", async function () {
+      // Round 1: both users buy, generating fees
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
+      await hub.advanceRound();
 
-      // Week 2: generate more fees
+      // Round 2: generate more fees
       const quote3 = await router.getBuyQuote(0, 5n * 10n ** 6n);
       await router.connect(user1).buy(0, 5n * 10n ** 6n, quote3.total);
 
-      await hub.setWeeklyPerformanceBatch([0], [350n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      await finishRound(hub, factory, [user1, user2], [0], [350n * 10n ** 6n], [0]);
 
-      // user2 claims week 1 — should work
+      // user2 claims round 1 — should work
       await hub.connect(user2).claimDividend(1);
       expect(await hub.hasClaimed(1, user2.address)).to.equal(true);
 
-      // user2 claims week 2 — should work
+      // user2 claims round 2 — should work
       await hub.connect(user2).claimDividend(2);
       expect(await hub.hasClaimed(2, user2.address)).to.equal(true);
 
-      // Both weeks should be claimed for user2
-      // user1 still has unclaimed weeks
+      // Both rounds should be claimed for user2
+      // user1 still has unclaimed rounds
       expect(await hub.hasClaimed(1, user1.address)).to.equal(false);
     });
   });
@@ -558,9 +551,7 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       const quote = await router.getBuyQuote(0, BUY_SHARES);
       await router.connect(user1).buy(0, BUY_SHARES, quote.total);
 
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
 
       const [total, weekCount] = await hub.getUnclaimedDividends(user1.address);
       expect(total).to.be.gt(0);
@@ -574,8 +565,7 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       await factory.createPoolsBatch(
         ["Stephen Curry", "Kevin Durant"],
         ["SC30", "KD35"],
-        ["curry_1", "durant_1"],
-        [4500n * 10n ** 6n, 4800n * 10n ** 6n]
+        ["curry_1", "durant_1"]
       );
 
       // User1 buys in pool 0 and pool 2
@@ -709,13 +699,11 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       await router.connect(user1).buy(0, BUY_SHARES, quote.total);
 
       await hub.setBasePoolBps(10000); // 100% base
-      await hub.setWeeklyPerformanceBatch([0], [400n * 10n ** 6n]);
-      await hub.setOutperformerEligible([0]);
-      await hub.distributeDividends();
+      await finishRound(hub, factory, [user1, user2], [0], [400n * 10n ** 6n], [0]);
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       expect(wd.basePool).to.equal(wd.totalPool);
-      expect(wd.outperformerPool).to.equal(0);
+      expect(wd.topPerformerPool).to.equal(0);
 
       // User should still be able to claim (all from base pool)
       const dividend = await hub.calculateDividend(1, user1.address);
@@ -732,11 +720,11 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
       ).to.be.revertedWithCustomError(hub, "OwnableUnauthorizedAccount");
 
       await expect(
-        hub.connect(user1).distributeDividends()
+        hub.connect(user1).distributeDividends(10n)
       ).to.be.revertedWithCustomError(hub, "OwnableUnauthorizedAccount");
 
       await expect(
-        factory.connect(user1).createPool("Test", "TST", "test_1", 1000n * 10n ** 6n)
+        factory.connect(user1).createPool("Test", "TST", "test_1")
       ).to.be.revertedWithCustomError(factory, "OwnableUnauthorizedAccount");
     });
   });
@@ -745,7 +733,7 @@ describe("Factory Pattern (Router + Pool + Hub)", function () {
     it("should add a new player pool after initial deployment", async function () {
       const countBefore = await factory.poolCount();
 
-      await factory.createPool("Giannis Antetokounmpo", "GA34", "giannis_1", 4800n * 10n ** 6n);
+      await factory.createPool("Giannis Antetokounmpo", "GA34", "giannis_1");
 
       expect(await factory.poolCount()).to.equal(countBefore + 1n);
 

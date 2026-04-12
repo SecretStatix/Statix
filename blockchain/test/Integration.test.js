@@ -20,15 +20,6 @@ describe("Integration (full-stack)", function () {
   const FAUCET_LIMIT = 500_000n * SCALE;
   const SHARES = 10n * SCALE;
 
-  // Weekly fantasy projections (1e6 scale) — on-chain storage is weekly, not season/17
-  const PROJECTIONS = [
-    100n * SCALE,
-    200n * SCALE,
-    300n * SCALE,
-    100n * SCALE,
-    200n * SCALE,
-  ];
-
   async function deployFixture() {
     [deployer, alice, bob, carol, dave, feeRecipient] =
       await ethers.getSigners();
@@ -68,8 +59,7 @@ describe("Integration (full-stack)", function () {
     await factory.createPoolsBatch(
       ["Player A", "Player B", "Player C", "Player D", "Player E"],
       ["PLRA", "PLRB", "PLRC", "PLRD", "PLRE"],
-      ["player_a", "player_b", "player_c", "player_d", "player_e"],
-      PROJECTIONS
+      ["player_a", "player_b", "player_c", "player_d", "player_e"]
     );
 
     poolAddrs = [];
@@ -106,12 +96,17 @@ describe("Integration (full-stack)", function () {
     await dbucks.transfer(hubAddr, amount);
   }
 
-  async function distributeWeek(poolIdxs, actualPoints, eligibleIdxs) {
-    await hub.setWeeklyPerformanceBatch(poolIdxs, actualPoints);
+  async function distributeWeek(poolIdxs, avgFpts, eligibleIdxs) {
+    const poolCount = Number(await factory.poolCount());
+    const allIdx = Array.from({ length: poolCount }, (_, i) => BigInt(i));
+    await hub.setRoundPerformanceBatch(poolIdxs, avgFpts);
     if (eligibleIdxs && eligibleIdxs.length > 0) {
-      await hub.setOutperformerEligible(eligibleIdxs);
+      await hub.setTopPerformerEligible(eligibleIdxs);
     }
-    await hub.distributeDividends();
+    for (const u of [deployer, alice, bob, carol, dave]) {
+      await hub.snapshotUserHoldings(u.address, allIdx);
+    }
+    await hub.distributeDividends(10n);
   }
 
   async function sumAllDbucks() {
@@ -234,11 +229,11 @@ describe("Integration (full-stack)", function () {
         [0, 2]
       );
 
-      const wd = await hub.weeklyDividends(1);
+      const wd = await hub.roundDividends(1);
       expect(wd.distributed).to.be.true;
       expect(wd.totalPool).to.be.gte(100_000n * SCALE);
       expect(wd.basePool).to.equal((wd.totalPool * 2000n) / BPS);
-      expect(wd.outperformerPool).to.equal(wd.totalPool - wd.basePool);
+      expect(wd.topPerformerPool).to.equal(wd.totalPool - wd.basePool);
 
       const divAlice = await hub.calculateDividend(1, alice.address);
       const divBob = await hub.calculateDividend(1, bob.address);
@@ -272,8 +267,8 @@ describe("Integration (full-stack)", function () {
 
       await hub.connect(alice).claimDividend(1);
 
-      await hub.advanceWeek();
-      expect(await hub.currentWeek()).to.equal(2);
+      await hub.advanceRound();
+      expect(await hub.currentRound()).to.equal(2);
 
       await buy(carol, 2, SHARES);
 
@@ -283,11 +278,11 @@ describe("Integration (full-stack)", function () {
         [100n * SCALE, 300n * SCALE, 450n * SCALE, 100n * SCALE, 200n * SCALE],
         [1, 2]
       );
-      await hub.advanceWeek();
-      expect(await hub.currentWeek()).to.equal(3);
+      await hub.advanceRound();
+      expect(await hub.currentRound()).to.equal(3);
 
-      await hub.skipWeek();
-      expect(await hub.currentWeek()).to.equal(4);
+      await hub.skipRound();
+      expect(await hub.currentRound()).to.equal(4);
 
       expect(await hub.calculateDividend(3, alice.address)).to.equal(0);
 
@@ -297,7 +292,7 @@ describe("Integration (full-stack)", function () {
       expect(unclaimedTotal).to.be.gt(0);
 
       const bobBefore = await dbucks.balanceOf(bob.address);
-      await hub.connect(bob).claimMultipleWeeks([1, 2, 3]);
+      await hub.connect(bob).claimMultipleRounds([1, 2, 3]);
       const bobAfter = await dbucks.balanceOf(bob.address);
       expect(bobAfter - bobBefore).to.equal(unclaimedTotal);
 
@@ -322,7 +317,7 @@ describe("Integration (full-stack)", function () {
       const div1 = await hub.calculateDividend(1, alice.address);
       expect(div1).to.be.gt(0);
 
-      await hub.advanceWeek();
+      await hub.advanceRound();
 
       await sell(alice, 0, 20n * SCALE);
       const p0 = await pool(0);
@@ -346,7 +341,7 @@ describe("Integration (full-stack)", function () {
         [150n * SCALE, 200n * SCALE, 300n * SCALE, 100n * SCALE, 200n * SCALE],
         [0]
       );
-      await hub.advanceWeek();
+      await hub.advanceRound();
 
       await buy(bob, 0, SHARES);
 
@@ -453,10 +448,10 @@ describe("Integration (full-stack)", function () {
         [150n * SCALE, 200n * SCALE, 300n * SCALE, 100n * SCALE, 200n * SCALE],
         [0]
       );
-      await hub.advanceWeek();
+      await hub.advanceRound();
 
-      await factory.createPool("New Player F", "PLRF", "player_f", 1700n * SCALE);
-      await factory.createPool("New Player G", "PLRG", "player_g", 3400n * SCALE);
+      await factory.createPool("New Player F", "PLRF", "player_f");
+      await factory.createPool("New Player G", "PLRG", "player_g");
 
       const newPool5 = await factory.pools(5);
       const newPool6 = await factory.pools(6);
@@ -512,7 +507,7 @@ describe("Integration (full-stack)", function () {
       await hub.connect(alice).claimDividend(1);
       await hub.connect(dave).claimDividend(1);
 
-      await hub.advanceWeek();
+      await hub.advanceRound();
 
       await buy(carol, 0, SHARES);
       await sell(dave, 4, 5n * SCALE);
@@ -524,7 +519,7 @@ describe("Integration (full-stack)", function () {
         [1, 3]
       );
 
-      await hub.connect(bob).claimMultipleWeeks([1, 2]);
+      await hub.connect(bob).claimMultipleRounds([1, 2]);
 
       const totalSupply = await dbucks.totalSupply();
       const totalAccounted = await sumAllDbucks();

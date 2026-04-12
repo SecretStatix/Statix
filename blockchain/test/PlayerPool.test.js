@@ -31,7 +31,6 @@ describe("PlayerPool (unit tests)", function () {
       "LeBron James",
       "LBJ",
       "lebron_1",
-      5000n * SCALE,       // projectedPoints
       INIT_SHARES,
       INIT_CASH
     );
@@ -59,7 +58,6 @@ describe("PlayerPool (unit tests)", function () {
       expect(await pool.name()).to.equal("LeBron James");
       expect(await pool.symbol()).to.equal("LBJ");
       expect(await pool.playerId()).to.equal("lebron_1");
-      expect(await pool.projectedPoints()).to.equal(5000n * SCALE);
 
       // totalLiquidity anchored to initialCash; lpLiquidity starts at 0
       expect(await pool.totalLiquidity()).to.equal(INIT_CASH);
@@ -519,47 +517,6 @@ describe("PlayerPool (unit tests)", function () {
   });
 
   // --------------------------------------------------------------------------
-  //  SNAPSHOTS
-  // --------------------------------------------------------------------------
-  describe("Snapshots", function () {
-    const SHARES = 10n * SCALE;
-
-    beforeEach(async function () {
-      await mock.callExecuteBuy(poolAddr, alice.address, SHARES, ethers.MaxUint256);
-    });
-
-    // snapshotTotalShares returns current totalShares
-    it("snapshotTotalShares returns totalShares", async function () {
-      const ts = await mock.callSnapshotTotalShares.staticCall(poolAddr);
-      expect(ts).to.equal(SHARES);
-    });
-
-    // Lazy snapshot fills weekEndHoldings for past weeks
-    it("snapshotUserHoldings backfills weekEndHoldings for skipped weeks", async function () {
-      await mock.setCurrentWeek(3);
-
-      // Snapshot triggers lazy fill for weeks 1 and 2
-      await mock.callSnapshotUserHoldings(poolAddr, 2, alice.address);
-
-      expect(await pool.weekEndHoldings(1, alice.address)).to.equal(SHARES);
-      expect(await pool.weekEndHoldings(2, alice.address)).to.equal(SHARES);
-    });
-
-    // Access control: only hub can call snapshot functions
-    it("snapshotTotalShares reverts for non-hub caller", async function () {
-      await expect(
-        pool.connect(outsider).snapshotTotalShares()
-      ).to.be.revertedWith("Only hub");
-    });
-
-    it("snapshotUserHoldings reverts for non-hub caller", async function () {
-      await expect(
-        pool.connect(outsider).snapshotUserHoldings(1, alice.address)
-      ).to.be.revertedWith("Only hub");
-    });
-  });
-
-  // --------------------------------------------------------------------------
   //  EMERGENCY FUNCTIONS
   // --------------------------------------------------------------------------
   describe("Emergency", function () {
@@ -589,10 +546,8 @@ describe("PlayerPool (unit tests)", function () {
       expect(refund).to.equal(0);
     });
 
-    // forceLiquidate sells user's shares, triggers snapshot, sends refund to router
+    // forceLiquidate sells user's shares and sends refund to router
     it("forceLiquidate returns shares and refund, zeros holdings", async function () {
-      await mock.setCurrentWeek(2);
-
       const mockBefore = await token.balanceOf(mockAddr);
       await mock.callForceLiquidate(poolAddr, alice.address);
       const mockAfter = await token.balanceOf(mockAddr);
