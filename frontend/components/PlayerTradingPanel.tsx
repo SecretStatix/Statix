@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
 import {
@@ -13,16 +13,13 @@ import {
   useDBucksAllowance,
   useHoldings,
 } from '@/hooks/useContracts';
-import { logTransaction } from '@/lib/api';
 
 interface PlayerTradingPanelProps {
   playerIndex: number;
-  playerId: string;
-  playerName: string;
   price: number;
 }
 
-export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }: PlayerTradingPanelProps) {
+export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelProps) {
   const { address, isConnected } = useAccount();
   const [mode, setMode] = useState<'buy' | 'sell'>('buy');
   const [amount, setAmount] = useState('');
@@ -37,18 +34,6 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
   const { approve, isPending: approving, isConfirming: approvingConfirming, isSuccess: approved } = useApproveDBucks();
   const { buy, hash: buyHash, isPending: buying, isConfirming: buyingConfirming, isSuccess: bought } = useBuyShares();
   const { sell, hash: sellHash, isPending: selling, isConfirming: sellingConfirming, isSuccess: sold } = useSellShares();
-
-  const tradeInfoRef = useRef<{ side: 'buy' | 'sell'; shares: number; total: number } | null>(null);
-
-  useEffect(() => {
-    if (bought || sold) {
-      const txHash = bought ? buyHash : sellHash;
-      const info = tradeInfoRef.current;
-      if (txHash && address && info) {
-        logTransaction(address, playerIndex, info.side, info.shares, info.total, txHash, playerName).catch(console.error);
-      }
-    }
-  }, [bought, sold, buyHash, sellHash, address, playerIndex]);
 
   let quote: { cost: number; fee: number; total: number; newPrice: number } | null = null;
 
@@ -100,7 +85,6 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
 
   const handleTrade = () => {
     if (!quote || !shares) return;
-    tradeInfoRef.current = { side: mode, shares, total: quote.total };
 
     if (mode === 'buy') {
       if (needsApproval) {
@@ -117,7 +101,7 @@ export function PlayerTradingPanel({ playerIndex, playerId, playerName, price }:
   const isSuccess = bought || sold;
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-white/[0.05] bg-white/[0.015] p-5 backdrop-blur-sm">
+    <div className="flex flex-col rounded-2xl border border-white/[0.05] bg-white/[0.015] p-5 backdrop-blur-sm">
       <h3 className="text-sm font-semibold text-foreground mb-4 tracking-tight">Trade</h3>
 
       {isSuccess && (

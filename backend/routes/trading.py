@@ -1,13 +1,12 @@
 """
-Trading routes - provides quotes and contract info for frontend trading.
-Actual buy/sell transactions happen directly on-chain via the frontend.
-The backend provides estimated quotes and logs transactions to Supabase.
-NOTE: Backend quotes are approximations based on pool state read from chain.
-The on-chain getBuyQuote/getSellQuote are the authoritative source of truth.
+Trading routes — quotes and contract info for frontend trading.
+Trades execute on-chain; the `transactions` table is filled by the StatixRouter chain indexer
+(Buy/Sell events), not by client POSTs.
+NOTE: Backend quotes are approximations; on-chain quotes are authoritative.
 """
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, field_validator
-from typing import Optional
+from typing import Optional, List
 import os
 import re
 import logging
@@ -36,6 +35,20 @@ class QuoteResponse(BaseModel):
     price_impact: float
     current_price: float
     new_price: float
+
+
+class PortfolioSnapshotPoint(BaseModel):
+    snapshot_at: str
+    net_worth: float
+    cash_dbucks: float
+    positions_value: float
+
+
+class PortfolioSnapshotsResponse(BaseModel):
+    wallet_address: str
+    days: int
+    source: str
+    points: List[PortfolioSnapshotPoint]
 
 
 class TransactionLog(BaseModel):
@@ -262,43 +275,18 @@ async def get_recent_transactions(limit: int = Query(default=15, le=50)):
 
 
 @router.post("/log-transaction")
-async def log_transaction(tx: TransactionLog):
+async def log_transaction(_tx: TransactionLog):
     """
-    Log a completed on-chain transaction to Supabase.
-    Public endpoint — blockchain is the source of truth; Supabase is for analytics/leaderboard.
+    Removed: `transactions` is populated only by the StatixRouter chain indexer
+    (`backend/index_statix_router_ws.py` or `indexing.batch`) from Buy/Sell events.
     """
-    player_name = tx.player_name
-    if not player_name:
-        deployment = get_deployment()
-        if deployment:
-            for p in deployment.get("players", []):
-                if p["index"] == tx.player_index:
-                    player_name = p["name"]
-                    break
-
-    row = {
-        "wallet_address": tx.wallet_address,
-        "player_index": tx.player_index,
-        "side": tx.side,
-        "shares": tx.shares,
-        "cost": tx.cost,
-        "tx_hash": tx.tx_hash,
-    }
-    if player_name:
-        row["player_name"] = player_name
-    if tx.fee is not None:
-        row["fee"] = tx.fee
-    if tx.price_per_share is not None:
-        row["price_per_share"] = tx.price_per_share
-
-    supabase = get_supabase()
-    if supabase:
-        supabase.table("transactions").insert(row).execute()
-    else:
-        store = get_store()
-        store["transactions"].append(tx.model_dump())
-
-    return {"status": "logged"}
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "Client logging is disabled. Run the chain indexer with SUPABASE_SERVICE_ROLE_KEY; "
+            "it upserts into `transactions` from StatixRouter Buy/Sell logs."
+        ),
+    )
 
 
 @router.get("/history/{wallet_address}")
@@ -356,3 +344,67 @@ async def get_trading_summary(wallet_address: str):
         "buys": buys,
         "sells": sells,
     }
+
+
+@router.get("/portfolio-snapshots", response_model=PortfolioSnapshotsResponse)
+async def get_portfolio_snapshots(
+    wallet: str = Query(..., description="Wallet address (0x…)"),
+    days: int = Query(default=30, ge=1, le=365),
+):
+    """
+    Hourly NAV snapshots for portfolio chart (written by `python -m snapshot.job`).
+
+    Returns rows from `wallet_portfolio_snapshots` within the last `days` window.
+    """
+    w = wallet.strip().lower()
+    if not re.match(r"^0x[a-f0-9]{40}$", w):
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+
+    supabase = get_supabase()
+    if not supabase:
+        return PortfolioSnapshotsResponse(
+            wallet_address=w,
+            days=days,
+            source="none",
+            points=[],
+        )
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff_iso = cutoff.isoformat()
+
+    try:
+        result = (
+            supabase.table("wallet_portfolio_snapshots")
+            .select("snapshot_at, net_worth, cash_dbucks, positions_value")
+            .eq("wallet_address", w)
+            .gte("snapshot_at", cutoff_iso)
+            .order("snapshot_at", desc=False)
+            .limit(2000)
+            .execute()
+        )
+        rows = result.data or []
+    except Exception as e:
+        logger.warning("portfolio-snapshots query failed: %s", e)
+        return PortfolioSnapshotsResponse(
+            wallet_address=w,
+            days=days,
+            source="none",
+            points=[],
+        )
+
+    points = [
+        PortfolioSnapshotPoint(
+            snapshot_at=str(r["snapshot_at"]),
+            net_worth=float(r["net_worth"]),
+            cash_dbucks=float(r["cash_dbucks"]),
+            positions_value=float(r["positions_value"]),
+        )
+        for r in rows
+    ]
+
+    return PortfolioSnapshotsResponse(
+        wallet_address=w,
+        days=days,
+        source="snapshots" if points else "none",
+        points=points,
+    )

@@ -66,7 +66,7 @@ export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
   const isPositive = pctChange >= 0;
   return (
     <>
-      <div className="bg-card border border-white/[0.06] rounded-xl p-5 hover:border-primary/15 transition-all duration-200">
+      <div className="bg-gradient-to-r from-primary/[0.08] via-card to-success/[0.06] border border-white/[0.10] rounded-xl p-5 hover:border-primary/25 transition-all duration-200">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
           {/* Player info */}
           <Link href={`/player/${featured.id}`} className="flex items-center gap-4 flex-1 min-w-0 group">
@@ -89,15 +89,15 @@ export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
               <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
                 <defs>
                   <linearGradient id="featuredGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isPositive ? '#22C55E' : '#EF4444'} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={isPositive ? '#22C55E' : '#EF4444'} stopOpacity={0} />
+                    <stop offset="5%" stopColor={isPositive ? '#3EE88A' : '#FF6B6B'} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={isPositive ? '#3EE88A' : '#FF6B6B'} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <YAxis domain={['dataMin', 'dataMax']} hide />
                 <Area
                   type="monotone"
                   dataKey="value"
-                  stroke={isPositive ? '#22C55E' : '#EF4444'}
+                  stroke={isPositive ? '#3EE88A' : '#FF6B6B'}
                   strokeWidth={2}
                   fill="url(#featuredGrad)"
                   dot={false}
