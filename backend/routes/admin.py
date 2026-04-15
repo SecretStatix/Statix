@@ -12,6 +12,7 @@ import os
 from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points
 from chain import get_deployment
 from db import get_supabase, get_store
+from snapshot.job import run_snapshot_job
 
 router = APIRouter()
 
@@ -214,3 +215,18 @@ async def refresh_players(_=Depends(verify_admin)):
     players = fetch_curated_players()
     fetched = len([p for p in players if p.get("games_played", 0) > 0])
     return {"players_total": len(players), "players_with_stats": fetched}
+
+
+@router.post("/run-snapshot")
+async def run_snapshot(_=Depends(verify_admin)):
+    """
+    Trigger a portfolio NAV snapshot immediately.
+    Reads all wallets from the transactions table, computes on-chain NAV for each,
+    and writes to wallet_portfolio_snapshots. This is what feeds the leaderboard.
+    In production this runs hourly via cron — call this endpoint to force a refresh.
+    """
+    try:
+        result = run_snapshot_job()
+        return result
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
