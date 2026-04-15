@@ -125,7 +125,7 @@
       "id": "amen_thompson",
       "name": "Amen Thompson",
       "symbol": "THOMA",
-      "nba_id": 1641731,
+      "nba_id": 1641708,
       "team": "HOU",
       "weekly_projection": null
     },
@@ -197,7 +197,7 @@
       "id": "deni_avdija",
       "name": "Deni Avdija",
       "symbol": "AVDID",
-      "nba_id": 1629656,
+      "nba_id": 1630166,
       "team": "POR",
       "weekly_projection": null
     },
@@ -233,7 +233,7 @@
       "id": "jalen_duren",
       "name": "Jalen Duren",
       "symbol": "DUREJ",
-      "nba_id": 1631107,
+      "nba_id": 1631105,
       "team": "DET",
       "weekly_projection": null
     },
@@ -422,7 +422,7 @@
       "id": "brandon_miller",
       "name": "Brandon Miller",
       "symbol": "MILLB",
-      "nba_id": 1641715,
+      "nba_id": 1641706,
       "team": "CHA",
       "weekly_projection": null
     },
