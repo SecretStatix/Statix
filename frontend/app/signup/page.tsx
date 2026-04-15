@@ -160,7 +160,7 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
-        <div className="p-8 border-b border-border text-center">
+        <div className="p-4 sm:p-8 border-b border-border text-center">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
             <span className="text-white font-bold text-lg">SX</span>
           </div>
@@ -170,24 +170,24 @@ export default function SignupPage() {
         </div>
 
         {/* Step indicator */}
-        <div className="px-8 pt-4 flex items-center gap-2">
+        <div className="px-4 sm:px-8 pt-4 flex items-center gap-2">
           <div className="flex-1 h-0.5 rounded bg-primary" />
           <div className={`flex-1 h-0.5 rounded ${step === 'nda' ? 'bg-primary' : 'bg-secondary'}`} />
         </div>
-        <div className="px-8 pt-1.5 pb-2 flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider">
+        <div className="px-4 sm:px-8 pt-1.5 pb-2 flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider">
           <span>Account Info</span>
           <span>NDA Agreement</span>
         </div>
 
         {error && (
-          <div className="mx-8 mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
+          <div className="mx-4 sm:mx-8 mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-destructive text-sm">
             {error}
           </div>
         )}
 
         {step === 'info' ? (
-          <form onSubmit={handleInfoSubmit} className="p-8 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleInfoSubmit} className="p-4 sm:p-8 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Legal First Name</label>
                 <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required className={inputClass} placeholder="John" />
@@ -228,7 +228,7 @@ export default function SignupPage() {
             </p>
           </form>
         ) : (
-          <div className="p-8 space-y-4">
+          <div className="p-4 sm:p-8 space-y-4">
             <div className="bg-secondary/50 border border-border rounded-xl p-5 max-h-72 overflow-y-auto text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {NDA_TEXT}
             </div>

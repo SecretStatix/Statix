@@ -19,7 +19,7 @@ export default function RootLayout({
         <AuthProvider>
           <Providers>
             <NavbarWrapper />
-            <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-10">
+            <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-10 pb-20 md:pb-10">
               {children}
             </main>
           </Providers>
