@@ -56,7 +56,7 @@ def compute_wallet_nav(w3: Web3, wallet_address: str) -> Tuple[float, float, flo
                 address=Web3.to_checksum_address(hub_addr),
                 abi=get_abi("DividendHub"),
             )
-            raw_unclaimed = hub.functions.getUnclaimedDividends(wallet).call()
+            raw_unclaimed, _round_count = hub.functions.getUnclaimedDividends(wallet).call()
             unclaimed = float(raw_unclaimed) / 10**USDC_DECIMALS
 
         net_worth = cash + positions_value + unclaimed
