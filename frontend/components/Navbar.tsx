@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
 import { TrendingUp, BarChart3, User as UserIcon, Info, BookOpen, Search } from 'lucide-react';
@@ -39,6 +41,17 @@ export function Navbar() {
     address: activeWallet?.address as `0x${string}`,
     query: { enabled: !!activeWallet },
   });
+
+  // Persist wallet address to Supabase profiles so leaderboard can show usernames
+  useEffect(() => {
+    if (!user || !activeWallet) return;
+    supabase
+      .from('profiles')
+      .update({ wallet_address: activeWallet.address })
+      .eq('id', user.id)
+      .is('wallet_address', null) // only write once (don't overwrite if already set)
+      .then(() => {});
+  }, [user?.id, activeWallet?.address]);
 
   // Auto-fund new wallets with gas
   useEffect(() => {

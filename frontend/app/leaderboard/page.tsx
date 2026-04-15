@@ -97,8 +97,10 @@ export default function LeaderboardPage() {
                             {rank}
                           </span>
                         </td>
-                        <td className="py-3.5 font-mono text-xs text-muted-foreground">
-                          {leader.wallet_address.slice(0, 6)}…{leader.wallet_address.slice(-4)}
+                        <td className="py-3.5 text-sm font-medium text-foreground">
+                          {leader.display_name || (leader.wallet_address
+                            ? `${leader.wallet_address.slice(0, 6)}…${leader.wallet_address.slice(-4)}`
+                            : '—')}
                         </td>
                         <td className="py-3.5 text-right font-semibold tabular-nums text-foreground">
                           ${parseFloat(leader.portfolio_value ?? leader.total_earned ?? 0).toFixed(2)}
