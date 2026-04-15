@@ -1,13 +1,13 @@
 {
-  "network": "base-sepolia",
-  "chainId": 84532,
-  "deployer": "0x639Daa0d790Ff595A2203db01552A28b2339a3f4",
+  "network": "localhost",
+  "chainId": 31337,
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
   "contracts": {
-    "MockUSDC": "0x8292C1D9856cBaa736a1E12B1ffa1Ca9BFa07457",
-    "DBucks": "0xd34D39029B58E612Fa2DBd8b9C1278b2A0EB9384",
-    "PoolFactory": "0x1ECE9119DDdbE1A7361a6A0853490C5be2E49c5B",
-    "StatixRouter": "0xFCFC9f1aD415367ec11c72CcC19D2fd21d83323D",
-    "DividendHub": "0xD6EC3c1f10ed5F92E7b7C02f4B657324D51B5795"
+    "MockUSDC": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "DBucks": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    "PoolFactory": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "StatixRouter": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    "DividendHub": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
   },
   "faucetMode": true,
   "faucetLimit": "1000000000",
@@ -125,7 +125,7 @@
       "id": "amen_thompson",
       "name": "Amen Thompson",
       "symbol": "THOMA",
-      "nba_id": 1641731,
+      "nba_id": 1641708,
       "team": "HOU",
       "weekly_projection": null
     },
@@ -197,7 +197,7 @@
       "id": "deni_avdija",
       "name": "Deni Avdija",
       "symbol": "AVDID",
-      "nba_id": 1629656,
+      "nba_id": 1630166,
       "team": "POR",
       "weekly_projection": null
     },
@@ -233,7 +233,7 @@
       "id": "jalen_duren",
       "name": "Jalen Duren",
       "symbol": "DUREJ",
-      "nba_id": 1631107,
+      "nba_id": 1631105,
       "team": "DET",
       "weekly_projection": null
     },
@@ -422,7 +422,7 @@
       "id": "brandon_miller",
       "name": "Brandon Miller",
       "symbol": "MILLB",
-      "nba_id": 1641715,
+      "nba_id": 1641706,
       "team": "CHA",
       "weekly_projection": null
     },
@@ -733,6 +733,5 @@
       "weekly_projection": null
     }
   ],
-  "deployedAt": "2026-04-13T05:28:30.383Z",
-  "lastUpdated": "2026-04-15T18:29:20.394Z"
+  "deployedAt": "2026-04-15T19:44:48.170Z"
 }

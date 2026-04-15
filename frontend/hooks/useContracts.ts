@@ -4,13 +4,11 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import { baseSepolia } from "viem/chains";
 import { StatixRouterABI, DividendHubABI, DBucksABI, CONTRACTS } from "@/lib/abis";
+import { CHAIN_ID } from "@/lib/chain-config";
 import { FAUCET_UI_MINT_AMOUNT } from "@/lib/faucet-config";
 
 const USDC_DECIMALS = 6;
-/** Base Sepolia — same chain as Privy `defaultChain` / `supportedChains` and wagmi `chains`. */
-const CHAIN_ID = baseSepolia.id;
 
 /** Manual gas limits (gas units). Tune if Privy/wallet under-estimates or txs fail. */
 const GAS_APPROVE = BigInt(120_000);

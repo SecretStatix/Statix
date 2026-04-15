@@ -161,9 +161,8 @@ export function Portfolio() {
       </div>
 
       <div className="relative border-t border-white/[0.06]">
-        <PortfolioCharts totalValue={totalValue} seedKey={address ?? '0x'} allocation={allocation} />
+        <PortfolioCharts walletAddress={address} allocation={allocation} />
       </div>
-
       <section className="relative border-t border-white/[0.06] px-5 py-6 sm:px-8 sm:py-7">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">Holdings</h2>
         {loading ? (

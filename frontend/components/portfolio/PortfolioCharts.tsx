@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { getPortfolioSnapshots, type PortfolioSnapshotPoint } from '@/lib/api';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -31,61 +32,32 @@ const CHART_COLORS = [
 
 type Range = '1W' | '1M';
 
-function hashSeed(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-  return Math.abs(h) / 2147483647;
-}
-
-function pseudoRandom(seed: number, i: number): number {
-  const x = Math.sin(seed * 127.1 + i * 311.7) * 43758.5453;
-  return x - Math.floor(x);
-}
-
-/** Deterministic volatile walk + volume — ends at totalValue (illustrative, not history) */
-function buildValueSeries(totalValue: number, range: Range, seedStr: string) {
-  const n = range === '1W' ? 42 : 48;
-  const seed = hashSeed(seedStr) * 100000;
+function snapshotSeries(points: PortfolioSnapshotPoint[], range: Range) {
+  const n = points.length;
   const pts: { idx: number; tick: string; v: number; vol: number }[] = [];
-
-  let v = totalValue * (0.9 + pseudoRandom(seed, 0) * 0.12);
-  const volBase = totalValue * 0.04;
-
   for (let i = 0; i < n; i++) {
-    const noise = (pseudoRandom(seed, i + 2) - 0.5) * 0.055 * totalValue;
-    const spike = (pseudoRandom(seed, i + 99) - 0.5) * 0.04 * totalValue;
-    const pull = (totalValue - v) * 0.11;
-    v = v + noise + spike + pull * 0.15;
-    v = Math.max(totalValue * 0.78, Math.min(totalValue * 1.14, v));
-
-    const vol = volBase * (0.35 + pseudoRandom(seed, i + 200) * 1.4) + Math.abs(noise + spike) * 2.2;
-
+    const p = points[i]!;
+    const prev = i > 0 ? points[i - 1]! : null;
+    const vol = prev ? Math.abs(p.net_worth - prev.net_worth) : 0;
     pts.push({
       idx: i,
-      tick: tickLabel(i, n, range),
-      v,
+      tick: snapshotTickLabel(p.snapshot_at, i, n, range),
+      v: p.net_worth,
       vol,
     });
-  }
-
-  if (pts.length) {
-    const last = pts.length - 1;
-    pts[last] = { ...pts[last], v: totalValue };
   }
   return pts;
 }
 
-function tickLabel(i: number, n: number, range: Range): string {
-  const marks =
-    range === '1W'
-      ? ['6:00 PM', '9:00 PM', '12:00 AM', '3:00 AM', '6:00 AM', '9:00 AM', '12:00 PM', '3:00 PM']
-      : ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
-  const step = Math.max(1, Math.floor((n - 1) / (marks.length - 1)));
-  if (i % step === 0 || i === n - 1) {
-    const mi = Math.min(marks.length - 1, Math.round((i / (n - 1)) * (marks.length - 1)));
-    return marks[mi] ?? '';
+function snapshotTickLabel(iso: string, i: number, n: number, range: Range): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const step = Math.max(1, Math.floor((n - 1) / 7));
+  if (i % step !== 0 && i !== n - 1) return '';
+  if (range === '1W') {
+    return d.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
   }
-  return '';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 function formatYAxis(v: number): string {
@@ -108,17 +80,50 @@ function formatPillUsd(v: number): string {
 export type AllocationSlice = { name: string; value: number; pct: number };
 
 interface PortfolioChartsProps {
-  totalValue: number;
-  seedKey: string;
+  walletAddress?: string;
   allocation: AllocationSlice[];
 }
 
-export function PortfolioCharts({ totalValue, seedKey, allocation }: PortfolioChartsProps) {
+export function PortfolioCharts({ walletAddress, allocation }: PortfolioChartsProps) {
   const [range, setRange] = useState<Range>('1W');
-  const lineData = useMemo(
-    () => buildValueSeries(totalValue, range, `${seedKey}-${range}`),
-    [totalValue, range, seedKey]
+  const [snapshots, setSnapshots] = useState<PortfolioSnapshotPoint[]>([]);
+  const [fetchStatus, setFetchStatus] = useState<'idle' | 'loading' | 'done'>(() =>
+    walletAddress ? 'loading' : 'idle'
   );
+
+  const daysForRange = range === '1W' ? 7 : 30;
+
+  useEffect(() => {
+    if (!walletAddress) {
+      setSnapshots([]);
+      setFetchStatus('idle');
+      return;
+    }
+    let cancelled = false;
+    setFetchStatus('loading');
+    setSnapshots([]);
+    (async () => {
+      try {
+        const res = await getPortfolioSnapshots(walletAddress, daysForRange);
+        if (cancelled) return;
+        setSnapshots(res.points ?? []);
+      } catch {
+        if (!cancelled) setSnapshots([]);
+      } finally {
+        if (!cancelled) setFetchStatus('done');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [walletAddress, daysForRange]);
+
+  const showChart = fetchStatus === 'done' && snapshots.length > 0;
+
+  const lineData = useMemo(() => {
+    if (!showChart) return [];
+    return snapshotSeries(snapshots, range);
+  }, [showChart, snapshots, range]);
 
   const pieData = useMemo(
     () =>
@@ -129,7 +134,9 @@ export function PortfolioCharts({ totalValue, seedKey, allocation }: PortfolioCh
   );
 
   const lastIdx = lineData.length > 0 ? lineData.length - 1 : 0;
-  const pillText = formatPillUsd(totalValue);
+  const displayValue =
+    showChart && snapshots.length ? snapshots[snapshots.length - 1]!.net_worth : 0;
+  const pillText = formatPillUsd(displayValue);
 
   const xTickIndices = useMemo(
     () =>
@@ -146,7 +153,7 @@ export function PortfolioCharts({ totalValue, seedKey, allocation }: PortfolioCh
       <div className="border-b border-white/[0.06] lg:col-span-3 lg:border-b-0">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5 sm:px-8 sm:pt-6">
           <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
-            Value (illustrative)
+            Net worth
           </p>
           <div className="flex rounded-lg bg-white/[0.04] p-0.5">
             {(['1W', '1M'] as Range[]).map((r) => (
@@ -169,9 +176,13 @@ export function PortfolioCharts({ totalValue, seedKey, allocation }: PortfolioCh
   
 
         <div className="relative mx-5 mb-5 mt-3 h-[260px] overflow-hidden rounded-xl bg-[#0c0d11] sm:mx-8 sm:mb-6">
-          {totalValue <= 0 ? (
+          {fetchStatus === 'loading' ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Fund your account or buy shares to see the chart.
+              Loading chart…
+            </div>
+          ) : !showChart ? (
+            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+              Chart not available
             </div>
           ) : (
             <>

@@ -62,7 +62,9 @@ def connect_w3_http() -> Web3:
             w3 = Web3(Web3.HTTPProvider(DEFAULT_RPC))
             if w3.is_connected() and int(w3.eth.chain_id) == want:
                 return w3
-        raise RuntimeError(f"Wrong chain: RPC has {got}, expected {want} (Base Sepolia).")
+        raise RuntimeError(
+            f"Wrong chain: RPC has {got}, expected {want} (from deployments.json)."
+        )
     return w3
 
 
