@@ -16,7 +16,8 @@
     "add-players:sepolia": "hardhat run scripts/add-players.js --network base-sepolia",
     "add-players:local": "hardhat run scripts/add-players.js --network localhost",
     "set-faucet:sepolia": "hardhat run scripts/admin/set-faucet-300.js --network base-sepolia",
-    "raise-faucet:sepolia": "hardhat run scripts/admin/raise-faucet.js --network base-sepolia"
+    "raise-faucet:sepolia": "hardhat run scripts/admin/raise-faucet.js --network base-sepolia",
+    "drain-hub:sepolia": "hardhat run scripts/admin/drain-hub.js --network base-sepolia"
   },
   "keywords": [],
   "author": "",
