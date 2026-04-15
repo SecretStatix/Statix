@@ -8,7 +8,6 @@ import {
   useDBucksBalance,
   useFaucetDBucks,
   useFaucetEligibility,
-  FAUCET_UI_MINT_AMOUNT,
 } from '@/hooks/useContracts';
 import { getPlayers } from '@/lib/api';
 import { PlayerAvatar } from './PlayerAvatar';
@@ -30,7 +29,15 @@ export function Portfolio() {
   const { data: portfolioData, isLoading } = usePortfolio(address);
   const { data: dbucksBalance } = useDBucksBalance(address);
   const { faucet, isPending: minting, isSuccess: minted } = useFaucetDBucks();
-  const { canMintFull, faucetMode, capReached } = useFaucetEligibility(address);
+  const { faucetMode, limit, minted: alreadyMinted } = useFaucetEligibility(address);
+
+  // How much is actually left to claim (limit - already minted)
+  const claimableRaw = (limit && alreadyMinted !== undefined)
+    ? (limit as bigint) - (alreadyMinted as bigint)
+    : 0n;
+  const claimableHuman = parseFloat(formatUnits(claimableRaw > 0n ? claimableRaw : 0n, 6));
+  const canMint = faucetMode === true && claimableHuman > 0;
+  const capReached = faucetMode === true && claimableHuman <= 0;
 
   const [playerMap, setPlayerMap] = useState<Map<number, PlayerMeta>>(new Map());
 
@@ -110,12 +117,12 @@ export function Portfolio() {
           <div className="flex shrink-0 flex-col items-end gap-1">
             <button
               type="button"
-              onClick={() => faucet(FAUCET_UI_MINT_AMOUNT)}
-              disabled={minting || !canMintFull}
+              onClick={() => faucet(claimableHuman)}
+              disabled={minting || !canMint}
               title={
                 faucetMode === false
                   ? 'Faucet is disabled on-chain'
-                  : !canMintFull
+                  : !canMint
                     ? 'Per-wallet testnet faucet cap reached'
                     : undefined
               }
@@ -125,7 +132,7 @@ export function Portfolio() {
                 ? 'Minting...'
                 : minted
                   ? 'Got it!'
-                  : `Get ${FAUCET_UI_MINT_AMOUNT.toLocaleString()} V-Bucks`}
+                  : `Get ${claimableHuman.toLocaleString()} V-Bucks`}
             </button>
             {capReached && (
               <p className="max-w-[14rem] text-right text-[11px] text-muted-foreground">
