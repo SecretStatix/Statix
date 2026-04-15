@@ -125,7 +125,7 @@
       "id": "amen_thompson",
       "name": "Amen Thompson",
       "symbol": "THOMA",
-      "nba_id": 1641708,
+      "nba_id": 1641731,
       "team": "HOU",
       "weekly_projection": null
     },
@@ -197,7 +197,7 @@
       "id": "deni_avdija",
       "name": "Deni Avdija",
       "symbol": "AVDID",
-      "nba_id": 1630166,
+      "nba_id": 1629656,
       "team": "POR",
       "weekly_projection": null
     },
@@ -233,7 +233,7 @@
       "id": "jalen_duren",
       "name": "Jalen Duren",
       "symbol": "DUREJ",
-      "nba_id": 1631105,
+      "nba_id": 1631107,
       "team": "DET",
       "weekly_projection": null
     },
@@ -422,7 +422,7 @@
       "id": "brandon_miller",
       "name": "Brandon Miller",
       "symbol": "MILLB",
-      "nba_id": 1641706,
+      "nba_id": 1641715,
       "team": "CHA",
       "weekly_projection": null
     },
@@ -470,7 +470,269 @@
       "nba_id": 1629639,
       "team": "MIA",
       "weekly_projection": null
+    },
+    {
+      "index": 51,
+      "id": "rudy_gobert",
+      "name": "Rudy Gobert",
+      "symbol": "GOBER",
+      "nba_id": 203497,
+      "team": "MIN",
+      "weekly_projection": null
+    },
+    {
+      "index": 52,
+      "id": "jaden_mcdaniels",
+      "name": "Jaden McDaniels",
+      "symbol": "MCDNJ",
+      "nba_id": 1630183,
+      "team": "MIN",
+      "weekly_projection": null
+    },
+    {
+      "index": 53,
+      "id": "naz_reid",
+      "name": "Naz Reid",
+      "symbol": "REIDN",
+      "nba_id": 1629675,
+      "team": "MIN",
+      "weekly_projection": null
+    },
+    {
+      "index": 54,
+      "id": "jabari_smith_jr",
+      "name": "Jabari Smith Jr.",
+      "symbol": "SMTHJR",
+      "nba_id": 1631095,
+      "team": "HOU",
+      "weekly_projection": null
+    },
+    {
+      "index": 55,
+      "id": "reed_sheppard",
+      "name": "Reed Sheppard",
+      "symbol": "SHEPR",
+      "nba_id": 1642263,
+      "team": "HOU",
+      "weekly_projection": null
+    },
+    {
+      "index": 56,
+      "id": "aaron_gordon",
+      "name": "Aaron Gordon",
+      "symbol": "GORDA",
+      "nba_id": 203932,
+      "team": "DEN",
+      "weekly_projection": null
+    },
+    {
+      "index": 57,
+      "id": "peyton_watson",
+      "name": "Peyton Watson",
+      "symbol": "WATPE",
+      "nba_id": 1631212,
+      "team": "DEN",
+      "weekly_projection": null
+    },
+    {
+      "index": 58,
+      "id": "jonas_valanciunas",
+      "name": "Jonas Valanciunas",
+      "symbol": "VALANJ",
+      "nba_id": 202685,
+      "team": "DEN",
+      "weekly_projection": null
+    },
+    {
+      "index": 59,
+      "id": "christian_braun",
+      "name": "Christian Braun",
+      "symbol": "BRAUC",
+      "nba_id": 1631128,
+      "team": "DEN",
+      "weekly_projection": null
+    },
+    {
+      "index": 60,
+      "id": "cameron_johnson",
+      "name": "Cameron Johnson",
+      "symbol": "JOHCAM",
+      "nba_id": 1629661,
+      "team": "DEN",
+      "weekly_projection": null
+    },
+    {
+      "index": 61,
+      "id": "bronny_james",
+      "name": "Bronny James",
+      "symbol": "BRNJMS",
+      "nba_id": 1642355,
+      "team": "LAL",
+      "weekly_projection": null
+    },
+    {
+      "index": 62,
+      "id": "luke_kennard",
+      "name": "Luke Kennard",
+      "symbol": "KENNL",
+      "nba_id": 1628379,
+      "team": "LAL",
+      "weekly_projection": null
+    },
+    {
+      "index": 63,
+      "id": "rui_hachimura",
+      "name": "Rui Hachimura",
+      "symbol": "HACHR",
+      "nba_id": 1629060,
+      "team": "LAL",
+      "weekly_projection": null
+    },
+    {
+      "index": 64,
+      "id": "marcus_smart",
+      "name": "Marcus Smart",
+      "symbol": "SMARM",
+      "nba_id": 203935,
+      "team": "LAL",
+      "weekly_projection": null
+    },
+    {
+      "index": 65,
+      "id": "stephon_castle",
+      "name": "Stephon Castle",
+      "symbol": "CASTST",
+      "nba_id": 1642264,
+      "team": "SAS",
+      "weekly_projection": null
+    },
+    {
+      "index": 66,
+      "id": "ausar_thompson",
+      "name": "Ausar Thompson",
+      "symbol": "THOMAU",
+      "nba_id": 1641709,
+      "team": "DET",
+      "weekly_projection": null
+    },
+    {
+      "index": 67,
+      "id": "tobias_harris",
+      "name": "Tobias Harris",
+      "symbol": "HARRTO",
+      "nba_id": 202699,
+      "team": "DET",
+      "weekly_projection": null
+    },
+    {
+      "index": 68,
+      "id": "duncan_robinson",
+      "name": "Duncan Robinson",
+      "symbol": "ROBND",
+      "nba_id": 1629130,
+      "team": "DET",
+      "weekly_projection": null
+    },
+    {
+      "index": 69,
+      "id": "payton_pritchard",
+      "name": "Payton Pritchard",
+      "symbol": "PRITP",
+      "nba_id": 1630202,
+      "team": "BOS",
+      "weekly_projection": null
+    },
+    {
+      "index": 70,
+      "id": "og_anunoby",
+      "name": "OG Anunoby",
+      "symbol": "ANUNO",
+      "nba_id": 1628384,
+      "team": "NYK",
+      "weekly_projection": null
+    },
+    {
+      "index": 71,
+      "id": "josh_hart",
+      "name": "Josh Hart",
+      "symbol": "HARTJ",
+      "nba_id": 1628404,
+      "team": "NYK",
+      "weekly_projection": null
+    },
+    {
+      "index": 72,
+      "id": "sandro_mamukelashvili",
+      "name": "Sandro Mamukelashvili",
+      "symbol": "MAMUS",
+      "nba_id": 1630572,
+      "team": "TOR",
+      "weekly_projection": null
+    },
+    {
+      "index": 73,
+      "id": "jakob_poeltl",
+      "name": "Jakob Poeltl",
+      "symbol": "POELTJ",
+      "nba_id": 1627751,
+      "team": "TOR",
+      "weekly_projection": null
+    },
+    {
+      "index": 74,
+      "id": "cj_mccollum",
+      "name": "CJ McCollum",
+      "symbol": "MCCOLL",
+      "nba_id": 203468,
+      "team": "ATL",
+      "weekly_projection": null
+    },
+    {
+      "index": 75,
+      "id": "dyson_daniels",
+      "name": "Dyson Daniels",
+      "symbol": "DANDYS",
+      "nba_id": 1630700,
+      "team": "ATL",
+      "weekly_projection": null
+    },
+    {
+      "index": 76,
+      "id": "miles_bridges",
+      "name": "Miles Bridges",
+      "symbol": "BRIDMI",
+      "nba_id": 1628970,
+      "team": "CHA",
+      "weekly_projection": null
+    },
+    {
+      "index": 77,
+      "id": "coby_white",
+      "name": "Coby White",
+      "symbol": "WHITCO",
+      "nba_id": 1629632,
+      "team": "CHA",
+      "weekly_projection": null
+    },
+    {
+      "index": 78,
+      "id": "paul_george",
+      "name": "Paul George",
+      "symbol": "GEORGP",
+      "nba_id": 202331,
+      "team": "PHI",
+      "weekly_projection": null
+    },
+    {
+      "index": 79,
+      "id": "vj_edgecombe",
+      "name": "V.J. Edgecombe",
+      "symbol": "EDGEVJ",
+      "nba_id": 1642845,
+      "team": "PHI",
+      "weekly_projection": null
     }
   ],
-  "deployedAt": "2026-04-13T05:28:30.383Z"
+  "deployedAt": "2026-04-13T05:28:30.383Z",
+  "lastUpdated": "2026-04-15T18:29:20.394Z"
 }
