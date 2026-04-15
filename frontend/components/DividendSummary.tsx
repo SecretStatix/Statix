@@ -92,7 +92,7 @@ export function DividendSummary() {
             fantasy point scorers each period.
           </p>
           <p className="text-xs text-muted-foreground/90 pt-1">
-            Trading fees (1.5% on each trade; 67% to the dividend pool) fund distributions. Claims settle on-chain via
+            Trading fees (2% on each trade; 67% to the dividend pool) fund distributions. Claims settle on-chain via
             DividendHub.
           </p>
         </div>
