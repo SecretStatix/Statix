@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getLeaderboard } from '@/lib/api';
+import { AnimatedDividendPool } from '@/components/AnimatedDividendPool';
 
 const PRIZES = [
   { rank: 1, label: '1st Place', amount: '$250', color: 'text-amber-400' },
@@ -31,7 +32,7 @@ export default function LeaderboardPage() {
   }, []);
 
   return (
-    <div className="space-y-10 pb-12">
+    <div className="space-y-8 pb-12">
       <header className="space-y-1">
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Leaderboard</p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Portfolio rankings</h1>
@@ -39,6 +40,8 @@ export default function LeaderboardPage() {
           Users ranked by total portfolio value — V-Bucks balance + share value + unclaimed dividends.
         </p>
       </header>
+
+      <AnimatedDividendPool />
 
       {/* Prize banner */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">

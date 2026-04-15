@@ -104,3 +104,13 @@ body {
 .stat-slide {
   animation: stat-slide-up 0.35s ease-out forwards;
 }
+
+/* Dividend pool hero glow */
+@keyframes dividend-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+.dividend-glow {
+  animation: dividend-glow 3s ease-in-out infinite;
+}

@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/AuthContext';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
+import { formatUnits } from 'viem';
 import { TrendingUp, BarChart3, User as UserIcon, Info, BookOpen, Search } from 'lucide-react';
+import { useDBucksBalance } from '@/hooks/useContracts';
 import { cn } from '@/lib/utils';
 import { ProfileMenu } from '@/components/ProfileMenu';
 
@@ -40,6 +43,8 @@ export function Navbar() {
     query: { enabled: !!activeWallet },
   });
 
+  const { data: dbucksRaw } = useDBucksBalance(activeWallet?.address);
+
   // Auto-fund new wallets with gas
   useEffect(() => {
     if (!activeWallet || fundedRef.current) return;
@@ -55,6 +60,19 @@ export function Navbar() {
 
   const truncateAddress = (addr: string) =>
     `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
+  const formatDBucks = (raw: bigint | undefined) => {
+    if (!raw) return '$0.00';
+    const num = parseFloat(formatUnits(raw, 6));
+    if (num >= 1000) return `$${(num / 1000).toFixed(1)}k`;
+    return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const formatDBucksFull = (raw: bigint | undefined) => {
+    if (!raw) return '$0.00';
+    const num = parseFloat(formatUnits(raw, 6));
+    return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   const handleSignOut = async () => {
     if (authenticated) {
@@ -130,6 +148,13 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             {ready && authenticated && activeWallet ? (
               <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5 border border-white/[0.06]">
+                <span className="text-sm font-semibold text-success tabular-nums hidden sm:inline">
+                  {formatDBucksFull(dbucksRaw as bigint | undefined)}
+                </span>
+                <span className="text-sm font-semibold text-success tabular-nums sm:hidden">
+                  {formatDBucks(dbucksRaw as bigint | undefined)}
+                </span>
+                <span className="text-white/20 hidden sm:inline">|</span>
                 <div className="w-2 h-2 rounded-full bg-success" />
                 <span className="text-sm text-muted-foreground font-mono">
                   {truncateAddress(activeWallet.address)}

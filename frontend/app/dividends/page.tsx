@@ -2,12 +2,13 @@
 
 import { useAccount } from 'wagmi';
 import { DividendSummary } from '@/components/DividendSummary';
+import { AnimatedDividendPool } from '@/components/AnimatedDividendPool';
 
 export default function DividendsPage() {
   const { isConnected } = useAccount();
 
   return (
-    <div className="space-y-10 pb-12">
+    <div className="space-y-8 pb-12">
       <header className="space-y-1">
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Dividends</p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Playoff distributions</h1>
@@ -15,6 +16,8 @@ export default function DividendsPage() {
           Claim your share of fee-funded pools each playoff round — base allocation plus top performer bonuses.
         </p>
       </header>
+
+      <AnimatedDividendPool />
 
       {isConnected ? (
         <DividendSummary />
