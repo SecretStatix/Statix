@@ -120,27 +120,7 @@ async function main() {
   const poolCount = await factory.poolCount();
   console.log(`\n   Total pools created: ${poolCount}`);
 
-  // 9. Seed D-Bucks into the DividendHub for dividend payouts
-  console.log("\n8. Seeding D-Bucks for dividend pool...");
-  const seedAmount = 1000000n * 10n ** 6n; // 1M
-
-  gas = await getGasOverrides(deployer);
-  await (await usdc.mint(deployerAddress, seedAmount, gas)).wait();
-  await delay(3000);
-
-  gas = await getGasOverrides(deployer);
-  await (await usdc.approve(dbucksAddress, seedAmount, gas)).wait();
-  await delay(3000);
-
-  gas = await getGasOverrides(deployer);
-  await (await dbucks.deposit(seedAmount, gas)).wait();
-  await delay(3000);
-
-  gas = await getGasOverrides(deployer);
-  await (await dbucks.transfer(hubAddress, seedAmount, gas)).wait();
-  console.log("   Seeded 1,000,000 D-Bucks to DividendHub");
-
-  // 10. Save deployment info
+  // 9. Save deployment info
   const deployment = {
     network: hre.network.name,
     chainId: hre.network.config.chainId,
