@@ -21,7 +21,6 @@ function useDividendPoolTotal(): number {
 // ── Animated number display (same pattern as player page) ────────────
 function AnimatedValue({ value, decimals = 2 }: { value: number; decimals?: number }) {
   const [display, setDisplay] = useState(value);
-  const [color, setColor] = useState<'text-foreground' | 'text-success' | 'text-destructive'>('text-foreground');
   const prevRef = useRef(value);
   const rafRef = useRef<number | null>(null);
 
@@ -32,19 +31,13 @@ function AnimatedValue({ value, decimals = 2 }: { value: number; decimals?: numb
 
     if (from === to) return;
 
-    const direction = to > from ? 1 : -1;
-    const step = Math.pow(10, -decimals);
-    const totalSteps = Math.round(Math.abs(to - from) / step);
-    const maxSteps = 30;
-    const actualSteps = Math.min(totalSteps, maxSteps);
-    const stepSize = (to - from) / actualSteps;
-
-    setColor(direction > 0 ? 'text-success' : 'text-destructive');
+    const totalSteps = Math.min(Math.round(Math.abs(to - from) / Math.pow(10, -decimals)), 30);
+    const stepSize = (to - from) / totalSteps;
 
     let current = 0;
     const tick = () => {
       current++;
-      if (current >= actualSteps) {
+      if (current >= totalSteps) {
         setDisplay(to);
         return;
       }
@@ -61,7 +54,7 @@ function AnimatedValue({ value, decimals = 2 }: { value: number; decimals?: numb
   }, [value, decimals]);
 
   return (
-    <span className={`transition-colors duration-300 ${color}`}>
+    <span className="text-foreground">
       ${display.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}
     </span>
   );
@@ -85,7 +78,7 @@ export function AnimatedDividendPool() {
 
       {/* Label */}
       <p className="relative text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70 mb-2">
-        Dividend Pool This Week
+        Dividend Pool This Round
       </p>
 
       {/* Animated value */}
