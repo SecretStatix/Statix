@@ -1,4 +1,4 @@
-"""Read DBucks + StatixRouter.getPortfolio for a wallet (same semantics as frontend)."""
+"""Read DBucks + StatixRouter.getPortfolio + unclaimed dividends for a wallet."""
 
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ def compute_wallet_nav(w3: Web3, wallet_address: str) -> Tuple[float, float, flo
     contracts = deployment["contracts"]
     router_addr = contracts.get("StatixRouter")
     dbucks_addr = contracts.get("DBucks")
+    hub_addr = contracts.get("DividendHub")
     if not router_addr or not dbucks_addr:
         return None
 
@@ -49,7 +50,16 @@ def compute_wallet_nav(w3: Web3, wallet_address: str) -> Tuple[float, float, flo
         _idxs, _shares, values = portfolio
         positions_value = sum(int(v) for v in values) / 10**USDC_DECIMALS
 
-        net_worth = cash + positions_value
+        unclaimed = 0.0
+        if hub_addr:
+            hub = w3.eth.contract(
+                address=Web3.to_checksum_address(hub_addr),
+                abi=get_abi("DividendHub"),
+            )
+            raw_unclaimed = hub.functions.getUnclaimedDividends(wallet).call()
+            unclaimed = float(raw_unclaimed) / 10**USDC_DECIMALS
+
+        net_worth = cash + positions_value + unclaimed
         return (net_worth, cash, positions_value)
     except Exception as e:
         logger.warning("compute_wallet_nav failed for %s: %s", wallet_address, e)
