@@ -12,7 +12,9 @@
     "mint-usdc:sepolia": "hardhat run scripts/mint-usdc.js --network base-sepolia",
     "mint-usdc:local": "hardhat run scripts/mint-usdc.js --network localhost",
     "distribute:sepolia": "hardhat run scripts/distribute-dividends.js --network base-sepolia",
-    "distribute:local": "hardhat run scripts/distribute-dividends.js --network localhost"
+    "distribute:local": "hardhat run scripts/distribute-dividends.js --network localhost",
+    "add-players:sepolia": "hardhat run scripts/add-players.js --network base-sepolia",
+    "add-players:local": "hardhat run scripts/add-players.js --network localhost"
   },
   "keywords": [],
   "author": "",
