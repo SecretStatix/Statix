@@ -35,9 +35,10 @@ const TABS: { key: FilterTab; label: string }[] = [
 interface PlayerGridProps {
   players: PlayerData[];
   loading: boolean;
+  expanded?: boolean;
 }
 
-export function PlayerGrid({ players, loading }: PlayerGridProps) {
+export function PlayerGrid({ players, loading, expanded = false }: PlayerGridProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerData | null>(null);
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('trending');
@@ -94,7 +95,7 @@ export function PlayerGrid({ players, loading }: PlayerGridProps) {
             <div key={t.key} className="h-8 w-20 bg-secondary/50 rounded-lg animate-pulse shrink-0" />
           ))}
         </div>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className={`grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 ${expanded ? '2xl:grid-cols-5' : '2xl:grid-cols-4'}`}>
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="bg-card border border-border rounded-xl p-4 space-y-3 animate-pulse">
               <div className="flex items-center gap-3">
@@ -115,7 +116,7 @@ export function PlayerGrid({ players, loading }: PlayerGridProps) {
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-4 overflow-x-auto py-1">
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto py-1 px-0.5">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
@@ -132,7 +133,7 @@ export function PlayerGrid({ players, loading }: PlayerGridProps) {
         <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">{filtered.length} players</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <div className={`grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 ${expanded ? '2xl:grid-cols-5' : '2xl:grid-cols-4'}`}>
         {filtered.map((player) => (
           <PlayerCard
             key={player.id}

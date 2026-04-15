@@ -635,13 +635,13 @@ export default function PlayerProfilePage() {
                 ))}
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="grid grid-cols-3 sm:flex items-center">
               {statEntries.map((s, i) => (
                 <div
                   key={s.key}
                   className={`flex-1 text-center py-3 overflow-hidden ${
-                    i > 0 ? 'border-l border-white/[0.05]' : ''
-                  }`}
+                    i > 0 ? 'sm:border-l sm:border-white/[0.05]' : ''
+                  } ${i >= 3 ? 'border-t border-white/[0.05] sm:border-t-0' : ''}`}
                 >
                   <p className="text-lg md:text-xl font-bold tabular-nums">
                     <AnimatedValue value={parseFloat(s.value)} />
@@ -659,7 +659,7 @@ export default function PlayerProfilePage() {
             <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mb-4">
               Fantasy Projections
             </h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="relative overflow-hidden rounded-xl bg-card border border-white/[0.06] p-4">
                 <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
                 <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium ml-2">FPts/Game</p>
@@ -703,8 +703,8 @@ export default function PlayerProfilePage() {
                       <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">PTS</th>
                       <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">REB</th>
                       <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">AST</th>
-                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">STL</th>
-                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px]">BLK</th>
+                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px] hidden sm:table-cell">STL</th>
+                      <th className="text-right px-3 py-3 font-medium text-muted-foreground/50 text-[11px] hidden sm:table-cell">BLK</th>
                       <th className="text-right px-3 py-3 font-medium text-primary/60 text-[11px]">FPts</th>
                     </tr>
                   </thead>
@@ -724,8 +724,8 @@ export default function PlayerProfilePage() {
                         <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.PTS?.toFixed(0)}</td>
                         <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.REB?.toFixed(0)}</td>
                         <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.AST?.toFixed(0)}</td>
-                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.STL?.toFixed(0)}</td>
-                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70">{game.stats.BLK?.toFixed(0)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70 hidden sm:table-cell">{game.stats.STL?.toFixed(0)}</td>
+                        <td className="px-3 py-3 text-right font-mono text-xs text-foreground/70 hidden sm:table-cell">{game.stats.BLK?.toFixed(0)}</td>
                         <td className="px-3 py-3 text-right font-mono text-xs font-semibold text-primary">
                           {game.fantasy_points.toFixed(1)}
                         </td>

@@ -50,7 +50,7 @@ export default function LeaderboardPage() {
             key={prize.rank}
             className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent px-4 py-5 text-center"
           >
-            <p className={`text-2xl font-bold tabular-nums ${prize.color}`}>{prize.amount}</p>
+            <p className={`text-xl sm:text-2xl font-bold tabular-nums ${prize.color}`}>{prize.amount}</p>
             <p className="mt-1 text-xs font-medium text-muted-foreground">{prize.label}</p>
           </div>
         ))}
@@ -77,13 +77,13 @@ export default function LeaderboardPage() {
               <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">Season standings</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[520px] text-sm">
+              <table className="w-full min-w-0 sm:min-w-[520px] text-sm">
                 <thead>
                   <tr className="border-b border-white/[0.06] text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80">
-                    <th className="px-5 py-3 sm:px-8">Rank</th>
+                    <th className="px-3 py-3 sm:px-8">Rank</th>
                     <th className="py-3 pr-4">Wallet</th>
-                    <th className="py-3 pr-5 text-right sm:pr-8">Portfolio value</th>
-                    <th className="py-3 pr-5 text-right sm:pr-8">Dividends earned</th>
+                    <th className="py-3 pr-3 text-right sm:pr-8">Portfolio value</th>
+                    <th className="py-3 pr-3 text-right sm:pr-8">Dividends earned</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -95,7 +95,7 @@ export default function LeaderboardPage() {
                         key={leader.wallet_address}
                         className="border-b border-white/[0.04] last:border-0 transition-colors hover:bg-white/[0.02]"
                       >
-                        <td className="px-5 py-3.5 sm:px-8">
+                        <td className="px-3 py-3.5 sm:px-8">
                           <span className={`font-bold tabular-nums ${prize ? prize.color : 'text-foreground'}`}>
                             {rank}
                           </span>
@@ -106,7 +106,7 @@ export default function LeaderboardPage() {
                         <td className="py-3.5 text-right font-semibold tabular-nums text-foreground">
                           ${parseFloat(leader.portfolio_value ?? leader.total_earned ?? 0).toFixed(2)}
                         </td>
-                        <td className="py-3.5 pr-5 text-right tabular-nums text-success sm:pr-8">
+                        <td className="py-3.5 pr-3 text-right tabular-nums text-success sm:pr-8">
                           ${parseFloat(leader.total_earned ?? 0).toFixed(2)}
                         </td>
                       </tr>

@@ -8,11 +8,13 @@ import { PlayerGrid, PlayerData } from '@/components/PlayerGrid';
 import { FeaturedPlayer } from '@/components/FeaturedPlayer';
 import { HotPlayers } from '@/components/HotPlayers';
 import { ActivityFeed } from '@/components/ActivityFeed';
+import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 function HomeContent() {
   const [players, setPlayers] = useState<PlayerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const { data: onChainData } = useAllPlayers();
 
@@ -68,22 +70,30 @@ function HomeContent() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Featured spotlight */}
-      <FeaturedPlayer players={players} loading={loading} />
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      {/* Left column: featured, hot, grid */}
+      <div className={`space-y-6 ${sidebarOpen ? 'lg:col-span-9' : 'lg:col-span-12'}`}>
+        <FeaturedPlayer players={players} loading={loading} />
+        <HotPlayers players={players} loading={loading} />
+        <PlayerGrid players={players} loading={loading} expanded={!sidebarOpen} />
+      </div>
 
-      {/* Hot players bar */}
-      <HotPlayers players={players} loading={loading} />
-
-      {/* Main content: grid + activity sidebar */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-9">
-          <PlayerGrid players={players} loading={loading} />
-        </div>
-        <div className="lg:col-span-3">
+      {/* Right column: activity sidebar */}
+      <div className={`lg:col-span-3 ${sidebarOpen ? '' : 'hidden'}`}>
+        <div className="lg:sticky lg:top-20 space-y-2">
           <ActivityFeed />
         </div>
       </div>
+
+      {/* Sidebar toggle — desktop only */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="hidden lg:flex fixed right-4 top-20 z-40 items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-card border border-white/[0.06] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors text-xs font-medium shadow-lg"
+        title={sidebarOpen ? 'Hide activity' : 'Show activity'}
+      >
+        {sidebarOpen ? <PanelRightClose className="w-3.5 h-3.5" /> : <PanelRightOpen className="w-3.5 h-3.5" />}
+        {sidebarOpen ? 'Hide' : 'Activity'}
+      </button>
     </div>
   );
 }

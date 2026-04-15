@@ -126,8 +126,8 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
   const isSuccess = bought || sold;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 max-w-md w-full" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black/40 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-5 border-b border-border flex items-center justify-between">
           <h2 className="font-semibold text-foreground">Trade {player.name}</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition">
