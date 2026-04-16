@@ -115,7 +115,7 @@ export function PlayerCard({ player, onTrade }: PlayerCardProps) {
               e.preventDefault();
               onTrade();
             }}
-            className="h-9 rounded-md border-0 bg-[#0a7a52] text-sm font-semibold text-white transition-all duration-200 hover:bg-[#0e9966] focus:outline-none focus:ring-2 focus:ring-[#0a7a52]/40 focus:ring-offset-1 focus:ring-offset-card"
+            className="h-11 sm:h-9 rounded-md border-0 bg-[#0a7a52] text-sm font-semibold text-white transition-all duration-200 hover:bg-[#0e9966] focus:outline-none focus:ring-2 focus:ring-[#0a7a52]/40 focus:ring-offset-1 focus:ring-offset-card"
           >
             Buy
           </button>
@@ -124,7 +124,7 @@ export function PlayerCard({ player, onTrade }: PlayerCardProps) {
               e.preventDefault();
               onTrade();
             }}
-            className="h-9 rounded-md border-0 bg-[#cc3333] text-sm font-semibold text-white transition-all duration-200 hover:bg-[#e04040] focus:outline-none focus:ring-2 focus:ring-[#cc3333]/40 focus:ring-offset-1 focus:ring-offset-card"
+            className="h-11 sm:h-9 rounded-md border-0 bg-[#cc3333] text-sm font-semibold text-white transition-all duration-200 hover:bg-[#e04040] focus:outline-none focus:ring-2 focus:ring-[#cc3333]/40 focus:ring-offset-1 focus:ring-offset-card"
           >
             Sell
           </button>

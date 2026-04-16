@@ -2314,8 +2314,8 @@ export const DBucksABI = [
 
 const c = statixDeployment.contracts;
 export const CONTRACTS = {
-  StatixRouter: c.StatixRouter as `0x${string}`,
-  DividendHub: c.DividendHub as `0x${string}`,
-  DBucks: c.DBucks as `0x${string}`,
-  PoolFactory: c.PoolFactory as `0x${string}`,
+  StatixRouter: "0x822C7C667137F8d025DE4dEAF686d3A1f4Ed75C8",
+  DividendHub: "0x135473c569cd4296359F50988b558Ed9725B0D4C",
+  DBucks: "0xf65F3a276a346d9B58b284ef98DEAdb74792294C",
+  PoolFactory: "0xd567351dB9e3a0AD51207B0A2728834b0499803a",
 };

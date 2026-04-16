@@ -125,11 +125,12 @@ export function useUnclaimedDividends(userAddress?: string) {
 
 // Write: Approve D-Bucks spending (for StatixRouter — one-time approval)
 export function useApproveDBucks() {
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { writeContract, data: hash, isPending, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
   useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
-  const approve = (amount: number) => {
+  const approve = (_amount?: number) => {
+    // Approve uint256.max so the user never needs to re-approve (standard pattern, e.g. Uniswap)
     writeContract({
       chainId: CHAIN_ID,
       address: CONTRACTS.DBucks as `0x${string}`,
@@ -137,18 +138,18 @@ export function useApproveDBucks() {
       functionName: "approve",
       args: [
         CONTRACTS.StatixRouter as `0x${string}`,
-        parseUnits(amount.toString(), USDC_DECIMALS),
+        BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
       ],
       gas: GAS_APPROVE,
     });
   };
 
-  return { approve, hash, isPending, isConfirming, isSuccess };
+  return { approve, hash, isPending, isConfirming, isSuccess, reset };
 }
 
 // Write: Buy shares (via StatixRouter)
 export function useBuyShares() {
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { writeContract, data: hash, isPending, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
   useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
@@ -167,12 +168,12 @@ export function useBuyShares() {
     });
   };
 
-  return { buy, hash, isPending, isConfirming, isSuccess };
+  return { buy, hash, isPending, isConfirming, isSuccess, reset };
 }
 
 // Write: Sell shares (via StatixRouter)
 export function useSellShares() {
-  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { writeContract, data: hash, isPending, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
   useInvalidateReadContractsOnTxSuccess(isSuccess, hash);
 
@@ -191,7 +192,7 @@ export function useSellShares() {
     });
   };
 
-  return { sell, hash, isPending, isConfirming, isSuccess };
+  return { sell, hash, isPending, isConfirming, isSuccess, reset };
 }
 
 export { FAUCET_UI_MINT_AMOUNT, FAUCET_LIMIT_HUMAN } from "@/lib/faucet-config";

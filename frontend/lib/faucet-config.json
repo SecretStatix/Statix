@@ -1,4 +1,4 @@
 {
-  "faucetLimitHuman": 1000,
-  "faucetUiMintPerClickHuman": 1000
+  "faucetLimitHuman": 300,
+  "faucetUiMintPerClickHuman": 100
 }

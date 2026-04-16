@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { Navbar } from './Navbar';
+import { MobileBottomNav } from './MobileBottomNav';
 import { TradingFreezeBanner } from './TradingFreezeBanner';
 
 const HIDE_NAVBAR_PATHS = ['/login', '/signup', '/pending', '/forgot-password', '/reset-password'];
@@ -20,6 +21,7 @@ export function NavbarWrapper() {
         <Navbar />
       </Suspense>
       <TradingFreezeBanner />
+      <MobileBottomNav />
     </>
   );
 }

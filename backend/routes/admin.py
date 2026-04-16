@@ -14,6 +14,7 @@ from web3 import Web3
 from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points
 from chain import get_deployment
 from db import get_supabase, get_store
+from snapshot.job import run_snapshot_job
 
 router = APIRouter()
 
@@ -274,3 +275,16 @@ async def snapshot_wallets(_=Depends(verify_admin)):
         wallets.append(Web3.to_checksum_address(s))
 
     return {"wallets": wallets, "count": len(wallets)}
+@router.post("/run-snapshot")
+async def run_snapshot(_=Depends(verify_admin)):
+    """
+    Trigger a portfolio NAV snapshot immediately.
+    Reads all wallets from the transactions table, computes on-chain NAV for each,
+    and writes to wallet_portfolio_snapshots. This is what feeds the leaderboard.
+    In production this runs hourly via cron — call this endpoint to force a refresh.
+    """
+    try:
+        result = run_snapshot_job()
+        return result
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))

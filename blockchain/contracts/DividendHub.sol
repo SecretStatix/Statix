@@ -212,6 +212,17 @@ contract DividendHub is Ownable, ReentrancyGuard {
         emit RoundAdvanced(currentRound);
     }
 
+    /**
+     * @notice Emergency drain — transfer entire token balance to a safe address.
+     *         Use if funds are stuck (e.g. no user snapshots were taken before distribution).
+     */
+    function emergencyDrain(address _to) external onlyOwner {
+        require(_to != address(0), "Zero address");
+        uint256 balance = paymentToken.balanceOf(address(this));
+        require(balance > 0, "Nothing to drain");
+        paymentToken.safeTransfer(_to, balance);
+    }
+
     // ============== CLAIMS ==============
 
     function _getUserHoldings(uint256 _round, uint256 _poolIdx, address _user) internal view returns (uint256) {

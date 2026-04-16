@@ -79,6 +79,17 @@ def build_router_contract(w3: Web3):
     return w3.eth.contract(address=Web3.to_checksum_address(router_addr), abi=abi)
 
 
+def build_hub_contract(w3: Web3):
+    deployment = get_deployment()
+    if not deployment:
+        raise RuntimeError("deployments.json missing")
+    hub_addr = deployment.get("contracts", {}).get("DividendHub")
+    if not hub_addr:
+        raise RuntimeError("DividendHub not in deployments.json")
+    abi = get_abi("DividendHub")
+    return w3.eth.contract(address=Web3.to_checksum_address(hub_addr), abi=abi)
+
+
 def http_rpc_to_ws(url: str) -> str:
     if url.startswith("https://"):
         return "wss://" + url[len("https://") :]

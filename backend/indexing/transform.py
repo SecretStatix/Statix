@@ -142,6 +142,57 @@ def collect_snapshots(w3: Web3, router, from_block: int, to_block: int) -> list[
     return snaps
 
 
+def collect_dividend_rows(
+    w3: Web3, hub, from_block: int, to_block: int
+) -> tuple[list[dict], list[dict]]:
+    """
+    Fetch DividendHub events in [from_block, to_block]. Returns:
+    - claim_rows     → dividend_claims   (one row per DividendClaimed event)
+    - dist_rows      → round_distributions (one row per DividendsDistributed event)
+    """
+    claimed_logs = list(hub.events.DividendClaimed.get_logs(from_block=from_block, to_block=to_block))
+    dist_logs = list(hub.events.DividendsDistributed.get_logs(from_block=from_block, to_block=to_block))
+
+    block_ts_cache: dict[int, int] = {}
+
+    def _get_ts(block_number: int) -> str:
+        if block_number not in block_ts_cache:
+            blk = w3.eth.get_block(block_number)
+            block_ts_cache[block_number] = int(blk["timestamp"])
+        ts = block_ts_cache[block_number]
+        return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+
+    claim_rows: list[dict] = []
+    for ev in claimed_logs:
+        args = ev["args"]
+        tx_hash = _tx_hash_hex(ev)
+        claimed_at = _get_ts(int(ev["blockNumber"]))
+        claim_rows.append({
+            "round": int(args["round"]),
+            "wallet_address": Web3.to_checksum_address(args["user"]).lower(),
+            "amount": _human_amount(int(args["amount"])),
+            "tx_hash": tx_hash,
+            "claimed_at": claimed_at,
+        })
+
+    dist_rows: list[dict] = []
+    for ev in dist_logs:
+        args = ev["args"]
+        tx_hash = _tx_hash_hex(ev)
+        distributed_at = _get_ts(int(ev["blockNumber"]))
+        dist_rows.append({
+            "round": int(args["round"]),
+            "total_pool": _human_amount(int(args["totalPool"])),
+            "base_pool": _human_amount(int(args["basePool"])),
+            "top_performer_pool": _human_amount(int(args["topPerformerPool"])),
+            "top_n": int(args["topN"]),
+            "tx_hash": tx_hash,
+            "distributed_at": distributed_at,
+        })
+
+    return claim_rows, dist_rows
+
+
 def parse_head_number(head: dict[str, Any]) -> int:
     n = head.get("number")
     if n is None:
