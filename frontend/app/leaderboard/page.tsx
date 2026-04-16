@@ -81,7 +81,7 @@ export default function LeaderboardPage() {
                 <thead>
                   <tr className="border-b border-white/[0.06] text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground/80">
                     <th className="px-3 py-3 sm:px-8">Rank</th>
-                    <th className="py-3 pr-4">Wallet</th>
+                    <th className="py-3 pr-4">User</th>
                     <th className="py-3 pr-3 text-right sm:pr-8">Portfolio value</th>
                     <th className="py-3 pr-3 text-right sm:pr-8">Dividends earned</th>
                   </tr>
@@ -105,7 +105,7 @@ export default function LeaderboardPage() {
                             ? `${leader.wallet_address.slice(0, 6)}…${leader.wallet_address.slice(-4)}`
                             : '—')}
                         </td>
-                        <td className="py-3.5 text-right font-semibold tabular-nums text-foreground">
+                        <td className="py-3.5 pr-3 text-right font-semibold tabular-nums text-foreground sm:pr-8">
                           ${parseFloat(leader.portfolio_value ?? leader.total_earned ?? 0).toFixed(2)}
                         </td>
                         <td className="py-3.5 pr-3 text-right tabular-nums text-success sm:pr-8">
