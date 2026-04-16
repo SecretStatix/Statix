@@ -1,4 +1,5 @@
 /**
+ * FIXME: Should I remove this? we could just test with real data.
  * TEST DISTRIBUTION — fake performance data, no backend needed.
  *
  * Fake FPts (avg per game, scaled 1e6):
