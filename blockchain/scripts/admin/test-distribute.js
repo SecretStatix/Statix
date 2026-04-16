@@ -2,12 +2,13 @@
  * TEST DISTRIBUTION — fake performance data, no backend needed.
  *
  * Fake FPts (avg per game, scaled 1e6):
- *   #1 Alperen Sengun  (pool 11): 45 FPts
- *   #2 Jaylen Brown    (pool 25): 40 FPts
- *   #3 Shai GCA        (pool  0): 35 FPts
- *   Fillers (pools 1,2,3,4,5,6,7,8,9,10): 20 FPts each
+ *   #1 Victor Wembanyama  (pool  3): 48 FPts
+ *   #2 Dylan Harper       (pool  5): 41 FPts
+ *   #3 Cade Cunningham    (pool 23): 36 FPts
+ *   #4 Filler             (pool 12): 22 FPts
+ *   #5 Filler             (pool 14): 19 FPts
  *
- * Top-N = 3 for this test.
+ * Top-N = 5 for this test.
  * Active users read from blockchain/active-users.json.
  *
  * Usage:
@@ -25,24 +26,16 @@ const SCALE = 10n ** 6n;
 
 // Fake performance data
 const PERF = [
-  { index: 0,  avgFpts: 35n * SCALE },  // Shai
-  { index: 1,  avgFpts: 20n * SCALE },
-  { index: 2,  avgFpts: 20n * SCALE },
-  { index: 3,  avgFpts: 20n * SCALE },
-  { index: 4,  avgFpts: 20n * SCALE },
-  { index: 5,  avgFpts: 20n * SCALE },
-  { index: 6,  avgFpts: 20n * SCALE },
-  { index: 7,  avgFpts: 20n * SCALE },
-  { index: 8,  avgFpts: 20n * SCALE },
-  { index: 9,  avgFpts: 20n * SCALE },
-  { index: 10, avgFpts: 20n * SCALE },
-  { index: 11, avgFpts: 45n * SCALE },  // Sengun  — #1
-  { index: 25, avgFpts: 40n * SCALE },  // JBrown  — #2
+  { index: 3,  avgFpts: 48n * SCALE },  // Wembanyama   — #1
+  { index: 5,  avgFpts: 41n * SCALE },  // Dylan Harper — #2
+  { index: 23, avgFpts: 36n * SCALE },  // Cade Cunningham — #3
+  { index: 12, avgFpts: 22n * SCALE },  // filler #4
+  { index: 14, avgFpts: 19n * SCALE },  // filler #5
 ];
 
-// Top-3 eligible (by fake ranking)
-const TOP_N = 3;
-const TOP_ELIGIBLE = [11, 25, 0]; // Sengun, JBrown, Shai
+// Top-5 eligible
+const TOP_N = 5;
+const TOP_ELIGIBLE = [3, 5, 23, 12, 14];
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
