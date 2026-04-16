@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import Link from 'next/link';
 import { getPortfolioSnapshots, type PortfolioSnapshotPoint } from '@/lib/api';
 import {
   ResponsiveContainer,
@@ -77,7 +78,7 @@ function formatPillUsd(v: number): string {
   return `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export type AllocationSlice = { name: string; value: number; pct: number };
+export type AllocationSlice = { name: string; value: number; pct: number; href?: string };
 
 interface PortfolioChartsProps {
   walletAddress?: string;
@@ -129,7 +130,7 @@ export function PortfolioCharts({ walletAddress, allocation }: PortfolioChartsPr
     () =>
       allocation
         .filter((a) => a.value > 0)
-        .map((a) => ({ name: a.name, value: a.value, pct: a.pct })),
+        .map((a) => ({ name: a.name, value: a.value, pct: a.pct, href: a.href })),
     [allocation]
   );
 
@@ -346,13 +347,22 @@ export function PortfolioCharts({ walletAddress, allocation }: PortfolioChartsPr
               </div>
               <ul className="flex-1 space-y-2 min-w-0 w-full">
                 {pieData.slice(0, 6).map((d, i) => (
-                  <li key={d.name} className="flex items-center gap-2 text-xs">
+                  <li key={d.name} className="flex items-center gap-2 text-xs min-w-0">
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
                     />
-                    <span className="truncate text-muted-foreground flex-1">{d.name}</span>
-                    <span className="tabular-nums text-foreground font-medium">{d.pct.toFixed(1)}%</span>
+                    {d.href ? (
+                      <Link
+                        href={d.href}
+                        className="truncate flex-1 text-left text-muted-foreground hover:text-primary transition-colors underline-offset-2 hover:underline"
+                      >
+                        {d.name}
+                      </Link>
+                    ) : (
+                      <span className="truncate text-muted-foreground flex-1">{d.name}</span>
+                    )}
+                    <span className="tabular-nums text-foreground font-medium shrink-0">{d.pct.toFixed(1)}%</span>
                   </li>
                 ))}
                 {pieData.length > 6 && (

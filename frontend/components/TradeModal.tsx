@@ -29,8 +29,11 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
   const [amount, setAmount] = useState('');
   const shares = parseFloat(amount) || 0;
 
-  const { data: buyQuoteData } = useBuyQuote(player.index, mode === 'buy' ? shares : 0);
-  const { data: sellQuoteData } = useSellQuote(player.index, mode === 'sell' ? shares : 0);
+  const buyQ = useBuyQuote(player.index, mode === 'buy' ? shares : 0);
+  const sellQ = useSellQuote(player.index, mode === 'sell' ? shares : 0);
+  const quoteRaw = mode === 'buy' ? buyQ.data : sellQ.data;
+  const quoteQueryPending = mode === 'buy' ? buyQ.isPending : sellQ.isPending;
+  const quoteQueryError = mode === 'buy' ? buyQ.isError : sellQ.isError;
   const { data: dbucksBalance } = useDBucksBalance(address);
   const { data: allowance } = useDBucksAllowance(address);
   const { data: myHoldings } = useHoldings(player.index, address);
@@ -69,20 +72,19 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
     }
   }, [bought, sold, buyHash, sellHash, address, player.index, onClose]);
   if (!isOpen) return null;
-  // FIXME: under no scenario should there be a fallback towards frontend data, when blockchain doesn't respond.
-  // FIXME: should display error instead.
+
   let quote: { cost: number; fee: number; total: number; newPrice: number } | null = null;
 
-  if (mode === 'buy' && buyQuoteData && shares > 0) {
-    const [cost, fee, total, newPrice] = buyQuoteData as [bigint, bigint, bigint, bigint];
+  if (mode === 'buy' && quoteRaw && shares > 0) {
+    const [cost, fee, total, newPrice] = quoteRaw as [bigint, bigint, bigint, bigint];
     quote = {
       cost: parseFloat(formatUnits(cost, 6)),
       fee: parseFloat(formatUnits(fee, 6)),
       total: parseFloat(formatUnits(total, 6)),
       newPrice: parseFloat(formatUnits(newPrice, 6)),
     };
-  } else if (mode === 'sell' && sellQuoteData && shares > 0) {
-    const [revenue, fee, net, newPrice] = sellQuoteData as [bigint, bigint, bigint, bigint];
+  } else if (mode === 'sell' && quoteRaw && shares > 0) {
+    const [revenue, fee, net, newPrice] = quoteRaw as [bigint, bigint, bigint, bigint];
     quote = {
       cost: parseFloat(formatUnits(revenue, 6)),
       fee: parseFloat(formatUnits(fee, 6)),
@@ -91,27 +93,9 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
     };
   }
 
-  if (!quote && shares > 0) {
-    const virtualShares = 1000;
-    const virtualCash = player.price * virtualShares;
-    const k = virtualShares * virtualCash;
-
-    if (mode === 'buy') {
-      const newShares = virtualShares - shares;
-      if (newShares > 0) {
-        const newCash = k / newShares;
-        const cost = newCash - virtualCash;
-        const fee = cost * 0.015;
-        quote = { cost, fee, total: cost + fee, newPrice: newCash / newShares };
-      }
-    } else {
-      const newShares = virtualShares + shares;
-      const newCash = k / newShares;
-      const revenue = virtualCash - newCash;
-      const fee = revenue * 0.015;
-      quote = { cost: revenue, fee, total: revenue - fee, newPrice: newCash / newShares };
-    }
-  }
+  const wantsQuote = shares > 0;
+  const blockchainUnavailable =
+    wantsQuote && !quoteQueryPending && (quoteQueryError || quote === null);
 
   const slippage = quote ? Math.abs((quote.newPrice - player.price) / player.price * 100) : 0;
   const balance = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
@@ -119,8 +103,16 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
   const needsApproval = mode === 'buy' && quote && allowance !== undefined &&
     (allowance as bigint) < BigInt(Math.ceil(quote.total * 1e6));
 
+  /** Matches `useBuyShares` maxCost (`quote.total * 1.05`). */
+  const buyMaxSpend = mode === 'buy' && quote ? quote.total * 1.05 : 0;
+  const insufficientBuyFunds =
+    mode === 'buy' && quote !== null && shares > 0 && balance + 1e-6 < buyMaxSpend;
+  const insufficientSellShares =
+    mode === 'sell' && quote !== null && shares > 0 && holdingAmount + 1e-8 < shares;
+
   const handleTrade = () => {
     if (!quote || !shares) return;
+    if (insufficientBuyFunds || insufficientSellShares) return;
     tradeInfoRef.current = { side: mode, shares, total: quote.total };
 
     if (mode === 'buy') {
@@ -136,6 +128,7 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
 
   const isPending = approving || approvingConfirming || buying || buyingConfirming || selling || sellingConfirming;
   const isSuccess = bought || sold;
+  const tradeBlocked = insufficientBuyFunds || insufficientSellShares || blockchainUnavailable;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
@@ -195,6 +188,23 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
           </p>
         </div>
 
+        {wantsQuote && quoteQueryPending && (
+          <div className="px-5 pb-4">
+            <p className="rounded-xl border border-border bg-secondary/50 px-4 py-3 text-center text-sm text-muted-foreground">
+              Loading quote from the network…
+            </p>
+          </div>
+        )}
+
+        {blockchainUnavailable && (
+          <div className="px-5 pb-4">
+            <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive">
+              Blockchain unavailable — could not load a live quote. Check your connection and that your wallet is on Base
+              Sepolia, then try again.
+            </p>
+          </div>
+        )}
+
         {quote && (
           <div className="px-5 pb-4">
             <div className="bg-secondary/50 rounded-xl p-4 space-y-2 border border-border">
@@ -219,14 +229,14 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
         <div className="p-5 pt-0">
           {isConnected ? (
             <>
-              {needsApproval && !isPending && (
+              {needsApproval && !isPending && !insufficientBuyFunds && (
                 <p className="text-center text-xs text-muted-foreground mb-2">
                   First-time buy requires 2 confirmations — one to unlock V-Bucks, one to complete the trade.
                 </p>
               )}
               <button
                 onClick={handleTrade}
-                disabled={!quote || isPending || isSuccess}
+                disabled={!quote || isPending || isSuccess || tradeBlocked}
                 className={`w-full h-12 rounded-xl text-base font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card ${
                   mode === 'buy'
                     ? 'bg-success text-white hover:bg-success/90 focus:ring-success'
@@ -241,6 +251,12 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
                   ? 'Confirming...'
                   : isSuccess
                   ? 'Done!'
+                  : blockchainUnavailable
+                  ? 'Blockchain unavailable'
+                  : insufficientBuyFunds
+                  ? 'Insufficient V-Bucks'
+                  : insufficientSellShares
+                  ? 'Insufficient shares'
                   : needsApproval
                   ? 'Approve & Buy'
                   : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} shares`}

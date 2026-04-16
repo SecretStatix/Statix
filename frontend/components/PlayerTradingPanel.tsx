@@ -25,8 +25,11 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
   const [amount, setAmount] = useState('');
   const shares = parseFloat(amount) || 0;
 
-  const { data: buyQuoteData } = useBuyQuote(playerIndex, mode === 'buy' ? shares : 0);
-  const { data: sellQuoteData } = useSellQuote(playerIndex, mode === 'sell' ? shares : 0);
+  const buyQ = useBuyQuote(playerIndex, mode === 'buy' ? shares : 0);
+  const sellQ = useSellQuote(playerIndex, mode === 'sell' ? shares : 0);
+  const quoteRaw = mode === 'buy' ? buyQ.data : sellQ.data;
+  const quoteQueryPending = mode === 'buy' ? buyQ.isPending : sellQ.isPending;
+  const quoteQueryError = mode === 'buy' ? buyQ.isError : sellQ.isError;
   const { data: dbucksBalance } = useDBucksBalance(address);
   const { data: allowance } = useDBucksAllowance(address);
   const { data: myHoldings } = useHoldings(playerIndex, address);
@@ -37,16 +40,16 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
 
   let quote: { cost: number; fee: number; total: number; newPrice: number } | null = null;
 
-  if (mode === 'buy' && buyQuoteData && shares > 0) {
-    const [cost, fee, total, newPrice] = buyQuoteData as [bigint, bigint, bigint, bigint];
+  if (mode === 'buy' && quoteRaw && shares > 0) {
+    const [cost, fee, total, newPrice] = quoteRaw as [bigint, bigint, bigint, bigint];
     quote = {
       cost: parseFloat(formatUnits(cost, 6)),
       fee: parseFloat(formatUnits(fee, 6)),
       total: parseFloat(formatUnits(total, 6)),
       newPrice: parseFloat(formatUnits(newPrice, 6)),
     };
-  } else if (mode === 'sell' && sellQuoteData && shares > 0) {
-    const [revenue, fee, net, newPrice] = sellQuoteData as [bigint, bigint, bigint, bigint];
+  } else if (mode === 'sell' && quoteRaw && shares > 0) {
+    const [revenue, fee, net, newPrice] = quoteRaw as [bigint, bigint, bigint, bigint];
     quote = {
       cost: parseFloat(formatUnits(revenue, 6)),
       fee: parseFloat(formatUnits(fee, 6)),
@@ -55,27 +58,9 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
     };
   }
 
-  if (!quote && shares > 0) {
-    const virtualShares = 1000;
-    const virtualCash = price * virtualShares;
-    const k = virtualShares * virtualCash;
-
-    if (mode === 'buy') {
-      const newShares = virtualShares - shares;
-      if (newShares > 0) {
-        const newCash = k / newShares;
-        const cost = newCash - virtualCash;
-        const fee = cost * 0.015;
-        quote = { cost, fee, total: cost + fee, newPrice: newCash / newShares };
-      }
-    } else {
-      const newShares = virtualShares + shares;
-      const newCash = k / newShares;
-      const revenue = virtualCash - newCash;
-      const fee = revenue * 0.015;
-      quote = { cost: revenue, fee, total: revenue - fee, newPrice: newCash / newShares };
-    }
-  }
+  const wantsQuote = shares > 0;
+  const blockchainUnavailable =
+    wantsQuote && !quoteQueryPending && (quoteQueryError || quote === null);
 
   const slippage = quote ? Math.abs((quote.newPrice - price) / price * 100) : 0;
   const balance = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
@@ -83,8 +68,16 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
   const needsApproval = mode === 'buy' && quote && allowance !== undefined &&
     (allowance as bigint) < BigInt(Math.ceil(quote.total * 1e6));
 
+  /** Matches `useBuyShares` maxCost (`quote.total * 1.05`) — need enough V-Bucks for worst-case debit. */
+  const buyMaxSpend = mode === 'buy' && quote ? quote.total * 1.05 : 0;
+  const insufficientBuyFunds =
+    mode === 'buy' && quote !== null && shares > 0 && balance + 1e-6 < buyMaxSpend;
+  const insufficientSellShares =
+    mode === 'sell' && quote !== null && shares > 0 && holdingAmount + 1e-8 < shares;
+
   const handleTrade = () => {
     if (!quote || !shares) return;
+    if (insufficientBuyFunds || insufficientSellShares) return;
 
     if (mode === 'buy') {
       if (needsApproval) {
@@ -99,6 +92,7 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
 
   const isPending = approving || approvingConfirming || buying || buyingConfirming || selling || sellingConfirming;
   const isSuccess = bought || sold;
+  const tradeBlocked = insufficientBuyFunds || insufficientSellShares || blockchainUnavailable;
 
   return (
     <div className="flex flex-col rounded-2xl border border-white/[0.05] bg-white/[0.015] p-5 backdrop-blur-sm">
@@ -147,6 +141,19 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
         <p className="text-xs text-gray-400 mt-1.5">${price.toFixed(2)} per share</p>
       </div>
 
+      {wantsQuote && quoteQueryPending && (
+        <p className="mb-4 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-center text-sm text-gray-400">
+          Loading quote from the network…
+        </p>
+      )}
+
+      {blockchainUnavailable && (
+        <p className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-center text-sm text-destructive">
+          Blockchain unavailable — could not load a live quote. Check your connection and that your wallet is on Base
+          Sepolia, then try again.
+        </p>
+      )}
+
       {quote && (
         <div className="mb-4 space-y-2 rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
           <div className="flex justify-between text-sm">
@@ -165,14 +172,26 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
       {isConnected ? (
         <button
           onClick={handleTrade}
-          disabled={!quote || isPending || isSuccess}
+          disabled={!quote || isPending || isSuccess || tradeBlocked}
           className={`w-full h-11 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none mt-auto ${
             mode === 'buy'
               ? 'bg-success text-white hover:bg-success/90'
               : 'bg-destructive text-white hover:bg-destructive/90'
           }`}
         >
-          {isPending ? 'Confirming...' : isSuccess ? 'Done' : needsApproval ? 'Approve' : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'}`}
+          {isPending
+            ? 'Confirming...'
+            : isSuccess
+              ? 'Done'
+              : blockchainUnavailable
+                ? 'Blockchain unavailable'
+                : insufficientBuyFunds
+                  ? 'Insufficient V-Bucks'
+                  : insufficientSellShares
+                    ? 'Insufficient shares'
+                    : needsApproval
+                      ? 'Approve'
+                      : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'}`}
         </button>
       ) : (
         <p className="text-center text-sm text-gray-400 py-4">Connect wallet to trade</p>

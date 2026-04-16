@@ -113,7 +113,12 @@ export function Portfolio() {
       rows.push({ name: 'Cash (V-Bucks)', value: balance, pct: (balance / totalValue) * 100 });
     }
     holdings.forEach((h) => {
-      rows.push({ name: h.name, value: h.value, pct: (h.value / totalValue) * 100 });
+      rows.push({
+        name: h.name,
+        value: h.value,
+        pct: (h.value / totalValue) * 100,
+        href: `/player/${encodeURIComponent(h.playerPageId)}`,
+      });
     });
     return rows.sort((a, b) => b.value - a.value);
   }, [balance, holdings, totalValue]);
@@ -214,8 +219,8 @@ export function Portfolio() {
               {holdings.map((h) => (
                 <li key={h.index}>
                   <Link
-                    href={`/player/${h.playerPageId}`}
-                    className="grid grid-cols-12 gap-3 py-4 transition-colors hover:bg-white/[0.02] -mx-2 px-2 rounded-lg"
+                    href={`/player/${encodeURIComponent(h.playerPageId)}`}
+                    className="grid grid-cols-12 gap-3 py-4 transition-colors hover:bg-white/[0.02] -mx-2 px-2 rounded-lg cursor-pointer"
                   >
                     <div className="col-span-6 flex min-w-0 items-center gap-3 sm:col-span-5">
                       <PlayerAvatar name={h.name} nbaId={h.nbaId} size="sm" />
