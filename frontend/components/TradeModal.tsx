@@ -35,23 +35,35 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
   const { data: allowance } = useDBucksAllowance(address);
   const { data: myHoldings } = useHoldings(player.index, address);
 
-  const { approve, isPending: approving, isConfirming: approvingConfirming, isSuccess: approved } = useApproveDBucks();
-  const { buy, hash: buyHash, isPending: buying, isConfirming: buyingConfirming, isSuccess: bought } = useBuyShares();
-  const { sell, hash: sellHash, isPending: selling, isConfirming: sellingConfirming, isSuccess: sold } = useSellShares();
+  const { approve, isPending: approving, isConfirming: approvingConfirming, isSuccess: approved, reset: resetApprove } = useApproveDBucks();
+  const { buy, hash: buyHash, isPending: buying, isConfirming: buyingConfirming, isSuccess: bought, reset: resetBuy } = useBuyShares();
+  const { sell, hash: sellHash, isPending: selling, isConfirming: sellingConfirming, isSuccess: sold, reset: resetSell } = useSellShares();
 
   const tradeInfoRef = useRef<{ side: 'buy' | 'sell'; shares: number; total: number } | null>(null);
 
+  // Reset all write state when modal closes so reopening immediately works cleanly
   useEffect(() => {
     if (!isOpen) {
       setAmount('');
       tradeInfoRef.current = null;
+      resetApprove();
+      resetBuy();
+      resetSell();
     } else {
       setMode(initialMode);
     }
   }, [isOpen, initialMode]);
 
+  // After approval succeeds, automatically proceed to the buy tx
   useEffect(() => {
-    // Closing modal
+    if (approved && tradeInfoRef.current?.side === 'buy') {
+      const { shares, total } = tradeInfoRef.current;
+      buy(player.index, shares, total * 1.05);
+    }
+  }, [approved]);
+
+  useEffect(() => {
+    // Close modal after success
     if (bought || sold) {
       setTimeout(() => onClose(), 2000);
     }
@@ -206,23 +218,34 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
 
         <div className="p-5 pt-0">
           {isConnected ? (
-            <button
-              onClick={handleTrade}
-              disabled={!quote || isPending || isSuccess}
-              className={`w-full h-12 rounded-xl text-base font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card ${
-                mode === 'buy'
-                  ? 'bg-success text-white hover:bg-success/90 focus:ring-success'
-                  : 'bg-destructive text-white hover:bg-destructive/90 focus:ring-destructive'
-              }`}
-            >
-              {isPending
-                ? 'Confirming...'
-                : isSuccess
-                ? 'Done!'
-                : needsApproval
-                ? 'Approve V-Bucks'
-                : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} shares`}
-            </button>
+            <>
+              {needsApproval && !isPending && (
+                <p className="text-center text-xs text-muted-foreground mb-2">
+                  First-time buy requires 2 confirmations — one to unlock V-Bucks, one to complete the trade.
+                </p>
+              )}
+              <button
+                onClick={handleTrade}
+                disabled={!quote || isPending || isSuccess}
+                className={`w-full h-12 rounded-xl text-base font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card ${
+                  mode === 'buy'
+                    ? 'bg-success text-white hover:bg-success/90 focus:ring-success'
+                    : 'bg-destructive text-white hover:bg-destructive/90 focus:ring-destructive'
+                }`}
+              >
+                {approving || approvingConfirming
+                  ? 'Unlocking V-Bucks... (1/2)'
+                  : buying || buyingConfirming
+                  ? 'Buying... (2/2)'
+                  : selling || sellingConfirming
+                  ? 'Confirming...'
+                  : isSuccess
+                  ? 'Done!'
+                  : needsApproval
+                  ? 'Approve & Buy'
+                  : `${mode === 'buy' ? 'Buy' : 'Sell'} ${amount || '0'} shares`}
+              </button>
+            </>
           ) : (
             <p className="text-center text-sm text-muted-foreground py-2">Connect your wallet to trade</p>
           )}
