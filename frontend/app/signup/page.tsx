@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
@@ -161,8 +162,8 @@ export default function SignupPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
         <div className="p-4 sm:p-8 border-b border-border text-center">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
-            <span className="text-white font-bold text-lg">SX</span>
+          <div className="mx-auto mb-4 flex justify-center">
+            <Image src="/logo.png" alt="Statix" width={32} height={32} className="rounded-lg" />
           </div>
           <h1 className="text-xl font-bold text-foreground">
             {step === 'info' ? 'Create your Statix account' : 'Review & Accept NDA'}
