@@ -62,9 +62,28 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "oldBps",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newBps",
+        "type": "uint256"
+      }
+    ],
+    "name": "BasePoolBpsUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "uint256",
-        "name": "week",
+        "name": "round",
         "type": "uint256"
       },
       {
@@ -89,7 +108,7 @@
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "week",
+        "name": "round",
         "type": "uint256"
       },
       {
@@ -107,7 +126,13 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "outperformerPool",
+        "name": "topPerformerPool",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "topN",
         "type": "uint256"
       }
     ],
@@ -138,25 +163,12 @@
     "inputs": [
       {
         "indexed": false,
-        "internalType": "bool",
-        "name": "paused",
-        "type": "bool"
-      }
-    ],
-    "name": "TradingPaused",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "uint256",
-        "name": "newWeek",
+        "name": "newRound",
         "type": "uint256"
       }
     ],
-    "name": "WeekAdvanced",
+    "name": "RoundAdvanced",
     "type": "event"
   },
   {
@@ -174,16 +186,29 @@
   },
   {
     "inputs": [],
-    "name": "advanceWeek",
+    "name": "advanceRound",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "basePoolBps",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_week",
+        "name": "_round",
         "type": "uint256"
       },
       {
@@ -207,7 +232,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_week",
+        "name": "_round",
         "type": "uint256"
       }
     ],
@@ -220,18 +245,18 @@
     "inputs": [
       {
         "internalType": "uint256[]",
-        "name": "_weeks",
+        "name": "_rounds",
         "type": "uint256[]"
       }
     ],
-    "name": "claimMultipleWeeks",
+    "name": "claimMultipleRounds",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "currentWeek",
+    "name": "currentRound",
     "outputs": [
       {
         "internalType": "uint256",
@@ -243,8 +268,27 @@
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_topN",
+        "type": "uint256"
+      }
+    ],
     "name": "distributeDividends",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "name": "emergencyDrain",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -279,7 +323,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "weekCount",
+        "name": "roundCount",
         "type": "uint256"
       }
     ],
@@ -300,30 +344,6 @@
       }
     ],
     "name": "hasClaimed",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "outperformerEligible",
     "outputs": [
       {
         "internalType": "bool",
@@ -368,6 +388,117 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundDividends",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "topN",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalPool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "basePool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "topPerformerPool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalTopAvgFpts",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "distributed",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundEndPoolTotalShares",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundEndTotalAllShares",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "roundPerformance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "avgFptsScaled",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "router",
     "outputs": [
@@ -383,12 +514,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256[]",
-        "name": "_poolIdxs",
-        "type": "uint256[]"
+        "internalType": "uint256",
+        "name": "_basePoolBps",
+        "type": "uint256"
       }
     ],
-    "name": "setOutperformerEligible",
+    "name": "setBasePoolBps",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -402,20 +533,75 @@
       },
       {
         "internalType": "uint256[]",
-        "name": "_actualPoints",
+        "name": "_avgFpts",
         "type": "uint256[]"
       }
     ],
-    "name": "setWeeklyPerformanceBatch",
+    "name": "setRoundPerformanceBatch",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_poolIdxs",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "setTopPerformerEligible",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "skipWeek",
+    "name": "skipRound",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "_poolIdxs",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "snapshotUserHoldings",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "topPerformerEligible",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -442,87 +628,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
-    "name": "weekEndTotalShares",
+    "name": "userRoundHoldings",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "weeklyDividends",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "totalPool",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "basePool",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "outperformerPool",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "totalPositiveOutperf",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "distributed",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "weeklyPerformance",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "actualPoints",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "projectedPoints",
-        "type": "uint256"
-      },
-      {
-        "internalType": "int256",
-        "name": "outperformance",
-        "type": "int256"
       }
     ],
     "stateMutability": "view",
