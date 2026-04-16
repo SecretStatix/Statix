@@ -8,6 +8,13 @@ const MIN_BALANCE = parseEther('0.0005'); // don't re-fund if they already have 
 
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.NEXT_PUBLIC_LOCAL_CHAIN === 'true') {
+      return NextResponse.json(
+        { message: 'Gas funding is for Base Sepolia only; local Hardhat accounts already have ETH.' },
+        { status: 400 },
+      );
+    }
+
     const { address } = await req.json();
 
     if (!address || !isAddress(address)) {

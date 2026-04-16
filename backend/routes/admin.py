@@ -9,6 +9,8 @@ from typing import List, Optional
 import hmac
 import os
 
+from web3 import Web3
+
 from nba_stats import fetch_top_players, fetch_curated_players, get_weekly_actuals, calculate_fantasy_points
 from chain import get_deployment
 from db import get_supabase, get_store
@@ -217,6 +219,62 @@ async def refresh_players(_=Depends(verify_admin)):
     return {"players_total": len(players), "players_with_stats": fetched}
 
 
+@router.get("/snapshot-wallets")
+async def snapshot_wallets(_=Depends(verify_admin)):
+    """
+    Approved users only: `profiles` rows with is_approved=true and a valid wallet_address.
+    Used by `blockchain/scripts/distribute-dividends.js` via BACKEND_URL + ADMIN_KEY.
+    """
+    supabase = get_supabase()
+    if not supabase:
+        return {
+            "wallets": [],
+            "detail": "Supabase not configured — use active-users.json or SNAPSHOT_USERS in the script",
+        }
+
+    page_size = 1000
+    offset = 0
+    rows: list = []
+
+    try:
+        while True:
+            q = (
+                supabase.table("profiles")
+                .select("wallet_address")
+                .eq("is_approved", True)
+            )
+            res = q.range(offset, offset + page_size - 1).execute()
+            batch = res.data or []
+            if not batch:
+                break
+            rows.extend(batch)
+            if len(batch) < page_size:
+                break
+            offset += page_size
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not read profiles: {e!s}",
+        ) from e
+
+    seen: set[str] = set()
+    wallets: list[str] = []
+    for row in rows:
+        raw = row.get("wallet_address")
+        if not raw or not isinstance(raw, str):
+            continue
+        s = raw.strip()
+        if not s:
+            continue
+        if not Web3.is_address(s):
+            continue
+        low = s.lower()
+        if low in seen:
+            continue
+        seen.add(low)
+        wallets.append(Web3.to_checksum_address(s))
+
+    return {"wallets": wallets, "count": len(wallets)}
 @router.post("/run-snapshot")
 async def run_snapshot(_=Depends(verify_admin)):
     """

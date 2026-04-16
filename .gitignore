@@ -28,6 +28,9 @@ Thumbs.db
 # Backend indexer checkpoint (local / server)
 backend/indexer_state.json
 
+# dev-stack-local.sh handshake (removed after Next.js starts)
+frontend/.statix-local-deploy-ready
+
 # Claude Code
 .claude/
 

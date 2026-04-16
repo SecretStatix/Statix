@@ -80,3 +80,31 @@ export async function getLeaderboard() {
   if (DEMO) return getDemoLeaderboard();
   return fetchAPI("/api/dividends/leaderboard");
 }
+
+export type PortfolioSnapshotPoint = {
+  snapshot_at: string;
+  net_worth: number;
+  cash_dbucks: number;
+  positions_value: number;
+};
+
+export type PortfolioSnapshotsResponse = {
+  wallet_address: string;
+  days: number;
+  source: string;
+  points: PortfolioSnapshotPoint[];
+};
+
+/** Hourly NAV history from Supabase (backend `wallet_portfolio_snapshots`). */
+export async function getPortfolioSnapshots(wallet: string, days: number) {
+  if (DEMO) {
+    return {
+      wallet_address: wallet.toLowerCase(),
+      days,
+      source: "none" as const,
+      points: [] as PortfolioSnapshotPoint[],
+    };
+  }
+  const q = new URLSearchParams({ wallet, days: String(days) });
+  return fetchAPI(`/api/trading/portfolio-snapshots?${q}`) as Promise<PortfolioSnapshotsResponse>;
+}
