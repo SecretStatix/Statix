@@ -1,81 +1,91 @@
 """
-Dividend routes - weekly dividend info, user history, claim status.
+Dividend routes - round info, user claim history, leaderboard.
 """
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
 from chain import get_deployment
-from db import get_supabase, get_store
+from db import get_supabase
 
 router = APIRouter()
 
-# Dividend config (mirrors on-chain constants) FIXME: make a source of truth
 DIVIDEND_CONFIG = {
-    "fee_rate": 0.02,           # 2% per trade
-    "dividend_pool_pct": 0.67,   # 67% of fees to dividends
-    "company_pct": 0.33,         # 33% to protocol
-    "base_pct": 0.20,            # 20% of dividend pool to all holders
-    "top_performer_pct": 0.80,   # 80% to top 10 fantasy point scorers' holders
+    "fee_rate": 0.02,
+    "dividend_pool_pct": 0.67,
+    "company_pct": 0.33,
+    "base_pct": 0.20,
+    "top_performer_pct": 0.80,
 }
 
 
 @router.get("/config")
 async def get_dividend_config():
-    """Get dividend configuration."""
     return DIVIDEND_CONFIG
 
 
-@router.get("/week/{week}")
-async def get_week_info(week: int):
-    """Get dividend info for a specific week."""
+@router.get("/rounds")
+async def get_rounds():
+    """All completed distribution rounds (from round_distributions table)."""
     supabase = get_supabase()
     if supabase:
-        result = supabase.table("weekly_dividends").select("*").eq("week", week).execute()
+        result = (
+            supabase.table("round_distributions")
+            .select("*")
+            .order("round", desc=True)
+            .execute()
+        )
+        return result.data or []
+    return []
+
+
+@router.get("/rounds/{round_number}")
+async def get_round(round_number: int):
+    """Info for a specific distribution round."""
+    supabase = get_supabase()
+    if supabase:
+        result = (
+            supabase.table("round_distributions")
+            .select("*")
+            .eq("round", round_number)
+            .execute()
+        )
         if result.data:
             return result.data[0]
-
-    return {
-        "week": week,
-        "status": "pending",
-        "total_pool": 0,
-        "base_pool": 0,
-        "outperformer_pool": 0,
-        "message": "No dividend data yet for this week",
-    }
+    raise HTTPException(status_code=404, detail=f"Round {round_number} not found or not yet distributed")
 
 
 @router.get("/user/{wallet_address}")
 async def get_user_dividends(wallet_address: str):
-    """Get user's dividend history."""
+    """User's full dividend claim history, newest first."""
     supabase = get_supabase()
     if supabase:
         result = (
             supabase.table("dividend_claims")
-            .select("*")
+            .select("round, amount, tx_hash, claimed_at")
             .eq("wallet_address", wallet_address.lower())
-            .order("week", desc=True)
+            .order("round", desc=True)
             .execute()
         )
+        claims = result.data or []
+        total_earned = sum(float(c["amount"]) for c in claims)
         return {
-            "wallet_address": wallet_address,
-            "claims": result.data or [],
+            "wallet_address": wallet_address.lower(),
+            "total_earned": round(total_earned, 6),
+            "rounds_claimed": len(claims),
+            "claims": claims,
         }
 
     return {
-        "wallet_address": wallet_address,
+        "wallet_address": wallet_address.lower(),
+        "total_earned": 0,
+        "rounds_claimed": 0,
         "claims": [],
-        "message": "Connect Supabase for persistent history",
     }
+
 
 @router.get("/leaderboard")
 async def get_dividend_leaderboard():
-    """Get top dividend earners."""
+    """Portfolio leaderboard ranked by NAV (calls get_dividend_leaderboard() Postgres function)."""
     supabase = get_supabase()
     if supabase:
-        result = (
-            supabase.rpc("get_dividend_leaderboard")
-            .execute()
-        )
+        result = supabase.rpc("get_dividend_leaderboard").execute()
         return result.data or []
-
     return []

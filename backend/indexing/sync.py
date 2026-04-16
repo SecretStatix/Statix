@@ -17,10 +17,15 @@ from .config import (
     FROM_BLOCK_ENV,
     STATE_PATH,
 )
-from .rpc import build_router_contract, connect_w3_http
+from .rpc import build_hub_contract, build_router_contract, connect_w3_http
 from .state import last_processed_block, load_state, save_state
-from .transform import collect_trade_index_rows
-from .upsert import upsert_snapshot_rows, upsert_transaction_rows
+from .transform import collect_dividend_rows, collect_trade_index_rows
+from .upsert import (
+    upsert_dividend_claim_rows,
+    upsert_round_distribution_rows,
+    upsert_snapshot_rows,
+    upsert_transaction_rows,
+)
 
 logger = logging.getLogger("statix_indexer.sync")
 
@@ -28,6 +33,7 @@ logger = logging.getLogger("statix_indexer.sync")
 def sync_range(
     w3: Web3,
     router,
+    hub,
     sb,
     start: int,
     end: int,
@@ -39,19 +45,24 @@ def sync_range(
     a = start
     while a <= end:
         b = min(a + BLOCK_CHUNK - 1, end)
+
         snap_rows, tx_rows = collect_trade_index_rows(w3, router, a, b)
+        claim_rows, dist_rows = collect_dividend_rows(w3, hub, a, b)
+
         if sb is not None:
             if snap_rows:
                 total_snap += upsert_snapshot_rows(sb, snap_rows)
             if tx_rows:
                 total_tx += upsert_transaction_rows(sb, tx_rows)
-        elif snap_rows or tx_rows:
+            if claim_rows:
+                upsert_dividend_claim_rows(sb, claim_rows)
+            if dist_rows:
+                upsert_round_distribution_rows(sb, dist_rows)
+        elif snap_rows or tx_rows or claim_rows or dist_rows:
             logger.info(
-                "Dry run: would upsert %s snapshot(s), %s transaction(s) (blocks %s-%s)",
-                len(snap_rows),
-                len(tx_rows),
-                a,
-                b,
+                "Dry run: would upsert %s snapshot(s), %s transaction(s), "
+                "%s claim(s), %s distribution(s) (blocks %s-%s)",
+                len(snap_rows), len(tx_rows), len(claim_rows), len(dist_rows), a, b,
             )
             total_snap += len(snap_rows)
             total_tx += len(tx_rows)
@@ -68,6 +79,7 @@ def catch_up_gap(sb) -> tuple[int, int]:
     """Index from last_processed+1 through safe_latest (for reconnect / WS drop)."""
     w3 = connect_w3_http()
     router = build_router_contract(w3)
+    hub = build_hub_contract(w3)
     st = load_state()
     last = last_processed_block(st)
     latest = w3.eth.block_number
@@ -75,7 +87,7 @@ def catch_up_gap(sb) -> tuple[int, int]:
     start = last + 1
     if start > safe:
         return 0, 0
-    return sync_range(w3, router, sb, start, safe, persist_state=True)
+    return sync_range(w3, router, hub, sb, start, safe, persist_state=True)
 
 
 def run_backfill_once(
@@ -96,6 +108,7 @@ def run_backfill_once(
     w3 = connect_w3_http()
     abi = get_abi("StatixRouter")
     router = w3.eth.contract(address=Web3.to_checksum_address(router_addr), abi=abi)
+    hub = build_hub_contract(w3)
 
     state = load_state()
     latest = w3.eth.block_number
@@ -133,6 +146,7 @@ def run_backfill_once(
     snap_n, tx_n = sync_range(
         w3,
         router,
+        hub,
         sb,
         start_block,
         safe_latest,
@@ -153,14 +167,20 @@ def process_blocks_range(sb, from_b: int, to_b: int) -> tuple[int, int]:
         return 0, 0
     w3 = connect_w3_http()
     router = build_router_contract(w3)
+    hub = build_hub_contract(w3)
     n_snap = 0
     n_tx = 0
     for b in range(from_b, to_b + 1):
         snap_rows, tx_rows = collect_trade_index_rows(w3, router, b, b)
+        claim_rows, dist_rows = collect_dividend_rows(w3, hub, b, b)
         if snap_rows:
             n_snap += upsert_snapshot_rows(sb, snap_rows)
         if tx_rows:
             n_tx += upsert_transaction_rows(sb, tx_rows)
+        if claim_rows:
+            upsert_dividend_claim_rows(sb, claim_rows)
+        if dist_rows:
+            upsert_round_distribution_rows(sb, dist_rows)
         save_state(b)
     return n_snap, n_tx
 

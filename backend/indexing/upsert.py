@@ -44,3 +44,31 @@ def upsert_transaction_rows(sb, rows: list[dict]) -> int:
         )
         total += len(batch)
     return total
+
+
+def upsert_dividend_claim_rows(sb, rows: list[dict]) -> int:
+    """Insert/update `dividend_claims` from DividendClaimed events (unique on round, wallet_address)."""
+    if not rows:
+        return 0
+    total = 0
+    for i in range(0, len(rows), UPSERT_BATCH):
+        batch = rows[i : i + UPSERT_BATCH]
+        sb.table("dividend_claims").upsert(
+            batch, on_conflict="round,wallet_address"
+        ).execute()
+        logger.info("Upserted %d row(s) into dividend_claims", len(batch))
+        total += len(batch)
+    return total
+
+
+def upsert_round_distribution_rows(sb, rows: list[dict]) -> int:
+    """Insert/update `round_distributions` from DividendsDistributed events (unique on round)."""
+    if not rows:
+        return 0
+    total = 0
+    for i in range(0, len(rows), UPSERT_BATCH):
+        batch = rows[i : i + UPSERT_BATCH]
+        sb.table("round_distributions").upsert(batch, on_conflict="round").execute()
+        logger.info("Upserted %d row(s) into round_distributions", len(batch))
+        total += len(batch)
+    return total

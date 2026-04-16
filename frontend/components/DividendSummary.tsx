@@ -1,8 +1,12 @@
 'use client';
 
 import { useAccount } from 'wagmi';
+import { useState, useEffect } from 'react';
 import { formatUnits } from 'viem';
 import { useUnclaimedDividends, useClaimMultipleWeeks, useCurrentWeek, usePortfolio } from '@/hooks/useContracts';
+
+type ClaimRow = { round: number; amount: string; tx_hash: string | null; claimed_at: string };
+type ClaimHistory = { total_earned: number; rounds_claimed: number; claims: ClaimRow[] };
 
 export function DividendSummary() {
   const { address, isConnected } = useAccount();
@@ -10,6 +14,17 @@ export function DividendSummary() {
   const { data: currentWeekData } = useCurrentWeek();
   const { claimAll, isPending: claiming, isSuccess: claimed } = useClaimMultipleWeeks();
   const { data: portfolioData } = usePortfolio(address);
+
+  const [history, setHistory] = useState<ClaimHistory | null>(null);
+
+  useEffect(() => {
+    if (!address) return;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    fetch(`${apiBase}/api/dividends/user/${address.toLowerCase()}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setHistory(data); })
+      .catch(() => {});
+  }, [address, claimed]);
 
   if (!isConnected) {
     return (
@@ -96,6 +111,45 @@ export function DividendSummary() {
             DividendHub.
           </p>
         </div>
+      </div>
+
+      {/* Claim history */}
+      <div className="relative border-t border-white/[0.06] px-5 py-6 sm:px-8 sm:py-7">
+        <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">Claim history</p>
+        {!history || history.claims.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">No claims yet — distributions appear here after each round.</p>
+        ) : (
+          <>
+            <div className="mt-1 mb-4 flex gap-6 text-xs text-muted-foreground">
+              <span>Total earned: <span className="font-semibold text-success">${history.total_earned.toFixed(2)}</span></span>
+              <span>Rounds claimed: <span className="font-semibold text-foreground">{history.rounds_claimed}</span></span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/[0.06] text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                    <th className="pb-2 pr-6">Round</th>
+                    <th className="pb-2 pr-6 text-right">Amount</th>
+                    <th className="pb-2 text-right">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {history.claims.map((c) => (
+                    <tr key={c.round} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 pr-6 font-medium text-foreground">Round {c.round}</td>
+                      <td className="py-3 pr-6 text-right font-semibold tabular-nums text-success">
+                        +${parseFloat(c.amount).toFixed(2)}
+                      </td>
+                      <td className="py-3 text-right tabular-nums text-muted-foreground text-xs">
+                        {new Date(c.claimed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
