@@ -51,6 +51,16 @@ export async function getRecentTransactions(limit = 15) {
   return fetchAPI(`/api/trading/transactions/recent?limit=${limit}`);
 }
 
+// Teams with NBA games scheduled today (cached 30m on backend)
+export async function getGamesToday(): Promise<{ date: string; teams: string[] }> {
+  if (DEMO) return { date: new Date().toISOString().slice(0, 10), teams: [] };
+  try {
+    return await fetchAPI(`/api/players/games-today`);
+  } catch {
+    return { date: '', teams: [] };
+  }
+}
+
 // Trading (contracts/quote: optional fallbacks; frontend uses on-chain reads via useContracts)
 export async function getContracts() {
   return fetchAPI("/api/trading/contracts");

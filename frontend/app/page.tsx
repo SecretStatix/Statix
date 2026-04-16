@@ -8,6 +8,7 @@ import { PlayerGrid, PlayerData } from '@/components/PlayerGrid';
 import { FeaturedPlayer } from '@/components/FeaturedPlayer';
 import { HotPlayers } from '@/components/HotPlayers';
 import { ActivityFeed } from '@/components/ActivityFeed';
+import { PriceTicker } from '@/components/PriceTicker';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 function HomeContent() {
@@ -73,6 +74,7 @@ function HomeContent() {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* Left column: featured, hot, grid */}
       <div className={`space-y-6 ${sidebarOpen ? 'lg:col-span-9' : 'lg:col-span-12'}`}>
+        <PriceTicker players={players} loading={loading} />
         <FeaturedPlayer players={players} loading={loading} />
         <HotPlayers players={players} loading={loading} />
         <PlayerGrid players={players} loading={loading} expanded={!sidebarOpen} />

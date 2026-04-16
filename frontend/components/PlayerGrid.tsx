@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PlayerCard } from './PlayerCard';
 import { TradeModal } from './TradeModal';
 import { isGuardPosition, isForwardPosition, isCenterPosition } from '@/lib/positions';
+import { getGamesToday, getRecentTransactions } from '@/lib/api';
 
 export interface PlayerData {
   index: number;
@@ -42,9 +43,84 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerData | null>(null);
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('trending');
+  const [teamsTonight, setTeamsTonight] = useState<Set<string>>(new Set());
+  const [flashMap, setFlashMap] = useState<Record<number, 'buy' | 'sell'>>({});
+  const seenTxRef = useRef<Set<string>>(new Set());
+  const initializedTxRef = useRef(false);
 
   const searchParams = useSearchParams();
   const search = searchParams.get('q') || '';
+
+  // Fetch teams playing tonight (cached 30m on backend; refresh every 15m client-side).
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const data = await getGamesToday();
+      if (!cancelled) setTeamsTonight(new Set((data.teams || []).map((t) => t.toUpperCase())));
+    }
+    load();
+    const id = setInterval(load, 15 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  // Poll recent trades and flash matching cards on new entries.
+  useEffect(() => {
+    let cancelled = false;
+    async function poll() {
+      try {
+        const trades = await getRecentTransactions(20);
+        if (cancelled || !Array.isArray(trades)) return;
+
+        // First pass: seed the seen-set so we don't flash historic trades on mount.
+        if (!initializedTxRef.current) {
+          trades.forEach((t: any) => t?.tx_hash && seenTxRef.current.add(t.tx_hash));
+          initializedTxRef.current = true;
+          return;
+        }
+
+        const fresh = trades.filter((t: any) => t?.tx_hash && !seenTxRef.current.has(t.tx_hash));
+        fresh.forEach((t: any) => seenTxRef.current.add(t.tx_hash));
+
+        if (fresh.length === 0) return;
+
+        setFlashMap((prev) => {
+          const next = { ...prev };
+          fresh.forEach((t: any) => {
+            if (typeof t.player_index === 'number') {
+              next[t.player_index] = t.side === 'sell' ? 'sell' : 'buy';
+            }
+          });
+          return next;
+        });
+
+        // Clear flashes after the CSS animation duration (1.6s + small buffer).
+        fresh.forEach((t: any) => {
+          if (typeof t.player_index === 'number') {
+            const idx = t.player_index;
+            setTimeout(() => {
+              setFlashMap((prev) => {
+                if (!(idx in prev)) return prev;
+                const next = { ...prev };
+                delete next[idx];
+                return next;
+              });
+            }, 1800);
+          }
+        });
+      } catch {
+        // Silent — offline / backend down shouldn't break the grid.
+      }
+    }
+    poll();
+    const id = setInterval(poll, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   const handleTrade = (player: PlayerData) => {
     setSelectedPlayer(player);
@@ -139,6 +215,8 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
             key={player.id}
             player={player}
             onTrade={() => handleTrade(player)}
+            playingTonight={teamsTonight.has((player.team || '').toUpperCase())}
+            flashSide={flashMap[player.index] ?? null}
           />
         ))}
       </div>
