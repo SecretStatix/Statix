@@ -229,7 +229,7 @@ async def snapshot_wallets(_=Depends(verify_admin)):
     if not supabase:
         return {
             "wallets": [],
-            "detail": "Supabase not configured — use active-users.json or SNAPSHOT_USERS in the script",
+            "detail": "Supabase not configured on the backend — set SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY",
         }
 
     page_size = 1000
