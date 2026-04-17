@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
@@ -12,7 +13,19 @@ import {
 } from '@/hooks/useContracts';
 import { getPlayers } from '@/lib/api';
 import { PlayerAvatar } from './PlayerAvatar';
-import { PortfolioCharts, type AllocationSlice } from './portfolio/PortfolioCharts';
+import type { AllocationSlice } from './portfolio/PortfolioCharts';
+
+// Lazy-load the recharts-heavy portfolio charts — keeps recharts out of the
+// portfolio page's initial JS bundle until the client has mounted.
+const PortfolioCharts = dynamic(
+  () => import('./portfolio/PortfolioCharts').then((m) => m.PortfolioCharts),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-72 bg-card border border-white/[0.06] rounded-xl animate-pulse" />
+    ),
+  }
+);
 
 type PlayerMeta = { id: string; name: string; team: string; nbaId: number };
 

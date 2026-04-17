@@ -1,12 +1,17 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { TrendingUp } from 'lucide-react';
-import { ResponsiveContainer, AreaChart, Area, YAxis } from 'recharts';
 import { PlayerData } from './PlayerGrid';
 import { PlayerAvatar } from './PlayerAvatar';
 import { TradeModal } from './TradeModal';
+
+const FeaturedPlayerChart = dynamic(() => import('./FeaturedPlayerChart'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full bg-secondary/30 rounded animate-pulse" />,
+});
 
 interface FeaturedPlayerProps {
   players: PlayerData[];
@@ -83,27 +88,9 @@ export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
             </div>
           </Link>
 
-          {/* Mini chart */}
+          {/* Mini chart — recharts is lazy-loaded so it stays out of the main landing bundle */}
           <div className="w-full md:w-52 h-14 shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
-                <defs>
-                  <linearGradient id="featuredGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isPositive ? '#3EE88A' : '#FF6B6B'} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={isPositive ? '#3EE88A' : '#FF6B6B'} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <YAxis domain={['dataMin', 'dataMax']} hide />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={isPositive ? '#3EE88A' : '#FF6B6B'}
-                  strokeWidth={2}
-                  fill="url(#featuredGrad)"
-                  dot={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <FeaturedPlayerChart data={chartData} isPositive={isPositive} />
           </div>
 
           {/* Price + actions */}
