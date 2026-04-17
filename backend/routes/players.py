@@ -43,14 +43,29 @@ def _float_field(player: dict, key: str, default: float = 0.0) -> float:
     return default if v is None else float(v)
 
 
+_nba_cache: dict = {}
+_nba_cache_mtime: float = 0.0
+
+
 def _load_nba_cache() -> dict:
-    """Load player_cache.json into a dict keyed by nba_id."""
+    """Load player_cache.json into a dict keyed by nba_id.
+
+    Cached in-process by file mtime — only re-reads the file when it changes
+    on disk (e.g. after GET /admin/refresh-players). Fast on every request.
+    """
+    global _nba_cache, _nba_cache_mtime
     cache_path = Path(__file__).parent.parent / "player_cache.json"
     if not cache_path.exists():
         return {}
+    mtime = cache_path.stat().st_mtime
+    if _nba_cache and mtime == _nba_cache_mtime:
+        return _nba_cache
     with open(cache_path) as f:
         data = json.load(f)
-    return {row["nba_id"]: row for row in data.get("players", [])}
+    _nba_cache = {row["nba_id"]: row for row in data.get("players", [])}
+    _nba_cache_mtime = mtime
+    logger.info("Loaded player_cache.json (%d players)", len(_nba_cache))
+    return _nba_cache
 
 
 def _get_cached_or_live(nba_id: int, nba_cache: dict) -> Optional[dict]:

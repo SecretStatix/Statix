@@ -211,15 +211,19 @@ async def get_player_transactions(player_index: int, limit: int = 10, days: int 
     """Top transactions for a player in the past N days, ordered by cost descending."""
     supabase = require_supabase()
     since = (datetime.utcnow() - timedelta(days=days)).isoformat()
-    res = (
-        supabase.table("transactions")
-        .select("wallet_address, player_index, side, shares, cost, tx_hash, created_at")
-        .eq("player_index", player_index)
-        .gte("created_at", since)
-        .order("cost", desc=True)
-        .limit(limit)
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("transactions")
+            .select("wallet_address, player_index, side, shares, cost, tx_hash, created_at")
+            .eq("player_index", player_index)
+            .gte("created_at", since)
+            .order("cost", desc=True)
+            .limit(limit)
+            .execute()
+        )
+    except Exception as e:
+        logger.error("transactions query failed for player %d: %s", player_index, e)
+        raise HTTPException(status_code=503, detail=f"Database query failed: {e}")
     return res.data or []
 
 
@@ -227,13 +231,17 @@ async def get_player_transactions(player_index: int, limit: int = 10, days: int 
 async def get_recent_transactions(limit: int = Query(default=15, le=50)):
     """Most recent trades across all players — feeds the homepage activity feed."""
     supabase = require_supabase()
-    res = (
-        supabase.table("transactions")
-        .select("wallet_address, player_index, player_name, side, shares, cost, tx_hash, created_at")
-        .order("created_at", desc=True)
-        .limit(limit)
-        .execute()
-    )
+    try:
+        res = (
+            supabase.table("transactions")
+            .select("wallet_address, player_index, player_name, side, shares, cost, tx_hash, created_at")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+    except Exception as e:
+        logger.error("transactions/recent query failed: %s", e)
+        raise HTTPException(status_code=503, detail=f"Database query failed: {e}")
     return _fill_missing_names(res.data or [])
 
 
@@ -244,14 +252,18 @@ async def get_transaction_history(
 ):
     """Full transaction history for a wallet address, newest first."""
     supabase = require_supabase()
-    result = (
-        supabase.table("transactions")
-        .select("*")
-        .eq("wallet_address", wallet_address.lower())
-        .order("created_at", desc=True)
-        .limit(limit)
-        .execute()
-    )
+    try:
+        result = (
+            supabase.table("transactions")
+            .select("*")
+            .eq("wallet_address", wallet_address.lower())
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+    except Exception as e:
+        logger.error("transaction history query failed for %s: %s", wallet_address, e)
+        raise HTTPException(status_code=503, detail=f"Database query failed: {e}")
     return result.data or []
 
 
@@ -259,12 +271,16 @@ async def get_transaction_history(
 async def get_trading_summary(wallet_address: str):
     """Aggregate trading stats (volume, fees, buys, sells) for a wallet."""
     supabase = require_supabase()
-    result = (
-        supabase.table("transactions")
-        .select("side, cost, fee")
-        .eq("wallet_address", wallet_address.lower())
-        .execute()
-    )
+    try:
+        result = (
+            supabase.table("transactions")
+            .select("side, cost, fee")
+            .eq("wallet_address", wallet_address.lower())
+            .execute()
+        )
+    except Exception as e:
+        logger.error("trading summary query failed for %s: %s", wallet_address, e)
+        raise HTTPException(status_code=503, detail=f"Database query failed: {e}")
     txs = result.data or []
 
     return {
