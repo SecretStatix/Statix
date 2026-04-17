@@ -4,25 +4,32 @@ Admin routes — performance updates, dividend triggering, and snapshot jobs.
 All endpoints require the ADMIN_KEY header (Bearer token). Workflow:
   1. POST /update-round-stats    — pull NBA data for a round window, upsert to round_performance
   2. POST /update-weekly-stats   — pull NBA data for a week window, upsert to weekly_performance
-  3. GET  /snapshot-wallets      — list approved wallet addresses (used by distribute-dividends.js)
-  4. POST /run-snapshot          — trigger an immediate portfolio NAV snapshot
-  5. GET  /refresh-players       — bust player_cache.json and re-fetch from NBA API
+  3. GET  /job-status/{job_id}   — check background job status
+  4. GET  /snapshot-wallets      — list approved wallet addresses (used by distribute-dividends.js)
+  5. POST /run-snapshot          — trigger an immediate portfolio NAV snapshot
+  6. GET  /refresh-players       — bust player_cache.json and re-fetch from NBA API
 
 Supabase upserts use batch inserts (single call per table) rather than per-row loops.
+Long-running NBA API fetches (80 players × 0.6s ≈ 48s) run as background tasks and
+return a job_id immediately. Poll GET /job-status/{job_id} for the result.
 """
 
 import hmac
 import logging
 import os
+import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from pydantic import BaseModel
 from web3 import Web3
 
 from nba_stats import fetch_curated_players, get_weekly_actuals
 from routes.helpers import require_supabase, require_deployment
 from snapshot.job import run_snapshot_job
+
+# In-memory job status store (per-process, sufficient for single-instance admin use)
+_jobs: dict[str, dict] = {}
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -61,127 +68,180 @@ class ManualPerformance(BaseModel):
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
-@router.post("/update-weekly-stats")
-async def update_weekly_stats(update: WeeklyUpdate, _=Depends(verify_admin)):
-    """Pull real NBA stats for a week window and calculate total fantasy points.
+def _run_weekly_stats_job(job_id: str, update: WeeklyUpdate) -> None:
+    """Background worker for update-weekly-stats. Writes result into _jobs[job_id]."""
+    from db import get_supabase as _get_supabase
+    from chain import get_deployment as _get_deployment
 
-    Upserts all rows to weekly_performance in a single batch call.
-    Returns data formatted for on-chain setWeeklyActualsBatch.
-    """
-    deployment = require_deployment()
-    players = deployment.get("players", [])
-    results = []
+    _jobs[job_id]["status"] = "running"
+    try:
+        deployment = _get_deployment()
+        if not deployment:
+            raise RuntimeError("deployments.json missing")
+        players = deployment.get("players", [])
+        results = []
 
-    for p in players:
-        nba_id = p.get("nba_id")
-        if not nba_id:
-            continue
-        try:
-            weekly = get_weekly_actuals(nba_id, update.week_start, update.week_end)
-            results.append({
-                "player_index": p["index"],
-                "name": p["name"],
-                "nba_id": nba_id,
-                "games_played": weekly["games_played"],
-                "actual_points": round(weekly["total_fantasy_points"], 2),
-            })
-        except Exception as e:
-            logger.warning("weekly stats failed for %s (nba_id=%s): %s", p["name"], nba_id, e)
-            results.append({"player_index": p["index"], "name": p["name"], "error": str(e)})
+        for p in players:
+            nba_id = p.get("nba_id")
+            if not nba_id:
+                continue
+            try:
+                weekly = get_weekly_actuals(nba_id, update.week_start, update.week_end)
+                results.append({
+                    "player_index": p["index"],
+                    "name": p["name"],
+                    "nba_id": nba_id,
+                    "games_played": weekly["games_played"],
+                    "actual_points": round(weekly["total_fantasy_points"], 2),
+                })
+            except Exception as e:
+                logger.warning("weekly stats failed for %s (nba_id=%s): %s", p["name"], nba_id, e)
+                results.append({"player_index": p["index"], "name": p["name"], "error": str(e)})
 
-    ok = [r for r in results if "error" not in r]
+        ok = [r for r in results if "error" not in r]
 
-    supabase = require_supabase()
-    if ok:
-        rows = [
-            {"week": update.week, "player_index": r["player_index"],
-             "actual_points": r["actual_points"], "games_played": r["games_played"]}
-            for r in ok
-        ]
-        try:
+        supabase = _get_supabase()
+        if supabase and ok:
+            rows = [
+                {"week": update.week, "player_index": r["player_index"],
+                 "actual_points": r["actual_points"], "games_played": r["games_played"]}
+                for r in ok
+            ]
             supabase.table("weekly_performance").upsert(rows).execute()
             logger.info("Upserted %d rows to weekly_performance (week %d)", len(rows), update.week)
-        except Exception as e:
-            logger.error("weekly_performance batch upsert failed (week %d): %s", update.week, e)
-            raise HTTPException(status_code=503, detail=f"Database upsert failed: {e}")
 
-    on_chain_data = {
-        "player_indices": [r["player_index"] for r in ok],
-        "actual_points_scaled": [int(r["actual_points"] * 1e6) for r in ok],
-    }
-    return {
-        "week": update.week,
-        "players_updated": len(ok),
-        "errors": len(results) - len(ok),
-        "results": results,
-        "on_chain_data": on_chain_data,
-    }
+        on_chain_data = {
+            "player_indices": [r["player_index"] for r in ok],
+            "actual_points_scaled": [int(r["actual_points"] * 1e6) for r in ok],
+        }
+        _jobs[job_id].update({
+            "status": "done",
+            "result": {
+                "week": update.week,
+                "players_updated": len(ok),
+                "errors": len(results) - len(ok),
+                "results": results,
+                "on_chain_data": on_chain_data,
+            },
+        })
+    except Exception as e:
+        logger.error("weekly stats job %s failed: %s", job_id, e)
+        _jobs[job_id].update({"status": "error", "error": str(e)})
+
+
+def _run_round_stats_job(job_id: str, update: RoundUpdate) -> None:
+    """Background worker for update-round-stats. Writes result into _jobs[job_id]."""
+    from db import get_supabase as _get_supabase
+    from chain import get_deployment as _get_deployment
+
+    _jobs[job_id]["status"] = "running"
+    try:
+        deployment = _get_deployment()
+        if not deployment:
+            raise RuntimeError("deployments.json missing")
+        players = deployment.get("players", [])
+        results = []
+
+        for p in players:
+            nba_id = p.get("nba_id")
+            if not nba_id:
+                continue
+            try:
+                weekly = get_weekly_actuals(nba_id, update.round_start, update.round_end)
+                games_played = weekly["games_played"]
+                total_fpts = weekly["total_fantasy_points"]
+                avg_fpts = round(total_fpts / games_played, 4) if games_played >= 1 else 0.0
+                results.append({
+                    "player_index": p["index"],
+                    "name": p["name"],
+                    "nba_id": nba_id,
+                    "games_played": games_played,
+                    "total_fpts": round(total_fpts, 2),
+                    "avg_fpts": avg_fpts,
+                })
+            except Exception as e:
+                logger.warning("round stats failed for %s (nba_id=%s): %s", p["name"], nba_id, e)
+                results.append({"player_index": p["index"], "name": p["name"], "error": str(e)})
+
+        ok = [r for r in results if "error" not in r]
+
+        supabase = _get_supabase()
+        if supabase and ok:
+            rows = [
+                {"round": update.round, "player_index": r["player_index"],
+                 "games_played": r["games_played"], "avg_fpts": r["avg_fpts"]}
+                for r in ok
+            ]
+            supabase.table("round_performance").upsert(rows).execute()
+            logger.info("Upserted %d rows to round_performance (round %d)", len(rows), update.round)
+
+        on_chain_data = {
+            "player_indices": [r["player_index"] for r in ok],
+            "avg_fpts_scaled": [int(r["avg_fpts"] * 1e6) for r in ok],
+            "games_played": [r["games_played"] for r in ok],
+        }
+        _jobs[job_id].update({
+            "status": "done",
+            "result": {
+                "round": update.round,
+                "round_start": update.round_start,
+                "round_end": update.round_end,
+                "top_n": update.top_n,
+                "players_updated": len(ok),
+                "errors": len(results) - len(ok),
+                "results": results,
+                "on_chain_data": on_chain_data,
+            },
+        })
+    except Exception as e:
+        logger.error("round stats job %s failed: %s", job_id, e)
+        _jobs[job_id].update({"status": "error", "error": str(e)})
+
+
+@router.post("/update-weekly-stats")
+async def update_weekly_stats(
+    update: WeeklyUpdate,
+    background_tasks: BackgroundTasks,
+    _=Depends(verify_admin),
+):
+    """Kick off a background job to pull NBA stats for a week window.
+
+    Returns immediately with a job_id. Poll GET /job-status/{job_id} for the result.
+    80 players × ~0.6s NBA API sleep ≈ 48s — must run in background to avoid timeouts.
+    """
+    job_id = str(uuid.uuid4())
+    _jobs[job_id] = {"status": "queued", "type": "weekly", "week": update.week}
+    background_tasks.add_task(_run_weekly_stats_job, job_id, update)
+    return {"job_id": job_id, "status": "queued", "message": "Poll GET /api/admin/job-status/" + job_id}
 
 
 @router.post("/update-round-stats")
-async def update_round_stats(update: RoundUpdate, _=Depends(verify_admin)):
-    """Pull real NBA stats for a playoff round window and compute per-game avg FPts.
+async def update_round_stats(
+    update: RoundUpdate,
+    background_tasks: BackgroundTasks,
+    _=Depends(verify_admin),
+):
+    """Kick off a background job to pull NBA stats for a playoff round window.
 
-    Upserts all rows to round_performance in a single batch call.
-    Returns data formatted for on-chain setRoundPerformanceBatch.
-    Minimum 1 game played required; players below threshold get avg_fpts=0.
+    Returns immediately with a job_id. Poll GET /job-status/{job_id} for the result.
+    80 players × ~0.6s NBA API sleep ≈ 48s — must run in background to avoid timeouts.
     """
-    deployment = require_deployment()
-    players = deployment.get("players", [])
-    results = []
+    job_id = str(uuid.uuid4())
+    _jobs[job_id] = {"status": "queued", "type": "round", "round": update.round}
+    background_tasks.add_task(_run_round_stats_job, job_id, update)
+    return {"job_id": job_id, "status": "queued", "message": "Poll GET /api/admin/job-status/" + job_id}
 
-    for p in players:
-        nba_id = p.get("nba_id")
-        if not nba_id:
-            continue
-        try:
-            weekly = get_weekly_actuals(nba_id, update.round_start, update.round_end)
-            games_played = weekly["games_played"]
-            total_fpts = weekly["total_fantasy_points"]
-            avg_fpts = round(total_fpts / games_played, 4) if games_played >= 1 else 0.0
-            results.append({
-                "player_index": p["index"],
-                "name": p["name"],
-                "nba_id": nba_id,
-                "games_played": games_played,
-                "total_fpts": round(total_fpts, 2),
-                "avg_fpts": avg_fpts,
-            })
-        except Exception as e:
-            logger.warning("round stats failed for %s (nba_id=%s): %s", p["name"], nba_id, e)
-            results.append({"player_index": p["index"], "name": p["name"], "error": str(e)})
 
-    ok = [r for r in results if "error" not in r]
+@router.get("/job-status/{job_id}")
+async def get_job_status(job_id: str, _=Depends(verify_admin)):
+    """Check the status of a background stats job.
 
-    supabase = require_supabase()
-    if ok:
-        rows = [
-            {"round": update.round, "player_index": r["player_index"],
-             "games_played": r["games_played"], "avg_fpts": r["avg_fpts"]}
-            for r in ok
-        ]
-        try:
-            supabase.table("round_performance").upsert(rows).execute()
-            logger.info("Upserted %d rows to round_performance (round %d)", len(rows), update.round)
-        except Exception as e:
-            logger.error("round_performance batch upsert failed (round %d): %s", update.round, e)
-            raise HTTPException(status_code=503, detail=f"Database upsert failed: {e}")
-
-    on_chain_data = {
-        "player_indices": [r["player_index"] for r in ok],
-        "avg_fpts_scaled": [int(r["avg_fpts"] * 1e6) for r in ok],
-        "games_played": [r["games_played"] for r in ok],
-    }
-    return {
-        "round": update.round,
-        "round_start": update.round_start,
-        "round_end": update.round_end,
-        "top_n": update.top_n,
-        "players_updated": len(ok),
-        "errors": len(results) - len(ok),
-        "results": results,
-        "on_chain_data": on_chain_data,
-    }
+    Returns {status: queued|running|done|error, result?, error?}.
+    """
+    job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
 
 @router.post("/set-performance-manual")
