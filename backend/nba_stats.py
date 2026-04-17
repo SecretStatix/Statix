@@ -163,6 +163,12 @@ def fetch_curated_players(season: str = None) -> List[dict]:
             continue
 
         stats = fetch_player_season_stats(nba_id, season)
+        try:
+            recent_games = fetch_player_game_log(nba_id, last_n_games=10)
+        except Exception as e:
+            logger.warning("[%d/%d] %s — game log failed: %s", i + 1, len(curated), p["name"], e)
+            recent_games = []
+
         if stats:
             players_list.append({
                 "nba_id": nba_id,
@@ -174,11 +180,12 @@ def fetch_curated_players(season: str = None) -> List[dict]:
                 "avg_fantasy_points": stats["avg_fantasy_points"],
                 "weekly_projection": stats["weekly_projection"],
                 "season_projection": stats["season_projection"],
+                "recent_games": recent_games,
             })
             logger.info(
-                "[%d/%d] %s — %d GP, %.1f FPts/G",
+                "[%d/%d] %s — %d GP, %.1f FPts/G, %d recent games",
                 i + 1, len(curated), p["name"],
-                stats["games_played"], stats["avg_fantasy_points"],
+                stats["games_played"], stats["avg_fantasy_points"], len(recent_games),
             )
         else:
             players_list.append({
@@ -191,6 +198,7 @@ def fetch_curated_players(season: str = None) -> List[dict]:
                 "avg_fantasy_points": 0,
                 "weekly_projection": 0,
                 "season_projection": 0,
+                "recent_games": recent_games,
             })
             logger.info("[%d/%d] %s — no data", i + 1, len(curated), p["name"])
 

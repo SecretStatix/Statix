@@ -441,7 +441,7 @@ async def get_player(player_id: str):
 
 @router.get("/{player_id}/games")
 async def get_player_games(player_id: str, last_n: int = Query(default=10, le=82)):
-    """Get a player's recent game log."""
+    """Get a player's recent game log. Serves from player_cache.json; live NBA API fallback."""
     target = _resolve_player(player_id)
     if not target:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -450,9 +450,16 @@ async def get_player_games(player_id: str, last_n: int = Query(default=10, le=82
     if not nba_id:
         raise HTTPException(status_code=404, detail="No NBA ID for player")
 
+    # Serve from cache first (Railway can't reach stats.nba.com)
+    nba_cache = _load_nba_cache()
+    cached = nba_cache.get(nba_id)
+    if cached and cached.get("recent_games"):
+        games = cached["recent_games"][:last_n]
+        return {"player_id": player_id, "games": games, "source": "cache"}
+
     try:
         games = fetch_player_game_log(nba_id, last_n_games=last_n)
-        return {"player_id": player_id, "games": games}
+        return {"player_id": player_id, "games": games, "source": "live"}
     except Exception as e:
         logger.error("game log fetch failed for %s (nba_id=%s): %s", player_id, nba_id, e)
         raise HTTPException(status_code=500, detail="Failed to fetch game log")
