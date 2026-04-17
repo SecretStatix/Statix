@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-17T16:43:27.816426",
+  "timestamp": "2026-04-17T17:04:09.561216",
   "season": "2025-26",
   "players": [
     {
@@ -2918,6 +2918,22 @@
       "season_projection": 3144.7,
       "recent_games": [
         {
+          "date": "Apr 14, 2026",
+          "matchup": "PHX vs. POR",
+          "result": "L",
+          "stats": {
+            "PTS": 22.0,
+            "REB": 1.0,
+            "AST": 4.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 2.0,
+            "MIN": 38.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 28.2
+        },
+        {
           "date": "Apr 08, 2026",
           "matchup": "PHX vs. DAL",
           "result": "W",
@@ -3060,22 +3076,6 @@
             "FG3M": 3.0
           },
           "fantasy_points": 36.1
-        },
-        {
-          "date": "Mar 21, 2026",
-          "matchup": "PHX vs. MIL",
-          "result": "L",
-          "stats": {
-            "PTS": 14.0,
-            "REB": 4.0,
-            "AST": 7.0,
-            "STL": 2.0,
-            "BLK": 1.0,
-            "TOV": 3.0,
-            "MIN": 35.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 31.8
         }
       ]
     },
@@ -3098,6 +3098,22 @@
       "weekly_projection": 93.56,
       "season_projection": 2191.86,
       "recent_games": [
+        {
+          "date": "Apr 14, 2026",
+          "matchup": "PHX vs. POR",
+          "result": "L",
+          "stats": {
+            "PTS": 35.0,
+            "REB": 5.0,
+            "AST": 2.0,
+            "STL": 0.0,
+            "BLK": 1.0,
+            "TOV": 5.0,
+            "MIN": 39.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 39.5
+        },
         {
           "date": "Apr 08, 2026",
           "matchup": "PHX vs. DAL",
@@ -3241,22 +3257,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 34.1
-        },
-        {
-          "date": "Mar 21, 2026",
-          "matchup": "PHX vs. MIL",
-          "result": "L",
-          "stats": {
-            "PTS": 24.0,
-            "REB": 3.0,
-            "AST": 2.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 36.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 29.1
         }
       ]
     },
@@ -3279,6 +3279,22 @@
       "weekly_projection": 153.69,
       "season_projection": 3600.62,
       "recent_games": [
+        {
+          "date": "Apr 15, 2026",
+          "matchup": "LAC vs. GSW",
+          "result": "L",
+          "stats": {
+            "PTS": 21.0,
+            "REB": 7.0,
+            "AST": 3.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 5.0,
+            "MIN": 40.0,
+            "FG3M": 1.0
+          },
+          "fantasy_points": 26.9
+        },
         {
           "date": "Apr 10, 2026",
           "matchup": "LAC @ POR",
@@ -3422,22 +3438,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 35.7
-        },
-        {
-          "date": "Mar 23, 2026",
-          "matchup": "LAC vs. MIL",
-          "result": "W",
-          "stats": {
-            "PTS": 28.0,
-            "REB": 5.0,
-            "AST": 3.0,
-            "STL": 3.0,
-            "BLK": 1.0,
-            "TOV": 2.0,
-            "MIN": 25.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 45.0
         }
       ]
     },
@@ -3642,6 +3642,22 @@
       "season_projection": 3379.22,
       "recent_games": [
         {
+          "date": "Apr 14, 2026",
+          "matchup": "POR @ PHX",
+          "result": "W",
+          "stats": {
+            "PTS": 41.0,
+            "REB": 7.0,
+            "AST": 12.0,
+            "STL": 0.0,
+            "BLK": 2.0,
+            "TOV": 5.0,
+            "MIN": 38.0,
+            "FG3M": 3.0
+          },
+          "fantasy_points": 67.4
+        },
+        {
           "date": "Apr 12, 2026",
           "matchup": "POR vs. SAC",
           "result": "W",
@@ -3784,22 +3800,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 29.8
-        },
-        {
-          "date": "Mar 23, 2026",
-          "matchup": "POR vs. BKN",
-          "result": "W",
-          "stats": {
-            "PTS": 18.0,
-            "REB": 5.0,
-            "AST": 2.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 3.0,
-            "MIN": 21.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 24.5
         }
       ]
     },
@@ -3822,6 +3822,22 @@
       "weekly_projection": 136.96,
       "season_projection": 3208.66,
       "recent_games": [
+        {
+          "date": "Apr 15, 2026",
+          "matchup": "GSW @ LAC",
+          "result": "W",
+          "stats": {
+            "PTS": 35.0,
+            "REB": 1.0,
+            "AST": 4.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 3.0,
+            "MIN": 36.0,
+            "FG3M": 7.0
+          },
+          "fantasy_points": 43.2
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "GSW @ LAC",
@@ -3965,22 +3981,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 25.6
-        },
-        {
-          "date": "Jan 19, 2026",
-          "matchup": "GSW vs. MIA",
-          "result": "W",
-          "stats": {
-            "PTS": 19.0,
-            "REB": 3.0,
-            "AST": 11.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 3.0,
-            "MIN": 28.0,
-            "FG3M": 5.0
-          },
-          "fantasy_points": 39.1
         }
       ]
     },
@@ -4003,6 +4003,22 @@
       "weekly_projection": 102.2,
       "season_projection": 2394.4,
       "recent_games": [
+        {
+          "date": "Apr 15, 2026",
+          "matchup": "GSW @ LAC",
+          "result": "W",
+          "stats": {
+            "PTS": 20.0,
+            "REB": 5.0,
+            "AST": 5.0,
+            "STL": 1.0,
+            "BLK": 2.0,
+            "TOV": 1.0,
+            "MIN": 28.0,
+            "FG3M": 3.0
+          },
+          "fantasy_points": 39.5
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "GSW @ LAC",
@@ -4146,22 +4162,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 11.6
-        },
-        {
-          "date": "Mar 18, 2026",
-          "matchup": "GSW @ BOS",
-          "result": "L",
-          "stats": {
-            "PTS": 11.0,
-            "REB": 5.0,
-            "AST": 2.0,
-            "STL": 2.0,
-            "BLK": 2.0,
-            "TOV": 0.0,
-            "MIN": 23.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 29.0
         }
       ]
     },
@@ -7443,6 +7443,22 @@
       "season_projection": 2662.54,
       "recent_games": [
         {
+          "date": "Apr 15, 2026",
+          "matchup": "ORL @ PHI",
+          "result": "L",
+          "stats": {
+            "PTS": 12.0,
+            "REB": 4.0,
+            "AST": 3.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 0.0,
+            "MIN": 29.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 21.3
+        },
+        {
           "date": "Apr 12, 2026",
           "matchup": "ORL @ BOS",
           "result": "L",
@@ -7585,22 +7601,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 23.3
-        },
-        {
-          "date": "Jan 15, 2026",
-          "matchup": "ORL vs. MEM",
-          "result": "W",
-          "stats": {
-            "PTS": 18.0,
-            "REB": 9.0,
-            "AST": 2.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 4.0,
-            "MIN": 27.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 27.3
         }
       ]
     },
@@ -7623,6 +7623,22 @@
       "weekly_projection": 137.83,
       "season_projection": 3229.16,
       "recent_games": [
+        {
+          "date": "Apr 15, 2026",
+          "matchup": "ORL @ PHI",
+          "result": "L",
+          "stats": {
+            "PTS": 18.0,
+            "REB": 5.0,
+            "AST": 4.0,
+            "STL": 0.0,
+            "BLK": 1.0,
+            "TOV": 6.0,
+            "MIN": 36.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 23.0
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "ORL @ BOS",
@@ -7766,22 +7782,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 12.0
-        },
-        {
-          "date": "Mar 26, 2026",
-          "matchup": "ORL vs. SAC",
-          "result": "W",
-          "stats": {
-            "PTS": 30.0,
-            "REB": 9.0,
-            "AST": 7.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 38.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 50.3
         }
       ]
     },
@@ -7804,6 +7804,22 @@
       "weekly_projection": 112.91,
       "season_projection": 2645.32,
       "recent_games": [
+        {
+          "date": "Apr 15, 2026",
+          "matchup": "ORL @ PHI",
+          "result": "L",
+          "stats": {
+            "PTS": 34.0,
+            "REB": 3.0,
+            "AST": 3.0,
+            "STL": 0.0,
+            "BLK": 1.0,
+            "TOV": 5.0,
+            "MIN": 40.0,
+            "FG3M": 4.0
+          },
+          "fantasy_points": 38.6
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "ORL @ BOS",
@@ -7947,22 +7963,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 20.1
-        },
-        {
-          "date": "Mar 26, 2026",
-          "matchup": "ORL vs. SAC",
-          "result": "W",
-          "stats": {
-            "PTS": 23.0,
-            "REB": 0.0,
-            "AST": 6.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 35.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 30.5
         }
       ]
     },
@@ -7985,6 +7985,22 @@
       "weekly_projection": 131.08,
       "season_projection": 3070.9,
       "recent_games": [
+        {
+          "date": "Apr 14, 2026",
+          "matchup": "CHA vs. MIA",
+          "result": "W",
+          "stats": {
+            "PTS": 30.0,
+            "REB": 5.0,
+            "AST": 10.0,
+            "STL": 1.0,
+            "BLK": 1.0,
+            "TOV": 3.0,
+            "MIN": 40.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 53.5
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "CHA @ NYK",
@@ -8128,22 +8144,6 @@
             "FG3M": 5.0
           },
           "fantasy_points": 37.1
-        },
-        {
-          "date": "Mar 26, 2026",
-          "matchup": "CHA vs. NYK",
-          "result": "W",
-          "stats": {
-            "PTS": 22.0,
-            "REB": 5.0,
-            "AST": 6.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 36.0,
-            "FG3M": 4.0
-          },
-          "fantasy_points": 37.5
         }
       ]
     },
@@ -8166,6 +8166,22 @@
       "weekly_projection": 113.23,
       "season_projection": 2652.7,
       "recent_games": [
+        {
+          "date": "Apr 14, 2026",
+          "matchup": "CHA vs. MIA",
+          "result": "W",
+          "stats": {
+            "PTS": 23.0,
+            "REB": 5.0,
+            "AST": 5.0,
+            "STL": 0.0,
+            "BLK": 2.0,
+            "TOV": 1.0,
+            "MIN": 37.0,
+            "FG3M": 5.0
+          },
+          "fantasy_points": 41.5
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "CHA @ NYK",
@@ -8309,22 +8325,6 @@
             "FG3M": 5.0
           },
           "fantasy_points": 41.1
-        },
-        {
-          "date": "Mar 26, 2026",
-          "matchup": "CHA vs. NYK",
-          "result": "W",
-          "stats": {
-            "PTS": 21.0,
-            "REB": 8.0,
-            "AST": 3.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 4.0,
-            "MIN": 33.0,
-            "FG3M": 4.0
-          },
-          "fantasy_points": 31.1
         }
       ]
     },
@@ -8347,6 +8347,22 @@
       "weekly_projection": 107.52,
       "season_projection": 2519.04,
       "recent_games": [
+        {
+          "date": "Apr 14, 2026",
+          "matchup": "CHA vs. MIA",
+          "result": "W",
+          "stats": {
+            "PTS": 6.0,
+            "REB": 5.0,
+            "AST": 1.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 0.0,
+            "MIN": 34.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 13.5
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "CHA @ NYK",
@@ -8490,22 +8506,6 @@
             "FG3M": 3.0
           },
           "fantasy_points": 27.7
-        },
-        {
-          "date": "Mar 26, 2026",
-          "matchup": "CHA vs. NYK",
-          "result": "W",
-          "stats": {
-            "PTS": 26.0,
-            "REB": 11.0,
-            "AST": 8.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 37.0,
-            "FG3M": 6.0
-          },
-          "fantasy_points": 53.2
         }
       ]
     },
@@ -8528,6 +8528,22 @@
       "weekly_projection": 162.86,
       "season_projection": 3815.46,
       "recent_games": [
+        {
+          "date": "Apr 15, 2026",
+          "matchup": "PHI vs. ORL",
+          "result": "W",
+          "stats": {
+            "PTS": 31.0,
+            "REB": 2.0,
+            "AST": 6.0,
+            "STL": 1.0,
+            "BLK": 1.0,
+            "TOV": 3.0,
+            "MIN": 42.0,
+            "FG3M": 3.0
+          },
+          "fantasy_points": 43.4
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "PHI vs. MIL",
@@ -8671,22 +8687,6 @@
             "FG3M": 3.0
           },
           "fantasy_points": 47.4
-        },
-        {
-          "date": "Mar 07, 2026",
-          "matchup": "PHI @ ATL",
-          "result": "L",
-          "stats": {
-            "PTS": 31.0,
-            "REB": 2.0,
-            "AST": 5.0,
-            "STL": 4.0,
-            "BLK": 0.0,
-            "TOV": 5.0,
-            "MIN": 38.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 42.9
         }
       ]
     },
@@ -8891,6 +8891,22 @@
       "season_projection": 3277.54,
       "recent_games": [
         {
+          "date": "Apr 14, 2026",
+          "matchup": "MIA @ CHA",
+          "result": "L",
+          "stats": {
+            "PTS": 6.0,
+            "REB": 3.0,
+            "AST": 1.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 0.0,
+            "MIN": 11.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 13.1
+        },
+        {
           "date": "Apr 12, 2026",
           "matchup": "MIA vs. ATL",
           "result": "W",
@@ -9033,22 +9049,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 41.2
-        },
-        {
-          "date": "Mar 25, 2026",
-          "matchup": "MIA @ CLE",
-          "result": "W",
-          "stats": {
-            "PTS": 17.0,
-            "REB": 10.0,
-            "AST": 7.0,
-            "STL": 2.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 33.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 44.5
         }
       ]
     },
@@ -9071,6 +9071,22 @@
       "weekly_projection": 115.25,
       "season_projection": 2700.26,
       "recent_games": [
+        {
+          "date": "Apr 14, 2026",
+          "matchup": "MIA @ CHA",
+          "result": "L",
+          "stats": {
+            "PTS": 23.0,
+            "REB": 3.0,
+            "AST": 6.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 2.0,
+            "MIN": 34.0,
+            "FG3M": 3.0
+          },
+          "fantasy_points": 34.1
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "MIA vs. ATL",
@@ -9214,22 +9230,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 27.0
-        },
-        {
-          "date": "Mar 21, 2026",
-          "matchup": "MIA @ HOU",
-          "result": "L",
-          "stats": {
-            "PTS": 25.0,
-            "REB": 6.0,
-            "AST": 4.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 0.0,
-            "MIN": 39.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 41.2
         }
       ]
     },
@@ -13778,6 +13778,22 @@
       "season_projection": 2462.46,
       "recent_games": [
         {
+          "date": "Apr 14, 2026",
+          "matchup": "CHA vs. MIA",
+          "result": "W",
+          "stats": {
+            "PTS": 28.0,
+            "REB": 9.0,
+            "AST": 2.0,
+            "STL": 1.0,
+            "BLK": 3.0,
+            "TOV": 0.0,
+            "MIN": 43.0,
+            "FG3M": 5.0
+          },
+          "fantasy_points": 52.3
+        },
+        {
           "date": "Apr 12, 2026",
           "matchup": "CHA @ NYK",
           "result": "W",
@@ -13920,22 +13936,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 20.2
-        },
-        {
-          "date": "Mar 26, 2026",
-          "matchup": "CHA vs. NYK",
-          "result": "W",
-          "stats": {
-            "PTS": 17.0,
-            "REB": 5.0,
-            "AST": 3.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 32.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 26.0
         }
       ]
     },
@@ -13958,6 +13958,22 @@
       "weekly_projection": 90.96,
       "season_projection": 2131.18,
       "recent_games": [
+        {
+          "date": "Apr 14, 2026",
+          "matchup": "CHA vs. MIA",
+          "result": "W",
+          "stats": {
+            "PTS": 19.0,
+            "REB": 5.0,
+            "AST": 3.0,
+            "STL": 2.0,
+            "BLK": 0.0,
+            "TOV": 1.0,
+            "MIN": 26.0,
+            "FG3M": 5.0
+          },
+          "fantasy_points": 34.5
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "CHA @ NYK",
@@ -14101,22 +14117,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 19.6
-        },
-        {
-          "date": "Mar 24, 2026",
-          "matchup": "CHA vs. SAC",
-          "result": "W",
-          "stats": {
-            "PTS": 27.0,
-            "REB": 5.0,
-            "AST": 1.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 0.0,
-            "MIN": 18.0,
-            "FG3M": 6.0
-          },
-          "fantasy_points": 37.5
         }
       ]
     },
@@ -14139,6 +14139,22 @@
       "weekly_projection": 112.52,
       "season_projection": 2636.3,
       "recent_games": [
+        {
+          "date": "Apr 15, 2026",
+          "matchup": "PHI vs. ORL",
+          "result": "W",
+          "stats": {
+            "PTS": 16.0,
+            "REB": 5.0,
+            "AST": 5.0,
+            "STL": 2.0,
+            "BLK": 0.0,
+            "TOV": 0.0,
+            "MIN": 36.0,
+            "FG3M": 1.0
+          },
+          "fantasy_points": 34.0
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "PHI vs. MIL",
@@ -14282,22 +14298,6 @@
             "FG3M": 4.0
           },
           "fantasy_points": 54.1
-        },
-        {
-          "date": "Mar 25, 2026",
-          "matchup": "PHI vs. CHI",
-          "result": "W",
-          "stats": {
-            "PTS": 28.0,
-            "REB": 6.0,
-            "AST": 4.0,
-            "STL": 4.0,
-            "BLK": 1.0,
-            "TOV": 0.0,
-            "MIN": 26.0,
-            "FG3M": 6.0
-          },
-          "fantasy_points": 54.2
         }
       ]
     },
@@ -14320,6 +14320,22 @@
       "weekly_projection": 109.87,
       "season_projection": 2573.98,
       "recent_games": [
+        {
+          "date": "Apr 15, 2026",
+          "matchup": "PHI vs. ORL",
+          "result": "W",
+          "stats": {
+            "PTS": 19.0,
+            "REB": 11.0,
+            "AST": 1.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 4.0,
+            "MIN": 42.0,
+            "FG3M": 1.0
+          },
+          "fantasy_points": 32.2
+        },
         {
           "date": "Apr 12, 2026",
           "matchup": "PHI vs. MIL",
@@ -14463,22 +14479,6 @@
             "FG3M": 3.0
           },
           "fantasy_points": 23.5
-        },
-        {
-          "date": "Mar 25, 2026",
-          "matchup": "PHI vs. CHI",
-          "result": "W",
-          "stats": {
-            "PTS": 22.0,
-            "REB": 6.0,
-            "AST": 6.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 30.0,
-            "FG3M": 4.0
-          },
-          "fantasy_points": 40.7
         }
       ]
     }
