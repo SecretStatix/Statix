@@ -9,13 +9,14 @@ import { supabase } from '@/lib/supabase';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
 import { formatUnits } from 'viem';
-import { TrendingUp, BarChart3, User as UserIcon, Info, BookOpen, Search } from 'lucide-react';
+import { TrendingUp, BarChart3, User as UserIcon, Info, BookOpen, Search, Swords } from 'lucide-react';
 import { useDBucksBalance } from '@/hooks/useContracts';
 import { cn } from '@/lib/utils';
 import { ProfileMenu } from '@/components/ProfileMenu';
 
 const NAV_LINKS = [
   { href: '/', label: 'Market', icon: TrendingUp },
+  { href: '/h2h', label: 'H2H', icon: Swords },
   { href: '/portfolio', label: 'Portfolio', icon: UserIcon },
   { href: '/dividends', label: 'Dividends', icon: BarChart3 },
   { href: '/leaderboard', label: 'Leaderboard', icon: Info },

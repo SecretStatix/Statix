@@ -9,6 +9,8 @@
     "generate-players": "node scripts/generate-players.js",
     "deploy:sepolia": "hardhat run scripts/deploy-statix.js --network base-sepolia",
     "deploy:local": "hardhat run scripts/deploy-statix.js --network localhost",
+    "deploy-h2h:sepolia": "hardhat run scripts/deploy-h2h.js --network base-sepolia",
+    "deploy-h2h:local": "hardhat run scripts/deploy-h2h.js --network localhost",
     "mint-usdc:sepolia": "hardhat run scripts/mint-usdc.js --network base-sepolia",
     "mint-usdc:local": "hardhat run scripts/mint-usdc.js --network localhost",
     "distribute:sepolia": "hardhat run scripts/distribute-dividends.js --network base-sepolia",

@@ -14,6 +14,7 @@ from routes.players import router as players_router
 from routes.trading import router as trading_router
 from routes.dividends import router as dividends_router
 from routes.admin import router as admin_router
+from h2h.routes import router as h2h_router
 
 app = FastAPI(
     title="Statix API",
@@ -35,6 +36,7 @@ app.include_router(players_router, prefix="/api/players", tags=["Players"])
 app.include_router(trading_router, prefix="/api/trading", tags=["Trading"])
 app.include_router(dividends_router, prefix="/api/dividends", tags=["Dividends"])
 app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
+app.include_router(h2h_router, prefix="/api/h2h", tags=["Head-to-Head"])
 
 
 @app.get("/")

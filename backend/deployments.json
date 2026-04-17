@@ -3,11 +3,11 @@
   "chainId": 84532,
   "deployer": "0x639Daa0d790Ff595A2203db01552A28b2339a3f4",
   "contracts": {
-    "MockUSDC": "0xe19E814c72f267489567F6E70D3a8137072C6381",
-    "DBucks": "0x6f00D655A72dE996c9D069D7CADa9Ec1CCd2d6F4",
-    "PoolFactory": "0xb270bd68aa872b127e06d1a55df74Bd0a2A52719",
-    "StatixRouter": "0xA09F675CDb563A43C9381Ca05D6eae488C2684d0",
-    "DividendHub": "0x88623Bd98f7845d8B6985A6db9E3e083F3659326"
+    "MockUSDC": "0xc2D64fB46Bc5Be3eeBdA162e2f541BC3158CC3e6",
+    "DBucks": "0xf65F3a276a346d9B58b284ef98DEAdb74792294C",
+    "PoolFactory": "0xd567351dB9e3a0AD51207B0A2728834b0499803a",
+    "StatixRouter": "0x822C7C667137F8d025DE4dEAF686d3A1f4Ed75C8",
+    "DividendHub": "0x135473c569cd4296359F50988b558Ed9725B0D4C"
   },
   "faucetMode": true,
   "faucetLimit": "300000000",
@@ -733,5 +733,15 @@
       "weekly_projection": null
     }
   ],
-  "deployedAt": "2026-04-16T16:53:04.473Z"
+  "deployedAt": "2026-04-16T16:53:04.473Z",
+  "h2h": {
+    "BinaryCTF": "0x1cdf9539b8fcCCCFF3da591EfE9e950F4AaB808E",
+    "H2HOracle": "0xcd34cffff6C5880daad873f30736A2Bd447dBF16",
+    "H2HCreator": "0xE21DAE88753F6fB72f417ba9314A7c6a05585a7d",
+    "collateral": "0xf65F3a276a346d9B58b284ef98DEAdb74792294C",
+    "feeRecipient": "0x135473c569cd4296359F50988b558Ed9725B0D4C",
+    "feeBps": 200,
+    "oracleOwner": "0x639Daa0d790Ff595A2203db01552A28b2339a3f4",
+    "deployedAt": "2026-04-17T02:18:45.727Z"
+  }
 }
