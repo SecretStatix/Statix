@@ -7,6 +7,12 @@ Implementation: indexing/live.py, indexing/poll.py, indexing/websocket.py, index
   ./venv/bin/python index_statix_router_ws.py --poll-seconds 3
   ./venv/bin/python -m indexing.live --poll-seconds 3
 """
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent / ".env")
+
 from indexing.live import main
 
 if __name__ == "__main__":
