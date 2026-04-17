@@ -78,6 +78,6 @@ async def run_ws_loop(sb, *, fallback_poll: float) -> None:
                         snap_n,
                         tx_n,
                     )
-            except Exception:
-                logger.exception("catch_up_gap failed")
+            except Exception as e:
+                logger.exception("catch_up_gap failed: %s", e)
             await asyncio.sleep(5)

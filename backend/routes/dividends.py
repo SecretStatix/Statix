@@ -1,95 +1,112 @@
 """
-Dividend routes - round info, user claim history, leaderboard.
-"""
-from fastapi import APIRouter, HTTPException
-from chain import get_deployment
-from db import get_supabase
+Dividend routes — round info, user claim history, top performers, leaderboard.
 
+Data flow:
+  - round_distributions table is written by distribute-dividends.js (on-chain events)
+  - dividend_claims table is written by the chain indexer (DividendClaimed events)
+  - round_performance table is written by POST /admin/update-round-stats
+  - Player name/team comes from deployments.json via chain.get_player_map()
+
+Endpoints:
+  GET /config              — fee & split constants
+  GET /rounds              — all completed distribution rounds
+  GET /rounds/{n}          — info for a specific round
+  GET /user/{wallet}       — claim history and totals for a wallet
+  GET /top-performers      — ranked players eligible for the 80% bonus pool
+  GET /leaderboard         — portfolio NAV leaderboard
+"""
+
+import logging
+
+from fastapi import APIRouter, HTTPException
+
+from chain import get_player_map
+from config import (
+    FEE_RATE, DIVIDEND_POOL_PCT, COMPANY_PCT,
+    BASE_POOL_PCT, TOP_PERFORMER_PCT,
+)
+from routes.helpers import require_supabase
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 DIVIDEND_CONFIG = {
-    "fee_rate": 0.02,
-    "dividend_pool_pct": 0.67,
-    "company_pct": 0.33,
-    "base_pct": 0.20,
-    "top_performer_pct": 0.80,
+    "fee_rate": FEE_RATE,
+    "dividend_pool_pct": DIVIDEND_POOL_PCT,
+    "company_pct": COMPANY_PCT,
+    "base_pct": BASE_POOL_PCT,
+    "top_performer_pct": TOP_PERFORMER_PCT,
 }
 
 
 @router.get("/config")
 async def get_dividend_config():
+    """Fee and split constants (matches StatixRouter.sol + DividendHub.sol)."""
     return DIVIDEND_CONFIG
 
 
 @router.get("/rounds")
 async def get_rounds():
-    """All completed distribution rounds (from round_distributions table)."""
-    supabase = get_supabase()
-    if supabase:
-        result = (
-            supabase.table("round_distributions")
-            .select("*")
-            .order("round", desc=True)
-            .execute()
-        )
-        return result.data or []
-    return []
+    """All completed distribution rounds, newest first."""
+    supabase = require_supabase()
+    result = (
+        supabase.table("round_distributions")
+        .select("*")
+        .order("round", desc=True)
+        .execute()
+    )
+    return result.data or []
 
 
 @router.get("/rounds/{round_number}")
 async def get_round(round_number: int):
     """Info for a specific distribution round."""
-    supabase = get_supabase()
-    if supabase:
-        result = (
-            supabase.table("round_distributions")
-            .select("*")
-            .eq("round", round_number)
-            .execute()
-        )
-        if result.data:
-            return result.data[0]
-    raise HTTPException(status_code=404, detail=f"Round {round_number} not found or not yet distributed")
+    supabase = require_supabase()
+    result = (
+        supabase.table("round_distributions")
+        .select("*")
+        .eq("round", round_number)
+        .execute()
+    )
+    if result.data:
+        return result.data[0]
+    raise HTTPException(
+        status_code=404,
+        detail=f"Round {round_number} not found or not yet distributed",
+    )
 
 
 @router.get("/user/{wallet_address}")
 async def get_user_dividends(wallet_address: str):
-    """User's full dividend claim history, newest first."""
-    supabase = get_supabase()
-    if supabase:
-        result = (
-            supabase.table("dividend_claims")
-            .select("round, amount, tx_hash, claimed_at")
-            .eq("wallet_address", wallet_address.lower())
-            .order("round", desc=True)
-            .execute()
-        )
-        claims = result.data or []
-        total_earned = sum(float(c["amount"]) for c in claims)
-        return {
-            "wallet_address": wallet_address.lower(),
-            "total_earned": round(total_earned, 6),
-            "rounds_claimed": len(claims),
-            "claims": claims,
-        }
-
+    """Full dividend claim history for a wallet, newest first."""
+    supabase = require_supabase()
+    result = (
+        supabase.table("dividend_claims")
+        .select("round, amount, tx_hash, claimed_at")
+        .eq("wallet_address", wallet_address.lower())
+        .order("round", desc=True)
+        .execute()
+    )
+    claims = result.data or []
+    total_earned = sum(float(c["amount"]) for c in claims)
     return {
         "wallet_address": wallet_address.lower(),
-        "total_earned": 0,
-        "rounds_claimed": 0,
-        "claims": [],
+        "total_earned": round(total_earned, 6),
+        "rounds_claimed": len(claims),
+        "claims": claims,
     }
 
 
 @router.get("/top-performers")
 async def get_top_performers(round: int = None):
-    """Top performing players for a given round (defaults to latest completed round).
-    Returns players sorted by avg_fpts descending, capped to top_n for that round."""
-    supabase = get_supabase()
-    if not supabase:
-        return []
+    """Top performing players eligible for the 80% bonus pool.
 
-    # Resolve round number
+    Defaults to the latest completed round. Returns players sorted by avg_fpts
+    descending, capped to top_n for that round.
+    Player names come from deployments.json — no separate DB lookup needed.
+    """
+    supabase = require_supabase()
+
     if round is None:
         result = (
             supabase.table("round_distributions")
@@ -102,7 +119,6 @@ async def get_top_performers(round: int = None):
             return []
         round = result.data[0]["round"]
 
-    # Get top_n for this round
     dist = (
         supabase.table("round_distributions")
         .select("top_n")
@@ -111,7 +127,6 @@ async def get_top_performers(round: int = None):
     )
     top_n = dist.data[0]["top_n"] if dist.data else 10
 
-    # Get performance rows for this round
     perf = (
         supabase.table("round_performance")
         .select("player_index, avg_fpts, games_played")
@@ -122,12 +137,7 @@ async def get_top_performers(round: int = None):
     )
     rows = perf.data or []
 
-    # Map player_index -> name/team from deployments.json
-    deployment = get_deployment()
-    players_by_index = {}
-    if deployment:
-        for p in deployment.get("players", []):
-            players_by_index[p["index"]] = p
+    players_by_index = get_player_map()
 
     out = []
     for r in rows:
@@ -148,8 +158,10 @@ async def get_top_performers(round: int = None):
 @router.get("/leaderboard")
 async def get_dividend_leaderboard():
     """Portfolio leaderboard ranked by NAV (calls get_dividend_leaderboard() Postgres function)."""
-    supabase = get_supabase()
-    if supabase:
+    supabase = require_supabase()
+    try:
         result = supabase.rpc("get_dividend_leaderboard").execute()
-        return result.data or []
-    return []
+    except Exception as e:
+        logger.error("leaderboard RPC failed: %s", e)
+        raise HTTPException(status_code=503, detail=f"Leaderboard query failed: {e}")
+    return result.data or []

@@ -57,7 +57,7 @@ async def health_db():
         return {
             "status": "degraded",
             "supabase": False,
-            "detail": "Supabase not configured — using in-memory fallback",
+            "detail": "Supabase not configured — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
         }
 
     checks = {}

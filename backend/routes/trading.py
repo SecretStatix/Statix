@@ -1,28 +1,44 @@
 """
-Trading routes — quotes and contract info for frontend trading.
-Trades execute on-chain; the `transactions` table is filled by the StatixRouter chain indexer
-(Buy/Sell events), not by client POSTs.
-NOTE: Backend quotes are approximations; on-chain quotes are authoritative.
+Trading routes — AMM quotes and transaction history.
+
+Trades execute on-chain via StatixRouter. The `transactions` and
+`pool_price_snapshots` tables are populated by the chain indexer
+(index_statix_router_ws.py / indexing.batch), NOT by client POSTs.
+
+Endpoints:
+  GET  /contracts              — addresses + ABIs for the frontend
+  POST /quote                  — AMM quote (buy or sell)
+  GET  /transactions           — per-player tx list (last N days)
+  GET  /transactions/recent    — latest trades across all players
+  GET  /history/{wallet}       — full tx history for a wallet
+  GET  /summary/{wallet}       — aggregate trading stats for a wallet
+  GET  /portfolio-snapshots    — hourly NAV snapshots for portfolio chart
 """
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, field_validator
-from typing import Optional, List
+
+import logging
 import os
 import re
-import logging
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
+from chain import get_contract_info, get_deployment, get_abi
+from config import FEE_RATE
+from db import get_supabase
+from routes.helpers import require_supabase, require_deployment
 
 logger = logging.getLogger(__name__)
-
-from chain import get_deployment, get_contract_info, get_abi
-from db import get_supabase, get_store
-
 router = APIRouter()
 
 
+# ── Pydantic models ──────────────────────────────────────────────────────────
+
 class QuoteRequest(BaseModel):
     player_index: int
-    shares: float  # Human-readable (e.g., 10.5 shares)
-    side: str  # "buy" or "sell"
+    shares: float   # human-readable (e.g. 10.5)
+    side: str       # "buy" or "sell"
 
 
 class QuoteResponse(BaseModel):
@@ -51,122 +67,110 @@ class PortfolioSnapshotsResponse(BaseModel):
     points: List[PortfolioSnapshotPoint]
 
 
-class TransactionLog(BaseModel):
-    wallet_address: str
-    player_index: int
-    side: str
-    shares: float
-    cost: float
-    tx_hash: str
-    player_name: Optional[str] = None
-    fee: Optional[float] = None
-    price_per_share: Optional[float] = None
+# ── Helpers ──────────────────────────────────────────────────────────────────
 
-    @field_validator("wallet_address")
-    @classmethod
-    def validate_wallet(cls, v: str) -> str:
-        if not re.match(r"^0x[a-fA-F0-9]{40}$", v):
-            raise ValueError("Invalid Ethereum address")
-        return v.lower()
+def _get_pool_state(player_index: int) -> tuple[float, float]:
+    """Read live virtualShares/virtualCash from the PlayerPool contract.
 
-    @field_validator("player_index")
-    @classmethod
-    def validate_player_index(cls, v: int) -> int:
-        if v < 0 or v >= 50:
-            raise ValueError("player_index must be 0-49")
-        return v
+    Raises HTTP 503 if the chain is unreachable — quotes are meaningless
+    without live pool state.
+    """
+    try:
+        from web3 import Web3
 
-    @field_validator("side")
-    @classmethod
-    def validate_side(cls, v: str) -> str:
-        if v not in ("buy", "sell"):
-            raise ValueError("side must be 'buy' or 'sell'")
-        return v
+        deployment = get_deployment()
+        if not deployment:
+            raise HTTPException(status_code=503, detail="Contracts not deployed")
 
+        rpc_url = os.getenv("RPC_URL", "https://sepolia.base.org")
+        w3 = Web3(Web3.HTTPProvider(rpc_url))
+        if not w3.is_connected():
+            raise HTTPException(status_code=503, detail="RPC unavailable")
+
+        factory_abi = get_abi("PoolFactory")
+        pool_abi = get_abi("PlayerPool")
+        factory = w3.eth.contract(
+            address=Web3.to_checksum_address(deployment["contracts"]["PoolFactory"]),
+            abi=factory_abi,
+        )
+        pool_addr = factory.functions.pools(player_index).call()
+        pool = w3.eth.contract(
+            address=Web3.to_checksum_address(pool_addr),
+            abi=pool_abi,
+        )
+        virtual_shares = pool.functions.virtualShares().call() / 1e6
+        virtual_cash = pool.functions.virtualCash().call() / 1e6
+        return virtual_shares, virtual_cash
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to read pool state for player %d: %s", player_index, e)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not read pool state for player {player_index} from chain: {e}",
+        )
+
+
+def _build_player_name_map() -> dict[int, str]:
+    """Build index→name lookup from deployments.json."""
+    deployment = get_deployment()
+    if not deployment:
+        return {}
+    return {p["index"]: p["name"] for p in deployment.get("players", [])}
+
+
+def _fill_missing_names(txs: list[dict]) -> list[dict]:
+    """Patch transactions with NULL player_name using the deployment name map."""
+    name_map: dict[int, str] | None = None
+    for tx in txs:
+        if not tx.get("player_name"):
+            if name_map is None:
+                name_map = _build_player_name_map()
+            tx["player_name"] = name_map.get(tx.get("player_index", -1))
+    return txs
+
+
+# ── Routes ───────────────────────────────────────────────────────────────────
 
 @router.get("/contracts")
 async def get_contracts():
-    """Get contract addresses and ABIs for frontend."""
+    """Contract addresses and ABIs for the frontend wallet integration."""
     info = get_contract_info()
     if not info:
         raise HTTPException(status_code=503, detail="Contracts not deployed yet")
     return info
 
 
-def _get_pool_state(player_index: int):
-    """
-    Try to read live pool state from chain via web3.
-    Falls back to initial values (1000 shares, $10,000 cash) if chain unavailable.
-    """
-    try:
-        from web3 import Web3
-
-        deployment = get_deployment()
-        chain_id = deployment.get("chainId", 84532)
-        rpc_url = os.getenv("RPC_URL", "https://sepolia.base.org")
-        w3 = Web3(Web3.HTTPProvider(rpc_url))
-
-        if w3.is_connected():
-            factory_abi = get_abi("PoolFactory")
-            pool_abi = get_abi("PlayerPool")
-            factory = w3.eth.contract(
-                address=Web3.to_checksum_address(deployment["contracts"]["PoolFactory"]),
-                abi=factory_abi,
-            )
-            pool_addr = factory.functions.pools(player_index).call()
-            pool = w3.eth.contract(
-                address=Web3.to_checksum_address(pool_addr),
-                abi=pool_abi,
-            )
-            virtual_shares = pool.functions.virtualShares().call() / 1e6
-            virtual_cash = pool.functions.virtualCash().call() / 1e6
-            return virtual_shares, virtual_cash
-    except Exception as e:
-        logger.warning(f"Failed to read pool state from chain for player {player_index}: {e}")
-
-    # Fallback to initial values
-    return 1000.0, 10000.0
-
 @router.post("/quote", response_model=QuoteResponse)
 async def get_quote(req: QuoteRequest):
-    """
-    Get a quote for buying or selling shares.
-    Reads live pool state from chain when available.
-    NOTE: On-chain getBuyQuote/getSellQuote are the source of truth.
-    """
-    deployment = get_deployment()
-    if not deployment:
-        raise HTTPException(status_code=503, detail="Not deployed")
+    """AMM quote for buying or selling shares.
 
-    # Find player
-    player = None
-    for p in deployment.get("players", []):
-        if p["index"] == req.player_index:
-            player = p
-            break
+    Reads live pool state from chain — raises 503 if chain is unreachable.
+    NOTE: On-chain getBuyQuote/getSellQuote are the authoritative source; use
+    this only for UI previews.
+    """
+    deployment = require_deployment()
 
+    player = next(
+        (p for p in deployment.get("players", []) if p["index"] == req.player_index),
+        None,
+    )
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
 
-    # Read live pool state (or fall back to initial values)
     virtual_shares, virtual_cash = _get_pool_state(req.player_index)
-
     shares = req.shares
-    fee_rate = 0.02  # 2%
 
     if req.side == "buy":
         if shares >= virtual_shares / 2:
             raise HTTPException(status_code=400, detail="Too many shares")
         new_shares = virtual_shares - shares
-        # Rearranged AMM math (matches on-chain): cost = (virtualCash * sharesOut) / newShares
         cost = (virtual_cash * shares) / new_shares
-        fee = cost * fee_rate
+        fee = cost * FEE_RATE
         total = cost + fee
         current_price = virtual_cash / virtual_shares
-        new_cash = virtual_cash + cost
-        new_price = new_cash / new_shares
+        new_price = (virtual_cash + cost) / new_shares
         price_impact = (new_price - current_price) / current_price * 100
-
         return QuoteResponse(
             player_index=req.player_index,
             side="buy",
@@ -178,17 +182,15 @@ async def get_quote(req: QuoteRequest):
             current_price=round(current_price, 2),
             new_price=round(new_price, 2),
         )
-    elif req.side == "sell":
+
+    if req.side == "sell":
         new_shares = virtual_shares + shares
-        # Rearranged AMM math (matches on-chain): revenue = (virtualCash * sharesIn) / newShares
         revenue = (virtual_cash * shares) / new_shares
-        fee = revenue * fee_rate
+        fee = revenue * FEE_RATE
         net = revenue - fee
         current_price = virtual_cash / virtual_shares
-        new_cash = virtual_cash - revenue
-        new_price = new_cash / new_shares
+        new_price = (virtual_cash - revenue) / new_shares
         price_impact = (current_price - new_price) / current_price * 100
-
         return QuoteResponse(
             player_index=req.player_index,
             side="sell",
@@ -200,149 +202,77 @@ async def get_quote(req: QuoteRequest):
             current_price=round(current_price, 2),
             new_price=round(new_price, 2),
         )
-    else:
-        raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
+
+    raise HTTPException(status_code=400, detail="side must be 'buy' or 'sell'")
 
 
 @router.get("/transactions")
 async def get_player_transactions(player_index: int, limit: int = 10, days: int = 7):
-    """
-    Get top transactions for a player in the past N days.
-    Returns buys and sells, ordered by cost (largest first).
-    Uses Supabase transactions table when configured; falls back to in-memory store.
-    """
-    supabase = get_supabase()
-    if supabase:
-        from datetime import datetime, timedelta
-        since = (datetime.utcnow() - timedelta(days=days)).isoformat()
-        res = (
-            supabase.table("transactions")
-            .select("wallet_address, player_index, side, shares, cost, tx_hash, created_at")
-            .eq("player_index", player_index)
-            .gte("created_at", since)
-            .order("cost", desc=True)
-            .limit(limit)
-            .execute()
-        )
-        return res.data or []
-    # In-memory fallback
-    store = get_store()
-    txs = [t for t in store.get("transactions", []) if t.get("player_index") == player_index]
-    txs.sort(key=lambda x: float(x.get("cost", 0)), reverse=True)
-    return txs[:limit]
-
-
-def _build_player_name_map() -> dict[int, str]:
-    """Build index→name lookup from deployments.json for filling NULL names."""
-    deployment = get_deployment()
-    if not deployment:
-        return {}
-    return {p["index"]: p["name"] for p in deployment.get("players", [])}
-
-
-def _fill_missing_names(txs: list[dict]) -> list[dict]:
-    """Patch transactions that have a NULL player_name with the deployment name."""
-    name_map: dict[int, str] | None = None
-    for tx in txs:
-        if not tx.get("player_name"):
-            if name_map is None:
-                name_map = _build_player_name_map()
-            tx["player_name"] = name_map.get(tx.get("player_index", -1))
-    return txs
+    """Top transactions for a player in the past N days, ordered by cost descending."""
+    supabase = require_supabase()
+    since = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    res = (
+        supabase.table("transactions")
+        .select("wallet_address, player_index, side, shares, cost, tx_hash, created_at")
+        .eq("player_index", player_index)
+        .gte("created_at", since)
+        .order("cost", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return res.data or []
 
 
 @router.get("/transactions/recent")
 async def get_recent_transactions(limit: int = Query(default=15, le=50)):
-    """
-    Get most recent transactions across all players.
-    Used by the activity feed on the homepage.
-    """
-    supabase = get_supabase()
-    if supabase:
-        res = (
-            supabase.table("transactions")
-            .select("wallet_address, player_index, player_name, side, shares, cost, tx_hash, created_at")
-            .order("created_at", desc=True)
-            .limit(limit)
-            .execute()
-        )
-        return _fill_missing_names(res.data or [])
-    # In-memory fallback
-    store = get_store()
-    txs = list(store.get("transactions", []))
-    txs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-    return _fill_missing_names(txs[:limit])
-
-
-@router.post("/log-transaction")
-async def log_transaction(_tx: TransactionLog):
-    """
-    Removed: `transactions` is populated only by the StatixRouter chain indexer
-    (`backend/index_statix_router_ws.py` or `indexing.batch`) from Buy/Sell events.
-    """
-    raise HTTPException(
-        status_code=410,
-        detail=(
-            "Client logging is disabled. Run the chain indexer with SUPABASE_SERVICE_ROLE_KEY; "
-            "it upserts into `transactions` from StatixRouter Buy/Sell logs."
-        ),
+    """Most recent trades across all players — feeds the homepage activity feed."""
+    supabase = require_supabase()
+    res = (
+        supabase.table("transactions")
+        .select("wallet_address, player_index, player_name, side, shares, cost, tx_hash, created_at")
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
     )
+    return _fill_missing_names(res.data or [])
 
 
 @router.get("/history/{wallet_address}")
-async def get_transaction_history(wallet_address: str, limit: int = Query(default=50, le=200)):
-    """Get recent transaction history for a wallet address."""
-    supabase = get_supabase()
-    if supabase:
-        result = (
-            supabase.table("transactions")
-            .select("*")
-            .eq("wallet_address", wallet_address.lower())
-            .order("created_at", desc=True)
-            .limit(limit)
-            .execute()
-        )
-        return result.data
-    else:
-        store = get_store()
-        txs = [
-            t for t in store["transactions"]
-            if t.get("wallet_address", "").lower() == wallet_address.lower()
-        ]
-        return list(reversed(txs[-limit:]))
+async def get_transaction_history(
+    wallet_address: str,
+    limit: int = Query(default=50, le=200),
+):
+    """Full transaction history for a wallet address, newest first."""
+    supabase = require_supabase()
+    result = (
+        supabase.table("transactions")
+        .select("*")
+        .eq("wallet_address", wallet_address.lower())
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return result.data or []
 
 
 @router.get("/summary/{wallet_address}")
 async def get_trading_summary(wallet_address: str):
-    """Get trading summary stats for a wallet address."""
-    supabase = get_supabase()
-    if supabase:
-        result = (
-            supabase.table("transactions")
-            .select("*")
-            .eq("wallet_address", wallet_address.lower())
-            .execute()
-        )
-        txs = result.data
-    else:
-        store = get_store()
-        txs = [
-            t for t in store["transactions"]
-            if t.get("wallet_address", "").lower() == wallet_address.lower()
-        ]
-
-    total_trades = len(txs)
-    total_volume = sum(abs(float(t.get("cost", 0))) for t in txs)
-    total_fees = sum(float(t.get("fee", 0)) for t in txs)
-    buys = sum(1 for t in txs if t.get("side") == "buy")
-    sells = sum(1 for t in txs if t.get("side") == "sell")
+    """Aggregate trading stats (volume, fees, buys, sells) for a wallet."""
+    supabase = require_supabase()
+    result = (
+        supabase.table("transactions")
+        .select("side, cost, fee")
+        .eq("wallet_address", wallet_address.lower())
+        .execute()
+    )
+    txs = result.data or []
 
     return {
-        "total_trades": total_trades,
-        "total_volume": round(total_volume, 2),
-        "total_fees": round(total_fees, 2),
-        "buys": buys,
-        "sells": sells,
+        "total_trades": len(txs),
+        "total_volume": round(sum(abs(float(t.get("cost", 0))) for t in txs), 2),
+        "total_fees": round(sum(float(t.get("fee", 0)) for t in txs), 2),
+        "buys": sum(1 for t in txs if t.get("side") == "buy"),
+        "sells": sum(1 for t in txs if t.get("side") == "sell"),
     }
 
 
@@ -351,26 +281,17 @@ async def get_portfolio_snapshots(
     wallet: str = Query(..., description="Wallet address (0x…)"),
     days: int = Query(default=30, ge=1, le=365),
 ):
-    """
-    Hourly NAV snapshots for portfolio chart (written by `python -m snapshot.job`).
+    """Hourly NAV snapshots for the portfolio chart (written by snapshot.job).
 
-    Returns rows from `wallet_portfolio_snapshots` within the last `days` window.
+    Returns rows from wallet_portfolio_snapshots within the last `days` window.
+    Raises 503 if the database is unavailable.
     """
     w = wallet.strip().lower()
     if not re.match(r"^0x[a-f0-9]{40}$", w):
         raise HTTPException(status_code=400, detail="Invalid wallet address")
 
-    supabase = get_supabase()
-    if not supabase:
-        return PortfolioSnapshotsResponse(
-            wallet_address=w,
-            days=days,
-            source="none",
-            points=[],
-        )
-
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    cutoff_iso = cutoff.isoformat()
+    supabase = require_supabase()
+    cutoff_iso = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
 
     try:
         result = (
@@ -382,16 +303,11 @@ async def get_portfolio_snapshots(
             .limit(2000)
             .execute()
         )
-        rows = result.data or []
     except Exception as e:
-        logger.warning("portfolio-snapshots query failed: %s", e)
-        return PortfolioSnapshotsResponse(
-            wallet_address=w,
-            days=days,
-            source="none",
-            points=[],
-        )
+        logger.error("portfolio-snapshots query failed for %s: %s", w, e)
+        raise HTTPException(status_code=503, detail=f"Database query failed: {e}")
 
+    rows = result.data or []
     points = [
         PortfolioSnapshotPoint(
             snapshot_at=str(r["snapshot_at"]),

@@ -1,36 +1,31 @@
 """
-NBA Stats Integration - Fetches real player data for Statix.
-Uses nba_api library to pull from stats.nba.com.
+NBA Stats Integration — fetches real player data for Statix.
 
-Primary flow: fetch stats for the 50 curated players in players.json
-by their nba_id, using each player's game log to compute season averages.
+Uses nba_api to pull from stats.nba.com. Primary flow:
+  1. _load_curated_players() reads players.json (80 players with nba_id)
+  2. fetch_player_season_stats() pulls each player's game log for season averages
+  3. Results are cached in player_cache.json for 24 hours
+
+Consumed by: routes/players.py (list + detail), routes/admin.py (round stats).
+Fantasy point formula is imported from config.SCORING — do not inline it here.
 """
 
 import json
+import logging
 import os
 import re
+import time
 import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Dict, Optional
-from nba_api.stats.static import players as nba_players
-from nba_api.stats.endpoints import (
-    playergamelog,
-    commonplayerinfo,
-)
-import time
+from typing import Dict, List, Optional
 
-SCORING = {
-    "PTS": 1.0,
-    "REB": 1.2,
-    "AST": 1.5,
-    "STL": 2.0,
-    "BLK": 2.0,
-    "FG3M": 0.5,
-    "TOV": -1.5,
-    "DD_BONUS": 2.0,
-    "TD_BONUS": 5.0,
-}
+from nba_api.stats.endpoints import playergamelog
+from nba_api.stats.static import players as nba_players
+
+from config import SCORING
+
+logger = logging.getLogger(__name__)
 
 CACHE_FILE = os.path.join(os.path.dirname(__file__), "player_cache.json")
 PLAYERS_JSON = os.path.join(
@@ -39,7 +34,11 @@ PLAYERS_JSON = os.path.join(
 
 
 def calculate_fantasy_points(stats: dict) -> float:
-    """Calculate fantasy points from a stat line (per-game basis)."""
+    """Calculate fantasy points from a stat-line dict (per-game basis).
+
+    Stat keys: PTS, REB, AST, STL, BLK, FG3M, TOV.
+    Bonus categories: DD_BONUS (10+ in 2 cats), TD_BONUS (10+ in 3 cats).
+    """
     base = (
         stats.get("PTS", 0) * SCORING["PTS"]
         + stats.get("REB", 0) * SCORING["REB"]
@@ -49,7 +48,6 @@ def calculate_fantasy_points(stats: dict) -> float:
         + stats.get("FG3M", 0) * SCORING["FG3M"]
         + stats.get("TOV", 0) * SCORING["TOV"]
     )
-    # Double-double / triple-double bonuses (threshold: 10+ in a category)
     dd_cats = ["PTS", "REB", "AST", "STL", "BLK"]
     doubles = sum(1 for cat in dd_cats if stats.get(cat, 0) >= 10)
     if doubles >= 3:
@@ -60,22 +58,46 @@ def calculate_fantasy_points(stats: dict) -> float:
 
 
 def _current_nba_season() -> str:
-    """Calculate current NBA season string (e.g., '2025-26') from date."""
+    """Calculate current NBA season string (e.g., '2025-26') from today's date."""
     now = datetime.now()
     year = now.year if now.month >= 10 else now.year - 1
     return f"{year}-{str(year + 1)[-2:]}"
 
 
 def _load_curated_players() -> List[dict]:
-    """Load the curated 50-player list from players.json."""
+    """Load the curated player list from blockchain/scripts/players.json.
+
+    Raises FileNotFoundError if the file is absent — run `npm run generate-players`
+    in the blockchain directory to create it.
+    """
     if os.path.exists(PLAYERS_JSON):
         with open(PLAYERS_JSON) as f:
             return json.load(f)
-    return []
+    raise FileNotFoundError(
+        f"players.json not found at {PLAYERS_JSON}. "
+        "Run `npm run generate-players` in the blockchain directory."
+    )
+
+
+def _row_fpts(row, has_fg3m: bool) -> float:
+    """Compute fantasy points for a single game-log DataFrame row."""
+    return calculate_fantasy_points({
+        "PTS": row.get("PTS", 0),
+        "REB": row.get("REB", 0),
+        "AST": row.get("AST", 0),
+        "STL": row.get("STL", 0),
+        "BLK": row.get("BLK", 0),
+        "FG3M": row.get("FG3M", 0) if has_fg3m else 0,
+        "TOV": row.get("TOV", 0),
+    })
 
 
 def fetch_player_season_stats(nba_id: int, season: str = None) -> Optional[dict]:
-    """Fetch season averages for a specific player from their game log."""
+    """Fetch season averages for a player from their NBA game log.
+
+    Returns None if the player has no data for the season (did not play).
+    Logs a warning on API failure rather than silently returning None.
+    """
     if season is None:
         season = _current_nba_season()
 
@@ -83,65 +105,56 @@ def fetch_player_season_stats(nba_id: int, season: str = None) -> Optional[dict]
         log = playergamelog.PlayerGameLog(player_id=nba_id, season=season)
         time.sleep(0.6)
         df = log.get_data_frames()[0]
-    except Exception:
+    except Exception as e:
+        logger.warning("NBA API fetch failed for nba_id=%s season=%s: %s", nba_id, season, e)
         return None
 
     if df.empty:
         return None
 
+    has_fg3m = "FG3M" in df.columns
     avg_stats = {
         "PTS": round(float(df["PTS"].mean()), 1),
         "REB": round(float(df["REB"].mean()), 1),
         "AST": round(float(df["AST"].mean()), 1),
         "STL": round(float(df["STL"].mean()), 1),
         "BLK": round(float(df["BLK"].mean()), 1),
-        "FG3M": round(float(df["FG3M"].mean()), 1) if "FG3M" in df.columns else 0.0,
+        "FG3M": round(float(df["FG3M"].mean()), 1) if has_fg3m else 0.0,
         "TOV": round(float(df["TOV"].mean()), 1),
     }
-    # Compute FPts per game (with DD/TD bonuses per game) then average
-    def _row_fpts(row):
-        return calculate_fantasy_points({
-            "PTS": row.get("PTS", 0), "REB": row.get("REB", 0),
-            "AST": row.get("AST", 0), "STL": row.get("STL", 0),
-            "BLK": row.get("BLK", 0),
-            "FG3M": row.get("FG3M", 0) if "FG3M" in df.columns else 0,
-            "TOV": row.get("TOV", 0),
-        })
-    avg_fpts = round(float(df.apply(_row_fpts, axis=1).mean()), 2)
+    avg_fpts = round(float(df.apply(lambda r: _row_fpts(r, has_fg3m), axis=1).mean()), 2)
 
     return {
         "nba_id": nba_id,
         "games_played": len(df),
         "avg_stats": avg_stats,
-        "avg_fantasy_points": round(avg_fpts, 2),
+        "avg_fantasy_points": avg_fpts,
         "weekly_projection": round(avg_fpts * 3.5, 2),
         "season_projection": round(avg_fpts * 82, 2),
     }
 
 
 def fetch_curated_players(season: str = None) -> List[dict]:
-    """
-    Fetch stats for all 50 curated players by their nba_id.
-    Reads the player list from players.json, fetches each player's
-    game log, computes season averages, and caches the result.
+    """Fetch season stats for all curated players, writing a 24h cache.
+
+    Raises FileNotFoundError if players.json is missing.
+    Individual players that return no data receive zeroed stats (they simply
+    haven't played this season — not an error).
     """
     if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, "r") as f:
+        with open(CACHE_FILE) as f:
             cache = json.load(f)
-            cache_time = datetime.fromisoformat(cache.get("timestamp", "2000-01-01"))
-            if datetime.now() - cache_time < timedelta(hours=24):
-                print(f"Using cached player data ({len(cache['players'])} players)")
-                return cache["players"]
+        cache_time = datetime.fromisoformat(cache.get("timestamp", "2000-01-01"))
+        if datetime.now() - cache_time < timedelta(hours=24):
+            logger.info("Using cached player data (%d players)", len(cache["players"]))
+            return cache["players"]
 
     curated = _load_curated_players()
-    if not curated:
-        print("WARNING: players.json not found, falling back to empty list")
-        return []
 
     if season is None:
         season = _current_nba_season()
 
-    print(f"Fetching stats for {len(curated)} curated players (season {season})...")
+    logger.info("Fetching stats for %d curated players (season %s)...", len(curated), season)
 
     players_list = []
     for i, p in enumerate(curated):
@@ -149,9 +162,7 @@ def fetch_curated_players(season: str = None) -> List[dict]:
         if not nba_id:
             continue
 
-        print(f"  [{i+1}/{len(curated)}] {p['name']}...", end=" ", flush=True)
         stats = fetch_player_season_stats(nba_id, season)
-
         if stats:
             players_list.append({
                 "nba_id": nba_id,
@@ -164,7 +175,11 @@ def fetch_curated_players(season: str = None) -> List[dict]:
                 "weekly_projection": stats["weekly_projection"],
                 "season_projection": stats["season_projection"],
             })
-            print(f"OK ({stats['games_played']} GP, {stats['avg_fantasy_points']} FPts/G)")
+            logger.info(
+                "[%d/%d] %s — %d GP, %.1f FPts/G",
+                i + 1, len(curated), p["name"],
+                stats["games_played"], stats["avg_fantasy_points"],
+            )
         else:
             players_list.append({
                 "nba_id": nba_id,
@@ -177,41 +192,35 @@ def fetch_curated_players(season: str = None) -> List[dict]:
                 "weekly_projection": 0,
                 "season_projection": 0,
             })
-            print("NO DATA (player may not have played this season)")
+            logger.info("[%d/%d] %s — no data", i + 1, len(curated), p["name"])
 
     with open(CACHE_FILE, "w") as f:
-        json.dump({
-            "timestamp": datetime.now().isoformat(),
-            "season": season,
-            "players": players_list,
-        }, f, indent=2)
+        json.dump({"timestamp": datetime.now().isoformat(), "season": season, "players": players_list}, f, indent=2)
 
-    fetched = len([p for p in players_list if p["games_played"] > 0])
-    print(f"Cached {len(players_list)} players ({fetched} with stats)")
+    fetched = sum(1 for p in players_list if p["games_played"] > 0)
+    logger.info("Cached %d players (%d with stats)", len(players_list), fetched)
     return players_list
 
 
-def fetch_top_players(season: str = None, top_n: int = 50) -> List[dict]:
-    """Fetch stats for curated players. Wrapper for backward compatibility."""
+def fetch_top_players(season: str = None, top_n: int = 80) -> List[dict]:
+    """Fetch stats for curated players, capped to top_n. Wrapper for back-compat."""
     return fetch_curated_players(season)[:top_n]
 
 
 def fetch_player_game_log(
     player_id: int, season: str = None, last_n_games: int = 0
 ) -> List[dict]:
-    """
-    Fetch a player's game log for the season.
-    Returns list of game dicts with date, opponent, stats, fantasy points.
+    """Fetch a player's game log for the season.
+
+    Returns a list of game dicts: {date, matchup, result, stats, fantasy_points}.
     """
     if season is None:
         season = _current_nba_season()
-    log = playergamelog.PlayerGameLog(
-        player_id=player_id,
-        season=season,
-    )
+    log = playergamelog.PlayerGameLog(player_id=player_id, season=season)
     time.sleep(0.6)
 
     df = log.get_data_frames()[0]
+    has_fg3m = "FG3M" in df.columns
     games = []
 
     for _, row in df.iterrows():
@@ -224,8 +233,9 @@ def fetch_player_game_log(
             "TOV": float(row.get("TOV", 0)),
             "MIN": float(row.get("MIN", 0)),
         }
+        if has_fg3m:
+            stats["FG3M"] = float(row.get("FG3M", 0))
         fpts = calculate_fantasy_points(stats)
-
         games.append({
             "date": row["GAME_DATE"],
             "matchup": row["MATCHUP"],
@@ -236,7 +246,6 @@ def fetch_player_game_log(
 
     if last_n_games > 0:
         games = games[:last_n_games]
-
     return games
 
 
@@ -246,22 +255,20 @@ def get_weekly_actuals(
     week_end: str,
     season: str = None,
 ) -> dict:
-    """
-    Get a player's actual fantasy points for a specific week.
-    week_start/week_end in 'YYYY-MM-DD' format.
+    """Get a player's actual fantasy points for a date window.
+
+    week_start / week_end in 'YYYY-MM-DD' format.
+    Returns {player_id, week_start, week_end, games_played, total_fantasy_points, games}.
     """
     games = fetch_player_game_log(player_id, season)
     start = datetime.strptime(week_start, "%Y-%m-%d")
     end = datetime.strptime(week_end, "%Y-%m-%d")
 
-    week_games = []
-    total_fpts = 0.0
-
-    for game in games:
-        game_date = datetime.strptime(game["date"], "%b %d, %Y")
-        if start <= game_date <= end:
-            week_games.append(game)
-            total_fpts += game["fantasy_points"]
+    week_games = [
+        g for g in games
+        if start <= datetime.strptime(g["date"], "%b %d, %Y") <= end
+    ]
+    total_fpts = sum(g["fantasy_points"] for g in week_games)
 
     return {
         "player_id": player_id,
@@ -274,20 +281,19 @@ def get_weekly_actuals(
 
 
 def get_next_week_projection(nba_id: int, player: Dict) -> float:
-    """Projected fantasy points for the *upcoming* NBA week (next scoring window).
+    """Projected fantasy points for the upcoming NBA week.
 
-    Wired into on-chain updates via DividendHub.setNextWeekProjectionsBatch.
+    Currently re-uses the weekly_projection from cache/deployment.
     Replace with a dedicated forecast feed when available.
     """
-    # Default: reuse latest weekly estimate from deployment / cache
     return float(player.get("weekly_projection") or 0)
 
 
 def generate_player_id(name: str) -> str:
-    """Generate a clean ID from player name.
+    """Generate a clean slug ID from a player name.
 
-    Normalizes unicode (ć→c, ņ→n, etc.), strips non-alphanumeric chars,
-    collapses underscores. Must match generate-players.js logic exactly.
+    Normalizes unicode (ć→c, ņ→n, etc.), strips non-alphanumeric chars.
+    Must match generate-players.js logic exactly.
     """
     nfkd = unicodedata.normalize("NFKD", name)
     ascii_name = nfkd.encode("ascii", "ignore").decode("ascii")
@@ -301,6 +307,8 @@ if __name__ == "__main__":
     for i, p in enumerate(players):
         gp = p.get("games_played", 0)
         fpts = p.get("avg_fantasy_points", 0)
-        print(f"{i:2d}. {p['name']:<30s} {p.get('team',''):<5s} "
-              f"GP:{gp:3d}  FPts/G:{fpts:6.1f}  "
-              f"Weekly:{p.get('weekly_projection',0):6.1f}")
+        print(
+            f"{i:2d}. {p['name']:<30s} {p.get('team',''):<5s} "
+            f"GP:{gp:3d}  FPts/G:{fpts:6.1f}  "
+            f"Weekly:{p.get('weekly_projection', 0):6.1f}"
+        )

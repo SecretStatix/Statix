@@ -1,31 +1,41 @@
 """
-Player routes - real NBA data + on-chain price data.
+Player routes — NBA player data enriched with on-chain price history.
+
+Data sources:
+  - Player list: deployments.json (on-chain source of truth via chain.get_deployment)
+  - NBA stats: player_cache.json (24h cache) or live nba_api fallback
+  - Price history: pool_price_snapshots table + PlayerPool.getPrice() from chain
+
+Endpoints:
+  GET /                         — list all players with stats
+  GET /games-today              — team tri-codes with games scheduled today
+  GET /{player_id}              — player detail with NBA stats
+  GET /{player_id}/games        — player game log
+  GET /{player_id}/price-history — price chart data
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
-from typing import List, Optional
 import json
 import logging
 import os
-from db import get_supabase
+import time as _time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import List, Optional
 
-from nba_stats import fetch_top_players, calculate_fantasy_points, fetch_player_game_log, fetch_player_season_stats, generate_player_id
-from chain import get_deployment
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
+from chain import get_deployment, get_abi
+from config import INITIAL_POOL_PRICE
 from db import get_supabase
-import logging
-import time as _time
+from nba_stats import (
+    fetch_player_game_log,
+    fetch_player_season_stats,
+)
+from routes.helpers import require_deployment
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
-logger = logging.getLogger(__name__)
-
-# AMM listing price (DBucks per share) — matches PlayerPool initial virtual curve.
-INITIAL_POOL_PRICE = 10.0
-
 
 def _float_field(player: dict, key: str, default: float = 0.0) -> float:
     """Coerce player[key] to float; missing or None uses default."""
@@ -98,34 +108,18 @@ class PlayerPriceHistoryResponse(BaseModel):
 
 
 def _get_players() -> list:
-    """Get player list from deployments.json (on-chain source of truth)."""
-    deployment = get_deployment()
-    if deployment and "players" in deployment:
-        return deployment["players"]
+    """Get player list from deployments.json (on-chain source of truth).
 
-    # Fallback to NBA API
-    raw = fetch_top_players(top_n=50)
-    return [
-        {
-            "index": i,
-            "id": generate_player_id(p["name"]),
-            "name": p["name"],
-            "team": p["team"],
-            "symbol": "",
-            "nba_id": p["nba_id"],
-            "position": p.get("position", "F"),
-            "avg_fantasy_points": p["avg_fantasy_points"],
-            "weekly_projection": p["weekly_projection"],
-            "season_projection": p["season_projection"],
-            "avg_stats": p.get("avg_stats", {}),
-        }
-        for i, p in enumerate(raw)
-    ]
+    Raises HTTP 503 if deployments.json is missing — there is no valid fallback
+    since player indices must match the deployed pool contracts.
+    """
+    deployment = require_deployment()
+    return deployment.get("players", [])
 
 
 @router.get("/", response_model=List[PlayerResponse])
 async def list_players():
-    """Get all 50 tradeable players."""
+    """Get all tradeable players (up to 80)."""
     players = _get_players()
     nba_cache = _load_nba_cache()
 
@@ -204,14 +198,18 @@ def _parse_ts(ts) -> datetime:
 
 
 def _fetch_snapshot_rows(pool_index: int, days: int, max_rows: int = 8000) -> list:
-    """Rows from pool_price_snapshots since now - days, ordered by chain position."""
+    """Rows from pool_price_snapshots since now - days, ordered by chain position.
+
+    Returns [] on query failure (price history is non-critical — chain spot is the
+    authoritative price even when snapshot rows are absent).
+    """
     sb = get_supabase()
     if sb is None:
+        logger.warning("pool_price_snapshots unavailable: Supabase not configured")
         return []
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    cutoff_iso = cutoff.isoformat()
+    cutoff_iso = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     try:
-        q = (
+        res = (
             sb.table("pool_price_snapshots")
             .select("timestamp, price, block_number, log_index")
             .eq("pool_index", pool_index)
@@ -219,11 +217,11 @@ def _fetch_snapshot_rows(pool_index: int, days: int, max_rows: int = 8000) -> li
             .order("block_number", desc=False)
             .order("log_index", desc=False)
             .limit(max_rows)
+            .execute()
         )
-        res = q.execute()
         return res.data or []
     except Exception as e:
-        logger.warning("pool_price_snapshots query failed: %s", e)
+        logger.warning("pool_price_snapshots query failed for pool %d: %s", pool_index, e)
         return []
 
 
@@ -391,13 +389,7 @@ async def get_player_price_history(
 @router.get("/{player_id}")
 async def get_player(player_id: str):
     """Get player details by ID, enriched with cached NBA stats."""
-    players = _get_players()
-    target = None
-    for p in players:
-        if p["id"] == player_id or str(p.get("index")) == player_id:
-            target = p
-            break
-
+    target = _resolve_player(player_id)
     if not target:
         raise HTTPException(status_code=404, detail="Player not found")
 
@@ -435,13 +427,7 @@ async def get_player(player_id: str):
 @router.get("/{player_id}/games")
 async def get_player_games(player_id: str, last_n: int = Query(default=10, le=82)):
     """Get a player's recent game log."""
-    players = _get_players()
-    target = None
-    for p in players:
-        if p["id"] == player_id or str(p.get("index")) == player_id:
-            target = p
-            break
-
+    target = _resolve_player(player_id)
     if not target:
         raise HTTPException(status_code=404, detail="Player not found")
 
@@ -452,5 +438,6 @@ async def get_player_games(player_id: str, last_n: int = Query(default=10, le=82
     try:
         games = fetch_player_game_log(nba_id, last_n_games=last_n)
         return {"player_id": player_id, "games": games}
-    except Exception:
+    except Exception as e:
+        logger.error("game log fetch failed for %s (nba_id=%s): %s", player_id, nba_id, e)
         raise HTTPException(status_code=500, detail="Failed to fetch game log")

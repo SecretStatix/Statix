@@ -1,3 +1,12 @@
+/**
+ * check-wallet.js — Diagnostic script to inspect a signer's on-chain state.
+ *
+ * Prints the deployer wallet address, ETH balance, DBucks balance,
+ * and faucet eligibility. Useful for verifying the deployer has gas
+ * before running deploy-statix.js or distribute-dividends.js.
+ *
+ * Usage: npx hardhat run scripts/check-wallet.js --network base-sepolia
+ */
 const hre = require("hardhat");
 
 async function main() {

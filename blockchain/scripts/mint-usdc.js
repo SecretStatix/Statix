@@ -1,3 +1,12 @@
+/**
+ * mint-usdc.js — Mint MockUSDC to a target wallet for testing.
+ *
+ * Reads contract addresses from backend/deployments.json.
+ * Only works on testnets where MockUSDC is deployed with a public mint function.
+ *
+ * Usage: npx hardhat run scripts/mint-usdc.js --network base-sepolia
+ * Set TARGET_WALLET and MINT_AMOUNT env vars to override defaults.
+ */
 const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");

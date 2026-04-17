@@ -1,3 +1,14 @@
+/**
+ * deploy-statix.js — Full Statix contract stack deployment script.
+ *
+ * Deploys in order: MockUSDC → DBucks → PoolFactory → StatixRouter → DividendHub,
+ * then creates one PlayerPool per player in players.json via PoolFactory.
+ * Writes all addresses + player data to backend/deployments.json so the backend
+ * and indexer can hot-reload without a restart.
+ *
+ * Usage: npm run deploy:sepolia
+ * Output: backend/deployments.json (overwritten on each run)
+ */
 const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
