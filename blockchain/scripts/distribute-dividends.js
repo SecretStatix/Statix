@@ -12,7 +12,7 @@
  *   Round 1 (16 teams): 10
  *   Round 2 (8 teams):  5
  *   Conf Finals (4):    3
- *   NBA Finals (2):     2
+ *   NBA Finals (2):     1
  *
  * Steps:
  *   1. Fetch per-game avg FPts from backend for the round window
@@ -36,8 +36,8 @@ if (!ADMIN_KEY) {
 }
 
 const TOP_N = parseInt(process.env.TOP_N || "10");
-if (![2, 3, 5, 10].includes(TOP_N)) {
-  console.error(`TOP_N must be 2, 3, 5, or 10 (got ${TOP_N})`);
+if (![1, 3, 5, 10].includes(TOP_N)) {
+  console.error(`TOP_N must be 1, 3, 5, or 10 (got ${TOP_N})`);
   process.exit(1);
 }
 

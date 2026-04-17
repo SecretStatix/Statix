@@ -33,8 +33,8 @@ FastAPI server with 4 route groups:
 
 ## Key Technical Details
 - AMM: constant product (x*y=k), 1000 virtual shares, $10,000 virtual cash, $10/share starting price
-- Fees: 1.5% per trade → 67% to DividendHub, 33% to protocol
-- Dividends: 20% base (all holders), 80% top performer pool (top 10 players by absolute fantasy points)
+- Fees: 2% per trade → 67% to DividendHub, 33% to protocol
+- Dividends: 20% base (all holders), 80% top performer pool (top N players by absolute fantasy points — Round 1: 10, Round 2: 5, Conf Finals: 3, Finals: 1)
 - Token decimals: 6 (matching USDC)
 - Network: Base Sepolia (chain ID 84532)
 
