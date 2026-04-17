@@ -26,7 +26,6 @@ from .upsert import (
     upsert_snapshot_rows,
     upsert_transaction_rows,
 )
-
 logger = logging.getLogger("statix_indexer.sync")
 
 
