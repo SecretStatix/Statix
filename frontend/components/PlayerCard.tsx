@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 interface PlayerCardProps {
   player: PlayerData;
   onTrade: () => void;
+  playingTonight?: boolean;
+  flashSide?: 'buy' | 'sell' | null;
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -64,14 +66,18 @@ function getTeamAccentStyle(team: string): CSSProperties {
   } as CSSProperties;
 }
 
-export function PlayerCard({ player, onTrade }: PlayerCardProps) {
+export function PlayerCard({ player, onTrade, playingTonight = false, flashSide = null }: PlayerCardProps) {
   const pctChange = ((player.price - 10) / 10) * 100;
   const isPositive = pctChange >= 0;
   const accentStyle = getTeamAccentStyle(player.team);
+  const flashClass = flashSide === 'buy' ? 'card-flash-buy' : flashSide === 'sell' ? 'card-flash-sell' : '';
 
   return (
     <div
-      className="group overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-1"
+      className={cn(
+        "group relative overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-1",
+        flashClass,
+      )}
       style={{
         borderLeftWidth: '3px',
         ...accentStyle,
@@ -81,17 +87,29 @@ export function PlayerCard({ player, onTrade }: PlayerCardProps) {
         const r = getComputedStyle(el).getPropertyValue('--team-r');
         const g = getComputedStyle(el).getPropertyValue('--team-g');
         const b = getComputedStyle(el).getPropertyValue('--team-b');
-        el.style.boxShadow = `0 8px 28px rgba(${r}, ${g}, ${b}, 0.28), 0 4px 12px rgba(0,0,0,0.25)`;
+        el.style.boxShadow = `0 10px 36px rgba(${r}, ${g}, ${b}, 0.5), 0 4px 14px rgba(${r}, ${g}, ${b}, 0.3), 0 4px 12px rgba(0,0,0,0.25)`;
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = '';
       }}
     >
+      {playingTonight && (
+        <span
+          className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary ring-1 ring-primary/30"
+          title="Playing tonight"
+        >
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+          </span>
+          Tonight
+        </span>
+      )}
       <Link href={`/player/${player.id}`} className="block p-4">
         <div className="flex items-center gap-3">
           <PlayerAvatar name={player.name} nbaId={player.nbaId} size="md" />
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold leading-tight text-foreground transition-colors duration-200">
+            <h3 className="text-base font-semibold leading-tight text-foreground transition-colors duration-200 line-clamp-2 min-h-[2.5rem]">
               {player.name}
             </h3>
             <p className="mt-0.5 text-xs text-muted-foreground">{player.team} · {player.position} · {Math.round(player.avgFantasyPoints)} FP</p>

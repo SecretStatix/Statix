@@ -16,6 +16,7 @@ from nba_stats import fetch_top_players, calculate_fantasy_points, fetch_player_
 from chain import get_deployment
 from db import get_supabase
 import logging
+import time as _time
 
 logger = logging.getLogger(__name__)
 
@@ -330,6 +331,45 @@ def _build_price_history(
         range_change_pct=range_change_pct,
         vs_listing_pct=vs_listing,
     )
+
+
+_games_today_cache: dict = {"ts": 0.0, "teams": [], "date": ""}
+_GAMES_TODAY_TTL = 1800  # 30 minutes
+
+
+@router.get("/games-today")
+async def get_games_today():
+    """Team tri-codes with games scheduled today. Cached 30 min."""
+    now = _time.time()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if (
+        _games_today_cache["date"] == today
+        and now - _games_today_cache["ts"] < _GAMES_TODAY_TTL
+    ):
+        return {"date": today, "teams": _games_today_cache["teams"]}
+
+    try:
+        from nba_api.stats.endpoints import scoreboardv2
+        from nba_api.stats.static import teams as nba_teams
+
+        sb = scoreboardv2.ScoreboardV2(game_date=today, timeout=8)
+        line_score = sb.line_score.get_dict()
+        headers = line_score.get("headers", [])
+        rows = line_score.get("data", [])
+        idx = headers.index("TEAM_ABBREVIATION") if "TEAM_ABBREVIATION" in headers else None
+        teams_playing: set[str] = set()
+        if idx is not None:
+            for row in rows:
+                tri = row[idx]
+                if tri:
+                    teams_playing.add(tri)
+
+        result = sorted(teams_playing)
+        _games_today_cache.update({"ts": now, "teams": result, "date": today})
+        return {"date": today, "teams": result}
+    except Exception as e:
+        logger.warning("games-today fetch failed: %s", e)
+        return {"date": today, "teams": []}
 
 
 @router.get("/{player_id}/price-history", response_model=PlayerPriceHistoryResponse)
