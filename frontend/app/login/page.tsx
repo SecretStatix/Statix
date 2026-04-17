@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -35,9 +36,14 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
         <div className="p-8 text-center border-b border-border">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/25">
-            <span className="text-white font-bold text-lg">SX</span>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Statix"
+            width={48}
+            height={48}
+            priority
+            className="mx-auto mb-4 rounded-xl shadow-lg shadow-primary/25"
+          />
           <h1 className="text-xl font-semibold text-foreground">Welcome back to Statix</h1>
           <p className="text-muted-foreground text-sm mt-1">Log in to your account</p>
         </div>
