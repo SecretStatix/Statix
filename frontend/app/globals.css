@@ -135,3 +135,17 @@ body {
 .card-flash-sell {
   animation: card-flash-sell 1.6s ease-out;
 }
+
+/* Price ticker scroll */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.ticker-track {
+  animation: ticker-scroll 40s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
