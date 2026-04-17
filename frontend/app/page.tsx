@@ -12,6 +12,7 @@ import { PriceTicker } from '@/components/PriceTicker';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 function HomeContent() {
+  const [rawPlayers, setRawPlayers] = useState<any[]>([]);
   const [players, setPlayers] = useState<PlayerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -19,48 +20,52 @@ function HomeContent() {
 
   const { data: onChainData } = useAllPlayers();
 
+  // Fetch player list from API exactly once on mount.
   useEffect(() => {
     async function load() {
       setLoadError(null);
       try {
         const apiPlayers = await getPlayers();
-
-        const mapped: PlayerData[] = apiPlayers.map((p: any) => {
-          let price = p.price || 10;
-          if (onChainData) {
-            const [, , prices] = onChainData as [string[], string[], bigint[], bigint[]];
-            if (prices[p.index]) {
-              price = parseFloat(formatUnits(prices[p.index], 6));
-            }
-          }
-
-          return {
-            index: p.index,
-            id: p.id,
-            name: p.name,
-            team: p.team,
-            symbol: p.symbol,
-            position: p.position || 'F',
-            nbaId: p.nba_id,
-            price,
-            avgFantasyPoints: p.avg_fantasy_points ?? (p.weekly_projection ?? 0) / 3.5,
-            weeklyProjection: p.weekly_projection ?? 0,
-            seasonProjection: p.season_projection ?? 0,
-            totalShares: 0,
-          };
-        });
-
-        setPlayers(mapped);
+        setRawPlayers(apiPlayers);
       } catch (err) {
         console.error('Failed to load players:', err);
-        setPlayers([]);
         setLoadError('Unable to fetch player data');
       } finally {
         setLoading(false);
       }
     }
     load();
-  }, [onChainData]);
+  }, []);
+
+  // Merge chain prices into the player list whenever API data or chain data updates.
+  // No extra API call — just re-maps the already-fetched rawPlayers.
+  useEffect(() => {
+    if (!rawPlayers.length) return;
+    const mapped: PlayerData[] = rawPlayers.map((p: any) => {
+      let price = p.price || 10;
+      if (onChainData) {
+        const [, , prices] = onChainData as [string[], string[], bigint[], bigint[]];
+        if (prices[p.index]) {
+          price = parseFloat(formatUnits(prices[p.index], 6));
+        }
+      }
+      return {
+        index: p.index,
+        id: p.id,
+        name: p.name,
+        team: p.team,
+        symbol: p.symbol,
+        position: p.position || 'F',
+        nbaId: p.nba_id,
+        price,
+        avgFantasyPoints: p.avg_fantasy_points ?? (p.weekly_projection ?? 0) / 3.5,
+        weeklyProjection: p.weekly_projection ?? 0,
+        seasonProjection: p.season_projection ?? 0,
+        totalShares: 0,
+      };
+    });
+    setPlayers(mapped);
+  }, [rawPlayers, onChainData]);
 
   if (loadError) {
     return (

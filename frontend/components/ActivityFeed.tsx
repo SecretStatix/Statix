@@ -32,7 +32,7 @@ export function ActivityFeed() {
 
   useEffect(() => {
     loadTrades();
-    intervalRef.current = setInterval(loadTrades, 30_000);
+    intervalRef.current = setInterval(loadTrades, 8_000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
