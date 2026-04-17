@@ -17,7 +17,7 @@ const nextConfig = {
   },
   async rewrites() {
     const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const apiUrl = raw.replace(/\/+$/, '');
+    const apiUrl = raw.trim().replace(/\/+$/, '');
     return [
       {
         source: '/api/players/:path*',
