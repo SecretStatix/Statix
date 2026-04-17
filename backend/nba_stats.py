@@ -216,7 +216,7 @@ def fetch_player_game_log(
     """
     if season is None:
         season = _current_nba_season()
-    log = playergamelog.PlayerGameLog(player_id=player_id, season=season)
+    log = playergamelog.PlayerGameLog(player_id=player_id, season=season, timeout=15)
     time.sleep(0.6)
 
     df = log.get_data_frames()[0]
