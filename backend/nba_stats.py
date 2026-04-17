@@ -214,9 +214,21 @@ def fetch_player_game_log(
 
     Returns a list of game dicts: {date, matchup, result, stats, fantasy_points}.
     """
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+
     if season is None:
         season = _current_nba_season()
-    log = playergamelog.PlayerGameLog(player_id=player_id, season=season, timeout=15)
+
+    def _fetch():
+        return playergamelog.PlayerGameLog(player_id=player_id, season=season, timeout=15)
+
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        future = ex.submit(_fetch)
+        try:
+            log = future.result(timeout=20)
+        except FuturesTimeout:
+            raise TimeoutError(f"NBA API timed out for player_id={player_id}")
+
     time.sleep(0.6)
 
     df = log.get_data_frames()[0]
