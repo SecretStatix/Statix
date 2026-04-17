@@ -36,13 +36,15 @@ def _utc_hour_bucket() -> datetime:
 
 
 def fetch_distinct_wallets(sb) -> list[str]:
-    """Distinct wallet_address from transactions (lowercased). Full table scan via pagination."""
+    """Approved wallets from profiles (lowercased). Only snapshots users with accounts."""
     seen: set[str] = set()
     offset = 0
     while True:
         res = (
-            sb.table("transactions")
+            sb.table("profiles")
             .select("wallet_address")
+            .eq("is_approved", True)
+            .not_.is_("wallet_address", "null")
             .range(offset, offset + PAGE_SIZE - 1)
             .execute()
         )
