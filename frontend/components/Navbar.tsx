@@ -123,7 +123,7 @@ export function Navbar() {
               </span>
             </Link>
 
-            {/* Search bar — hidden on mobile */}
+            {/* Search bar — desktop inline (hidden on mobile; mobile version lives in its own row below) */}
             <div className="hidden md:flex relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
@@ -186,6 +186,20 @@ export function Navbar() {
                 <ProfileMenu email={user.email} label={profileLabel} onSignOut={handleSignOut} />
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Mobile search bar — its own row so the top row isn't crowded */}
+        <div className="md:hidden pb-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={searchValue}
+              onChange={handleSearchChange}
+              className="w-full h-9 bg-secondary border border-white/[0.06] rounded-lg pl-9 pr-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200"
+            />
           </div>
         </div>
       </div>

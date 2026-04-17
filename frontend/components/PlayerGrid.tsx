@@ -39,12 +39,15 @@ interface PlayerGridProps {
   expanded?: boolean;
 }
 
+const MOBILE_INITIAL_COUNT = 10;
+
 export function PlayerGrid({ players, loading, expanded = false }: PlayerGridProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerData | null>(null);
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('trending');
   const [teamsTonight, setTeamsTonight] = useState<Set<string>>(new Set());
   const [flashMap, setFlashMap] = useState<Record<number, 'buy' | 'sell'>>({});
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const seenTxRef = useRef<Set<string>>(new Set());
   const initializedTxRef = useRef(false);
 
@@ -196,7 +199,10 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
         {TABS.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key)}
+            onClick={() => {
+              setActiveTab(key);
+              setMobileExpanded(false);
+            }}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
               activeTab === key
                 ? 'bg-primary/10 text-primary ring-1 ring-primary/25'
@@ -210,16 +216,30 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
       </div>
 
       <div className={`grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 ${expanded ? '2xl:grid-cols-5' : '2xl:grid-cols-4'}`}>
-        {filtered.map((player) => (
-          <PlayerCard
-            key={player.id}
-            player={player}
-            onTrade={() => handleTrade(player)}
-            playingTonight={teamsTonight.has((player.team || '').toUpperCase())}
-            flashSide={flashMap[player.index] ?? null}
-          />
-        ))}
+        {filtered.map((player, i) => {
+          // On mobile (below md), collapse to 10 unless user is searching or has expanded.
+          const hideOnMobile = !search && !mobileExpanded && i >= MOBILE_INITIAL_COUNT;
+          return (
+            <div key={player.id} className={hideOnMobile ? 'hidden md:block' : undefined}>
+              <PlayerCard
+                player={player}
+                onTrade={() => handleTrade(player)}
+                playingTonight={teamsTonight.has((player.team || '').toUpperCase())}
+                flashSide={flashMap[player.index] ?? null}
+              />
+            </div>
+          );
+        })}
       </div>
+
+      {!search && !mobileExpanded && filtered.length > MOBILE_INITIAL_COUNT && (
+        <button
+          onClick={() => setMobileExpanded(true)}
+          className="md:hidden w-full mt-4 py-3 rounded-xl bg-card border border-white/[0.06] text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+        >
+          View more players ({filtered.length - MOBILE_INITIAL_COUNT} more)
+        </button>
+      )}
 
       {filtered.length === 0 && (
         <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border border-white/[0.06]">
