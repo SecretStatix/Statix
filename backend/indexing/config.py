@@ -22,3 +22,4 @@ UPSERT_BATCH = int(os.getenv("INDEXER_UPSERT_BATCH", "100"))
 
 # DBucks / share amounts on-chain use 6 decimals (match StatixRouter + DBucks).
 TOKEN_DECIMALS = 6
+

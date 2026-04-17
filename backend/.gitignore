@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
 .env
+venv/
 node_modules/
 player_cache.json

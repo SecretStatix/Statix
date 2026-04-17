@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
 import {
@@ -13,10 +14,11 @@ import { getPlayers } from '@/lib/api';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PortfolioCharts, type AllocationSlice } from './portfolio/PortfolioCharts';
 
-type PlayerMeta = { name: string; team: string; nbaId: number };
+type PlayerMeta = { id: string; name: string; team: string; nbaId: number };
 
 type HoldingRow = {
   index: number;
+  playerPageId: string;
   shares: number;
   value: number;
   name: string;
@@ -48,8 +50,19 @@ export function Portfolio() {
         const list = await getPlayers();
         if (cancelled) return;
         const m = new Map<number, PlayerMeta>();
-        for (const p of list as { index: number; name: string; team: string; nba_id?: number }[]) {
-          m.set(p.index, { name: p.name, team: p.team || '', nbaId: p.nba_id ?? 0 });
+        for (const p of list as {
+          index: number;
+          id: string;
+          name: string;
+          team: string;
+          nba_id?: number;
+        }[]) {
+          m.set(p.index, {
+            id: p.id,
+            name: p.name,
+            team: p.team || '',
+            nbaId: p.nba_id ?? 0,
+          });
         }
         setPlayerMap(m);
       } catch {
@@ -70,8 +83,21 @@ export function Portfolio() {
         const value = parseFloat(formatUnits(valuesArr[i], 6));
         hv += value;
         const n = Number(idx);
-        const meta = playerMap.get(n) || { name: `Player #${n}`, team: '???', nbaId: 0 };
-        rows.push({ index: n, shares, value, name: meta.name, team: meta.team, nbaId: meta.nbaId });
+        const meta = playerMap.get(n) || {
+          id: String(n),
+          name: `Player #${n}`,
+          team: '???',
+          nbaId: 0,
+        };
+        rows.push({
+          index: n,
+          playerPageId: meta.id,
+          shares,
+          value,
+          name: meta.name,
+          team: meta.team,
+          nbaId: meta.nbaId,
+        });
       });
     }
     return { balance: bal, holdings: rows, holdingsValue: hv };
@@ -168,9 +194,8 @@ export function Portfolio() {
       </div>
 
       <div className="relative border-t border-white/[0.06]">
-        <PortfolioCharts totalValue={totalValue} seedKey={address ?? '0x'} allocation={allocation} />
+        <PortfolioCharts walletAddress={address} allocation={allocation} />
       </div>
-
       <section className="relative border-t border-white/[0.06] px-5 py-6 sm:px-8 sm:py-7">
         <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">Holdings</h2>
         {loading ? (
@@ -188,7 +213,10 @@ export function Portfolio() {
             <ul className="divide-y divide-white/[0.05]">
               {holdings.map((h) => (
                 <li key={h.index}>
-                  <div className="grid grid-cols-12 gap-3 py-4 transition-colors hover:bg-white/[0.02] -mx-2 px-2 rounded-lg">
+                  <Link
+                    href={`/player/${h.playerPageId}`}
+                    className="grid grid-cols-12 gap-3 py-4 transition-colors hover:bg-white/[0.02] -mx-2 px-2 rounded-lg"
+                  >
                     <div className="col-span-6 flex min-w-0 items-center gap-3 sm:col-span-5">
                       <PlayerAvatar name={h.name} nbaId={h.nbaId} size="sm" />
                       <div className="min-w-0">
@@ -207,7 +235,7 @@ export function Portfolio() {
                     <div className="col-span-4 text-right sm:col-span-3">
                       <span className="text-sm font-semibold tabular-nums text-foreground">${h.value.toFixed(2)}</span>
                     </div>
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>

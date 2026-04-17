@@ -1,4 +1,5 @@
 // Auto-generated contract ABIs for Factory Pattern architecture
+import statixDeployment from "../deployments.json";
 
 export const StatixRouterABI = [
   {
@@ -2311,6 +2312,7 @@ export const DBucksABI = [
 
 
 
+const c = statixDeployment.contracts;
 export const CONTRACTS = {
   StatixRouter: "0x822C7C667137F8d025DE4dEAF686d3A1f4Ed75C8",
   DividendHub: "0x135473c569cd4296359F50988b558Ed9725B0D4C",

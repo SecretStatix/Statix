@@ -733,5 +733,15 @@
       "weekly_projection": null
     }
   ],
-  "deployedAt": "2026-04-16T06:53:13.647Z"
+  "deployedAt": "2026-04-16T16:53:04.473Z",
+  "h2h": {
+    "BinaryCTF": "0x1cdf9539b8fcCCCFF3da591EfE9e950F4AaB808E",
+    "H2HOracle": "0xcd34cffff6C5880daad873f30736A2Bd447dBF16",
+    "H2HCreator": "0xE21DAE88753F6fB72f417ba9314A7c6a05585a7d",
+    "collateral": "0xf65F3a276a346d9B58b284ef98DEAdb74792294C",
+    "feeRecipient": "0x135473c569cd4296359F50988b558Ed9725B0D4C",
+    "feeBps": 200,
+    "oracleOwner": "0x639Daa0d790Ff595A2203db01552A28b2339a3f4",
+    "deployedAt": "2026-04-17T02:18:45.727Z"
+  }
 }

@@ -5,6 +5,9 @@
  *   TOP_N=10 ROUND_START=2025-04-19 ROUND_END=2025-04-28 \
  *     npx hardhat run scripts/distribute-dividends.js --network base-sepolia
  *
+ * Snapshot wallets: GET `${BACKEND_URL}/api/admin/snapshot-wallets` (Bearer ADMIN_KEY).
+ * Approved users only: `profiles.wallet_address` in Supabase (no file or env fallback).
+ *
  * TOP_N values per round:
  *   Round 1 (16 teams): 10
  *   Round 2 (8 teams):  5
@@ -23,6 +26,7 @@
 const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
+const { isAddress, getAddress } = require("ethers");
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 const ADMIN_KEY = process.env.ADMIN_KEY;
@@ -35,6 +39,51 @@ const TOP_N = parseInt(process.env.TOP_N || "10");
 if (![2, 3, 5, 10].includes(TOP_N)) {
   console.error(`TOP_N must be 2, 3, 5, or 10 (got ${TOP_N})`);
   process.exit(1);
+}
+
+/**
+ * Snapshot targets from FastAPI GET /api/admin/snapshot-wallets (Supabase profiles.wallet_address).
+ */
+async function fetchSnapshotWalletsFromBackend() {
+  const base = BACKEND_URL.replace(/\/$/, "");
+  const url = `${base}/api/admin/snapshot-wallets`;
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${ADMIN_KEY}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`snapshot-wallets failed (${res.status}): ${await res.text()}`);
+  }
+
+  const data = await res.json();
+  if (!data || !Array.isArray(data.wallets)) {
+    throw new Error("snapshot-wallets response missing wallets array");
+  }
+
+  return data.wallets;
+}
+
+function normalizeWalletList(raw) {
+  const normalized = [];
+  const seenAddr = new Set();
+  for (const u of raw) {
+    const s = String(u).trim();
+    if (!s) continue;
+    if (!isAddress(s)) {
+      console.warn(`   Skipping invalid address: ${s}`);
+      continue;
+    }
+    const c = getAddress(s);
+    const low = c.toLowerCase();
+    if (seenAddr.has(low)) continue;
+    seenAddr.add(low);
+    normalized.push(c);
+  }
+  return normalized;
 }
 
 async function main() {
@@ -106,6 +155,22 @@ async function main() {
     process.exit(1);
   }
 
+  console.log("\n1b. Loading approved snapshot wallets from Supabase (via backend)...");
+  let snapshotWallets;
+  try {
+    const raw = await fetchSnapshotWalletsFromBackend();
+    snapshotWallets = normalizeWalletList(raw);
+  } catch (err) {
+    console.error(`\nFATAL: Could not load snapshot wallets — ${err.message}`);
+    console.error(`   Ensure BACKEND_URL reaches a running API with Supabase configured.`);
+    process.exit(1);
+  }
+  if (snapshotWallets.length === 0) {
+    console.error("FATAL: No approved profiles with a valid wallet_address in Supabase.");
+    process.exit(1);
+  }
+  console.log(`   ${snapshotWallets.length} wallet(s) from GET /api/admin/snapshot-wallets.`);
+
   // 2. Pause trading via Router
   console.log("\n2. Pausing trading...");
   const pauseTx = await router.setTradingPaused(true);
@@ -146,31 +211,18 @@ async function main() {
     await eligibleTx.wait();
     console.log("   Top performers submitted on-chain!");
 
-    // 4. Snapshot all user holdings for this round
+    // 4. Snapshot all user holdings for this round (wallets loaded in step 1b from Supabase)
     console.log("\n4. Snapshotting user holdings...");
     const poolCount = await factory.poolCount();
     const allPoolIdxs = Array.from({ length: Number(poolCount) }, (_, i) => BigInt(i));
 
-    // Collect active users from deployments or env
-    const usersFile = path.join(__dirname, "..", "active-users.json");
-    let activeUsers = [];
-    if (fs.existsSync(usersFile)) {
-      activeUsers = JSON.parse(fs.readFileSync(usersFile, "utf8"));
-    } else if (process.env.SNAPSHOT_USERS) {
-      activeUsers = process.env.SNAPSHOT_USERS.split(",").map(u => u.trim());
+    console.log(`   Snapshotting ${snapshotWallets.length} user(s) across ${poolCount} pools...`);
+    for (const user of snapshotWallets) {
+      const snapTx = await hub.snapshotUserHoldings(user, allPoolIdxs);
+      await snapTx.wait();
+      process.stdout.write(".");
     }
-
-    if (activeUsers.length === 0) {
-      console.log("   WARNING: No active users to snapshot (create active-users.json or set SNAPSHOT_USERS env).");
-    } else {
-      console.log(`   Snapshotting ${activeUsers.length} users across ${poolCount} pools...`);
-      for (const user of activeUsers) {
-        const snapTx = await hub.snapshotUserHoldings(user, allPoolIdxs);
-        await snapTx.wait();
-        process.stdout.write(".");
-      }
-      console.log("\n   Snapshots complete!");
-    }
+    console.log("\n   Snapshots complete!");
 
     // 5. Check Hub balance
     const dbucksAddress = deployments.contracts.DBucks;
