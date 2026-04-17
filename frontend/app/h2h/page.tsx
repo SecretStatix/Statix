@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useH2HMarkets } from '@/hooks/h2h/useH2HMarkets';
 import { MarketCard } from '@/components/h2h/MarketCard';
 import type { MarketStatus } from '@/lib/h2h-api';
@@ -10,6 +10,49 @@ const TABS: { key: MarketStatus | 'all'; label: string }[] = [
   { key: 'resolved', label: 'Resolved' },
   { key: 'all', label: 'All' },
 ];
+
+type NextGame = { game_date: string; player_a_name: string; player_b_name: string; notes: string | null };
+
+function NoMarketsCard({ tab }: { tab: string }) {
+  const [nextGame, setNextGame] = useState<NextGame | null>(null);
+
+  useEffect(() => {
+    if (tab !== 'open') return;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    fetch(`${apiBase}/api/h2h/next-game`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setNextGame(data); })
+      .catch(() => {});
+  }, [tab]);
+
+  if (tab !== 'open') {
+    return (
+      <div className="rounded-xl border border-border bg-card py-16 text-center text-sm text-muted-foreground">
+        No {tab} markets yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card py-16 text-center space-y-2">
+      <p className="text-sm font-medium text-foreground">No game today</p>
+      {nextGame ? (
+        <p className="text-sm text-muted-foreground">
+          Next matchup:{' '}
+          <span className="font-medium text-foreground">
+            {nextGame.player_a_name} vs {nextGame.player_b_name}
+          </span>
+          {' '}on{' '}
+          <span className="font-medium text-foreground">
+            {new Date(nextGame.game_date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+          </span>
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">Check back on the next game day.</p>
+      )}
+    </div>
+  );
+}
 
 export default function H2HLobbyPage() {
   const [tab, setTab] = useState<MarketStatus | 'all'>('open');
@@ -47,9 +90,7 @@ export default function H2HLobbyPage() {
           ))}
         </div>
       ) : markets.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card py-16 text-center text-sm text-muted-foreground">
-          No {tab === 'all' ? '' : tab} markets right now. Check back closer to tip-off.
-        </div>
+        <NoMarketsCard tab={tab} />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {markets.map((m) => (

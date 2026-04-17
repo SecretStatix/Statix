@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Body, Header, HTTPException, Query
 
 from db import get_supabase
 
@@ -88,6 +88,12 @@ def _check_admin(provided: Optional[str]) -> None:
 # ---------------------------------------------------------------------------
 # Public reads
 # ---------------------------------------------------------------------------
+
+@router.get("/next-game")
+async def next_game():
+    """Return the next scheduled H2H game (for 'no market today' UI state)."""
+    return service.get_next_scheduled_game() or {}
+
 
 @router.get("/markets", response_model=List[MarketSummary])
 async def list_markets(
@@ -234,7 +240,7 @@ async def create_daily_markets(
     x_admin_key: Optional[str] = Header(default=None),
 ):
     _check_admin(x_admin_key)
-    created = service.create_markets_for_today(dry_run=dry_run)
+    created = service.create_market_from_schedule(dry_run=dry_run)
     return {"created": len(created), "markets": created}
 
 
@@ -243,3 +249,115 @@ async def resolve_pending(x_admin_key: Optional[str] = Header(default=None)):
     _check_admin(x_admin_key)
     handled = resolver.run_once()
     return {"handled": handled}
+
+
+# ---------------------------------------------------------------------------
+# Schedule management
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/schedule")
+async def get_schedule(
+    x_admin_key: Optional[str] = Header(default=None),
+):
+    """List upcoming schedule entries (next 14 days)."""
+    _check_admin(x_admin_key)
+    return service.list_schedule()
+
+
+@router.post("/admin/schedule")
+async def set_schedule_entry(
+    game_date: str = Body(..., description="YYYY-MM-DD"),
+    player_a_id: str = Body(..., description="Player id from deployments.json e.g. victor_wembanyama"),
+    player_b_id: str = Body(..., description="Player id from deployments.json e.g. shai_gilgeous_alexander"),
+    game_id: Optional[str] = Body(default=None, description="NBA game id — auto-detected if omitted"),
+    tip_off_utc: Optional[str] = Body(default=None, description="ISO timestamp e.g. 2026-04-19T23:30:00Z"),
+    notes: Optional[str] = Body(default=None, description="Human note e.g. 'OKC vs SAS — Wemby vs Shai'"),
+    x_admin_key: Optional[str] = Header(default=None),
+):
+    """Upsert a game day entry. Run this weekly for upcoming playoff games."""
+    _check_admin(x_admin_key)
+    # Validate players exist
+    pa = service.get_player_by_id(player_a_id)
+    pb = service.get_player_by_id(player_b_id)
+    if not pa:
+        raise HTTPException(status_code=400, detail=f"Player not found: {player_a_id}")
+    if not pb:
+        raise HTTPException(status_code=400, detail=f"Player not found: {player_b_id}")
+    row = service.upsert_schedule_entry(game_date, player_a_id, player_b_id, game_id, tip_off_utc, notes)
+    return {
+        "ok": True,
+        "entry": row,
+        "player_a_name": pa["name"],
+        "player_b_name": pb["name"],
+    }
+
+
+@router.post("/admin/create-market-for-date")
+async def create_market_for_date(
+    game_date: Optional[str] = Body(default=None, description="YYYY-MM-DD — defaults to today"),
+    dry_run: bool = Body(default=False),
+    x_admin_key: Optional[str] = Header(default=None),
+):
+    """Trigger market creation for a specific date (reads from h2h_schedule).
+    Leave game_date null to use today. Use dry_run=true to preview without deploying."""
+    _check_admin(x_admin_key)
+    created = service.create_market_from_schedule(game_date=game_date, dry_run=dry_run)
+    return {"created": len(created), "markets": created}
+
+
+# ---------------------------------------------------------------------------
+# Manual resolve (testing only)
+# ---------------------------------------------------------------------------
+
+@router.post("/admin/resolve-manual")
+async def resolve_manual(
+    market_id: int = Body(..., description="h2h_markets.id"),
+    player_a_fp: float = Body(..., description="Fantasy points for player A (e.g. 45.5)"),
+    player_b_fp: float = Body(..., description="Fantasy points for player B (e.g. 32.0)"),
+    x_admin_key: Optional[str] = Header(default=None),
+):
+    """Resolve a market with manually provided fantasy point totals.
+    Use this for testing — skips the NBA API and calls oracle.resolve() directly."""
+    _check_admin(x_admin_key)
+    market = service.get_market(market_id)
+    if not market:
+        raise HTTPException(status_code=404, detail=f"Market {market_id} not found")
+    if market.get("status") != "open":
+        raise HTTPException(status_code=400, detail=f"Market is already {market['status']}")
+
+    from .chain import build_oracle, get_oracle_signer, get_w3, send_tx
+    from db import get_supabase as _sb
+
+    try:
+        w3 = get_w3()
+        signer = get_oracle_signer(w3)
+        oracle = build_oracle(w3)
+        qid_bytes = bytes.fromhex(market["question_id"].removeprefix("0x"))
+        fp_a_x100 = int(player_a_fp * 100)
+        fp_b_x100 = int(player_b_fp * 100)
+        tx = oracle.functions.resolve(qid_bytes, fp_a_x100, fp_b_x100).build_transaction({"from": signer.address})
+        tx_hash = send_tx(w3, signer, tx)
+        w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"On-chain resolve failed: {e}")
+
+    winner = "A" if player_a_fp > player_b_fp else ("B" if player_b_fp > player_a_fp else "void")
+    sb = _sb()
+    if sb:
+        sb.table("h2h_markets").update({
+            "status": "resolved",
+            "winner": winner,
+            "player_a_final_fp": player_a_fp,
+            "player_b_final_fp": player_b_fp,
+            "resolved_at": datetime.utcnow().isoformat(),
+            "resolve_tx_hash": tx_hash,
+        }).eq("id", market_id).execute()
+
+    return {
+        "ok": True,
+        "market_id": market_id,
+        "winner": winner,
+        "player_a_fp": player_a_fp,
+        "player_b_fp": player_b_fp,
+        "tx_hash": tx_hash,
+    }

@@ -1,10 +1,12 @@
-"""Cron entrypoint: create one H2H market per NBA game scheduled today.
+"""Cron entrypoint: create today's H2H market from the h2h_schedule table.
 
-Invoke once per day (e.g. 09:00 ET) via Railway scheduled jobs or GitHub Actions:
+Runs once per day (e.g. 09:00 ET). If no schedule entry exists for today,
+no market is created — expected on non-game days.
+
     python -m backend.scripts.h2h_create_daily_markets
 
 Env:
-    DRY_RUN=1 to skip on-chain writes.
+    DRY_RUN=1  — skip on-chain writes, just log what would be created.
 """
 
 from __future__ import annotations
@@ -25,8 +27,11 @@ def main() -> int:
     from h2h import service
 
     dry_run = os.getenv("DRY_RUN") in ("1", "true", "True")
-    created = service.create_markets_for_today(dry_run=dry_run)
-    logger.info("Created %s market(s) (dry_run=%s)", len(created), dry_run)
+    created = service.create_market_from_schedule(dry_run=dry_run)
+    if created:
+        logger.info("Created market (dry_run=%s): %s", dry_run, created[0].get("fpmm_address") or created[0].get("question_id"))
+    else:
+        logger.info("No market created today (no schedule entry or already exists).")
     print(json.dumps({"created": len(created), "dry_run": dry_run, "markets": created}))
     return 0
 

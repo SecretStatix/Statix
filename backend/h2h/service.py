@@ -256,6 +256,237 @@ def _persist_market(row: dict) -> Optional[int]:
 
 
 # ---------------------------------------------------------------------------
+# Schedule helpers
+# ---------------------------------------------------------------------------
+
+def get_player_by_id(player_id: str) -> Optional[dict]:
+    """Look up a player from deployments.json by their string id (e.g. 'victor_wembanyama')."""
+    deployment = get_deployment() or {}
+    for p in deployment.get("players", []):
+        if p.get("id") == player_id:
+            return p
+    return None
+
+
+def get_games_for_date(game_date: str) -> List[dict]:
+    """Like get_games_today() but for any YYYY-MM-DD date. Not cached."""
+    try:
+        from nba_api.stats.endpoints import scoreboardv2
+
+        sb_api = scoreboardv2.ScoreboardV2(game_date=game_date, timeout=8)
+        games_df = sb_api.game_header.get_data_frame()
+        line_df = sb_api.line_score.get_data_frame()
+    except Exception as e:
+        logger.warning("ScoreboardV2 fetch failed for %s: %s", game_date, e)
+        return []
+
+    games: List[dict] = []
+    for _, row in games_df.iterrows():
+        gid = str(row.get("GAME_ID", "")).strip()
+        home_id = row.get("HOME_TEAM_ID")
+        away_id = row.get("VISITOR_TEAM_ID")
+        if not gid or home_id is None or away_id is None:
+            continue
+        home_tri = _team_tricode(line_df, home_id)
+        away_tri = _team_tricode(line_df, away_id)
+        if not home_tri or not away_tri:
+            continue
+        tip_off = row.get("GAME_DATE_EST")
+        games.append({
+            "game_id": gid,
+            "home_team": home_tri,
+            "away_team": away_tri,
+            "tip_off_at": tip_off.isoformat() if hasattr(tip_off, "isoformat") else str(tip_off),
+        })
+    return games
+
+
+def get_next_scheduled_game() -> Optional[dict]:
+    """Return the next upcoming h2h_schedule entry (today or future). Used by frontend."""
+    from db import get_supabase as _sb
+    sb = _sb()
+    if sb is None:
+        return None
+    today = _today_iso()
+    try:
+        resp = (
+            sb.table("h2h_schedule")
+            .select("game_date, player_a_id, player_b_id, notes")
+            .gte("game_date", today)
+            .order("game_date")
+            .limit(1)
+            .execute()
+        )
+        rows = resp.data or []
+        if not rows:
+            return None
+        row = rows[0]
+        # Enrich with player names from deployments
+        pa = get_player_by_id(row["player_a_id"])
+        pb = get_player_by_id(row["player_b_id"])
+        return {
+            "game_date": row["game_date"],
+            "player_a_name": pa["name"] if pa else row["player_a_id"],
+            "player_b_name": pb["name"] if pb else row["player_b_id"],
+            "notes": row.get("notes"),
+        }
+    except Exception as e:
+        logger.warning("get_next_scheduled_game failed: %s", e)
+        return None
+
+
+def upsert_schedule_entry(
+    game_date: str,
+    player_a_id: str,
+    player_b_id: str,
+    game_id: Optional[str] = None,
+    tip_off_utc: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> dict:
+    """Upsert a row in h2h_schedule. Returns the upserted row."""
+    from db import get_supabase as _sb
+    sb = _sb()
+    if sb is None:
+        raise RuntimeError("Supabase not configured")
+    row = {
+        "game_date": game_date,
+        "player_a_id": player_a_id,
+        "player_b_id": player_b_id,
+    }
+    if game_id:
+        row["game_id"] = game_id
+    if tip_off_utc:
+        row["tip_off_utc"] = tip_off_utc
+    if notes:
+        row["notes"] = notes
+    resp = sb.table("h2h_schedule").upsert(row, on_conflict="game_date").execute()
+    return (resp.data or [row])[0]
+
+
+def list_schedule(limit: int = 14) -> List[dict]:
+    """Return upcoming schedule entries."""
+    from db import get_supabase as _sb
+    sb = _sb()
+    if sb is None:
+        return []
+    today = _today_iso()
+    try:
+        resp = (
+            sb.table("h2h_schedule")
+            .select("*")
+            .gte("game_date", today)
+            .order("game_date")
+            .limit(limit)
+            .execute()
+        )
+        rows = resp.data or []
+        # Enrich with player names
+        for row in rows:
+            pa = get_player_by_id(row["player_a_id"])
+            pb = get_player_by_id(row["player_b_id"])
+            row["player_a_name"] = pa["name"] if pa else row["player_a_id"]
+            row["player_b_name"] = pb["name"] if pb else row["player_b_id"]
+        return rows
+    except Exception as e:
+        logger.warning("list_schedule failed: %s", e)
+        return []
+
+
+def create_market_from_schedule(game_date: Optional[str] = None, dry_run: bool = False) -> List[dict]:
+    """Create today's (or a specific date's) H2H market from h2h_schedule.
+
+    Returns [] if no schedule entry exists for that date (no market = no game day).
+    """
+    from db import get_supabase as _sb
+    if game_date is None:
+        game_date = _today_iso()
+
+    sb = _sb()
+    schedule_row = None
+    if sb:
+        try:
+            resp = sb.table("h2h_schedule").select("*").eq("game_date", game_date).single().execute()
+            schedule_row = resp.data
+        except Exception:
+            pass
+
+    if not schedule_row:
+        logger.info("No h2h_schedule entry for %s — skipping.", game_date)
+        return []
+
+    pa_raw = get_player_by_id(schedule_row["player_a_id"])
+    pb_raw = get_player_by_id(schedule_row["player_b_id"])
+    if not pa_raw or not pb_raw:
+        logger.error("Player not found: %s or %s", schedule_row["player_a_id"], schedule_row["player_b_id"])
+        return []
+
+    pa = {"player_index": pa_raw["index"], "id": pa_raw["id"], "nba_id": pa_raw["nba_id"], "name": pa_raw["name"], "team": pa_raw["team"]}
+    pb = {"player_index": pb_raw["index"], "id": pb_raw["id"], "nba_id": pb_raw["nba_id"], "name": pb_raw["name"], "team": pb_raw["team"]}
+
+    # Use explicit game_id if set, else auto-detect from NBA API by matching player teams
+    game_id = schedule_row.get("game_id")
+    tip_off_at = schedule_row.get("tip_off_utc")
+
+    if not game_id:
+        games = get_games_for_date(game_date)
+        for g in games:
+            teams = {g["home_team"].upper(), g["away_team"].upper()}
+            if pa["team"].upper() in teams or pb["team"].upper() in teams:
+                game_id = g["game_id"]
+                tip_off_at = tip_off_at or g["tip_off_at"]
+                break
+        if not game_id:
+            # Fallback: use a deterministic placeholder so testing still works
+            game_id = f"manual_{game_date}_{pa['team']}_{pb['team']}"
+            logger.warning("Could not detect NBA game_id for %s — using placeholder %s", game_date, game_id)
+
+    if not tip_off_at:
+        tip_off_at = f"{game_date}T23:00:00+00:00"  # default 7pm ET
+
+    # Idempotency check
+    qid_hex = make_question_id(game_id, pa["id"], pb["id"]).hex()
+    if sb:
+        try:
+            resp = sb.table("h2h_markets").select("id").eq("question_id", qid_hex).execute()
+            if resp.data:
+                logger.info("Market already exists for %s — skipping.", game_date)
+                return []
+        except Exception:
+            pass
+
+    if dry_run:
+        return [{"game_date": game_date, "game_id": game_id, "player_a": pa, "player_b": pb, "question_id": qid_hex, "dry_run": True}]
+
+    try:
+        tx = create_market_onchain(game_id, pa, pb)
+    except Exception as e:
+        logger.error("createMarket failed for %s: %s", game_date, e)
+        return []
+
+    row = {
+        "condition_id": tx["condition_id"],
+        "question_id": tx["question_id"],
+        "fpmm_address": tx["fpmm_address"],
+        "position_id_a": "",
+        "position_id_b": "",
+        "game_id": game_id,
+        "tip_off_at": tip_off_at,
+        "player_a_id": pa["id"],
+        "player_a_nba_id": pa["nba_id"],
+        "player_a_name": pa["name"],
+        "player_a_team": pa["team"],
+        "player_b_id": pb["id"],
+        "player_b_nba_id": pb["nba_id"],
+        "player_b_name": pb["name"],
+        "player_b_team": pb["team"],
+        "status": "open",
+        "seed_collateral": tx["seed_amount"] / (10 ** COLLATERAL_DECIMALS),
+    }
+    market_id = _persist_market(row)
+    return [{"market_id": market_id, **row, "tx_hash": tx["tx_hash"]}]
+
+
+# ---------------------------------------------------------------------------
 # Public entrypoint
 # ---------------------------------------------------------------------------
 
