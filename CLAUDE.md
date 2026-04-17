@@ -16,7 +16,7 @@ Modular 6-contract system deployed via `scripts/deploy-statix.js`:
 
 ### Backend (backend/)
 FastAPI server with 4 route groups:
-- `/api/players/` — 50 NBA players from deployments.json + NBA API cache
+- `/api/players/` — 80 NBA players from deployments.json + NBA API cache
 - `/api/trading/` — AMM quotes, contract info, transaction logging
 - `/api/dividends/` — weekly dividend info, claims, leaderboard
 - `/api/admin/` — weekly stats updates, cache refresh (admin-key protected)
