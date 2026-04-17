@@ -172,6 +172,11 @@ export function Navbar() {
                   {truncateAddress(activeWallet.address)}
                 </span>
               </div>
+            ) : ready && !authenticated && user ? (
+              <div className="flex items-center gap-2 bg-secondary rounded-lg px-3 py-1.5 border border-white/[0.06]">
+                <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" />
+                <span className="text-sm text-muted-foreground">Connecting wallet…</span>
+              </div>
             ) : ready && !authenticated ? (
               <button
                 onClick={login}
