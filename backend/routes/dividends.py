@@ -81,6 +81,70 @@ async def get_user_dividends(wallet_address: str):
     }
 
 
+@router.get("/top-performers")
+async def get_top_performers(round: int = None):
+    """Top performing players for a given round (defaults to latest completed round).
+    Returns players sorted by avg_fpts descending, capped to top_n for that round."""
+    supabase = get_supabase()
+    if not supabase:
+        return []
+
+    # Resolve round number
+    if round is None:
+        result = (
+            supabase.table("round_distributions")
+            .select("round")
+            .order("round", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return []
+        round = result.data[0]["round"]
+
+    # Get top_n for this round
+    dist = (
+        supabase.table("round_distributions")
+        .select("top_n")
+        .eq("round", round)
+        .execute()
+    )
+    top_n = dist.data[0]["top_n"] if dist.data else 10
+
+    # Get performance rows for this round
+    perf = (
+        supabase.table("round_performance")
+        .select("player_index, avg_fpts, games_played")
+        .eq("round", round)
+        .order("avg_fpts", desc=True)
+        .limit(top_n)
+        .execute()
+    )
+    rows = perf.data or []
+
+    # Map player_index -> name/team from deployments.json
+    deployment = get_deployment()
+    players_by_index = {}
+    if deployment:
+        for p in deployment.get("players", []):
+            players_by_index[p["index"]] = p
+
+    out = []
+    for r in rows:
+        idx = r["player_index"]
+        p = players_by_index.get(idx, {})
+        out.append({
+            "rank": len(out) + 1,
+            "player_index": idx,
+            "player_name": p.get("name", f"Player #{idx}"),
+            "player_team": p.get("team", ""),
+            "avg_fpts": float(r["avg_fpts"]),
+            "games_played": r["games_played"],
+            "round": round,
+        })
+    return out
+
+
 @router.get("/leaderboard")
 async def get_dividend_leaderboard():
     """Portfolio leaderboard ranked by NAV (calls get_dividend_leaderboard() Postgres function)."""

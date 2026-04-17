@@ -3,6 +3,7 @@
 import { useAccount } from 'wagmi';
 import { DividendSummary } from '@/components/DividendSummary';
 import { AnimatedDividendPool } from '@/components/AnimatedDividendPool';
+import { TopPerformers } from '@/components/TopPerformers';
 
 export default function DividendsPage() {
   const { isConnected } = useAccount();
@@ -18,6 +19,8 @@ export default function DividendsPage() {
       </header>
 
       <AnimatedDividendPool />
+
+      <TopPerformers />
 
       {isConnected ? (
         <DividendSummary />
