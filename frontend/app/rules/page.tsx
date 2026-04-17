@@ -14,8 +14,8 @@ export default function RulesPage() {
         {/* Section: Overview */}
         <Section title="Overview">
           <p>
-            Statix is a simulated NBA player stock market for the 2025 playoffs. Buy and sell shares in 54 playoff
-            players using V-Bucks. Each playoff round, the fees collected from trading are distributed back to
+            Statix is a simulated NBA player stock market for the 2025 playoffs. Buy and sell shares in 80 players
+            using V-Bucks. Each playoff round, the fees collected from trading are distributed back to
             shareholders as dividends — with a bonus pool for holders of the top fantasy scorers.
           </p>
           <p className="mt-2">
@@ -26,7 +26,7 @@ export default function RulesPage() {
         {/* Section: Starting balance */}
         <Section title="Starting balance">
           <p>
-            Every approved user receives <span className="font-semibold text-foreground">1,000 V-Bucks</span> to start.
+            Every approved user receives <span className="font-semibold text-foreground">300 V-Bucks</span> to start.
             V-Bucks are the in-game currency — they&apos;re not real money, but prizes are.
           </p>
         </Section>
@@ -110,7 +110,7 @@ export default function RulesPage() {
                   ['Round 1 (16 teams)', 'Top 10'],
                   ['Round 2 (8 teams)', 'Top 5'],
                   ['Conference Finals (4 teams)', 'Top 3'],
-                  ['NBA Finals (2 teams)', 'Top 2'],
+                  ['NBA Finals (2 teams)', 'Top 1'],
                 ].map(([round, topN]) => (
                   <tr key={round}>
                     <td className="px-4 py-2.5 text-muted-foreground">{round}</td>
