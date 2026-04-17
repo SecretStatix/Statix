@@ -106,7 +106,7 @@ def get_oracle_signer(w3: Web3):
 
 def send_tx(w3: Web3, signer, tx: dict) -> str:
     """Sign and broadcast `tx`. Returns the tx hash hex."""
-    nonce = w3.eth.get_transaction_count(signer.address)
+    nonce = w3.eth.get_transaction_count(signer.address, "pending")
     gas_price = w3.eth.gas_price
     base = {
         "from": signer.address,
