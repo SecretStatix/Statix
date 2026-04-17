@@ -75,20 +75,6 @@ body {
   animation: fade-in 0.4s ease-out forwards;
 }
 
-/* Stock ticker marquee */
-@keyframes ticker-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-33.333%); }
-}
-
-.ticker-track {
-  animation: ticker-scroll 18s linear infinite;
-}
-
-.ticker-track:hover {
-  animation-play-state: paused;
-}
-
 /* Stat number vertical slide */
 @keyframes stat-slide-up {
   from {
@@ -143,9 +129,28 @@ body {
 }
 
 .ticker-track {
-  animation: ticker-scroll 40s linear infinite;
+  animation: ticker-scroll 20s linear infinite;
 }
 
 .ticker-track:hover {
   animation-play-state: paused;
+}
+
+/* Edge fade mask — makes the ticker blend into the page at its left/right
+   edges instead of looking like a bordered rectangle. */
+.ticker-mask {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
 }
