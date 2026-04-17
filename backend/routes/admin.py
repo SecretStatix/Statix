@@ -236,20 +236,19 @@ async def update_weekly_stats(
 
 
 @router.post("/update-round-stats")
-async def update_round_stats(
-    update: RoundUpdate,
-    background_tasks: BackgroundTasks,
-    _=Depends(verify_admin),
-):
-    """Kick off a background job to pull NBA stats for a playoff round window.
+async def update_round_stats(update: RoundUpdate, _=Depends(verify_admin)):
+    """Compute round stats from player_cache.json and return on_chain_data synchronously.
 
-    Returns immediately with a job_id. Poll GET /job-status/{job_id} for the result.
-    80 players × ~0.6s NBA API sleep ≈ 48s — must run in background to avoid timeouts.
+    Reads from local cache — instant, no NBA API calls. Run update_daily.sh first.
+    Returns on_chain_data directly so distribute-dividends.js can consume it immediately.
     """
     job_id = str(uuid.uuid4())
     _jobs[job_id] = {"status": "queued", "type": "round", "round": update.round}
-    background_tasks.add_task(_run_round_stats_job, job_id, update)
-    return {"job_id": job_id, "status": "queued", "message": "Poll GET /api/admin/job-status/" + job_id}
+    _run_round_stats_job(job_id, update)
+    job = _jobs[job_id]
+    if job["status"] == "error":
+        raise HTTPException(status_code=500, detail=job.get("error", "round stats failed"))
+    return job["result"]
 
 
 @router.get("/job-status/{job_id}")
