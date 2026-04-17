@@ -4,6 +4,7 @@ import { useAccount } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { formatUnits } from 'viem';
 import { useUnclaimedDividends, useClaimMultipleWeeks, useCurrentWeek, usePortfolio } from '@/hooks/useContracts';
+import { getApiBaseUrl } from '@/lib/apiBaseUrl';
 
 type ClaimRow = { round: number; amount: string; tx_hash: string | null; claimed_at: string };
 type ClaimHistory = { total_earned: number; rounds_claimed: number; claims: ClaimRow[] };
@@ -19,7 +20,7 @@ export function DividendSummary() {
 
   useEffect(() => {
     if (!address) return;
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const apiBase = getApiBaseUrl();
     fetch(`${apiBase}/api/dividends/user/${address.toLowerCase()}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setHistory(data); })

@@ -21,7 +21,12 @@ app = FastAPI(
     version="2.0.0",
 )
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://claude-foundation.vercel.app").split(",")
+_raw_origins = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,https://claude-foundation.vercel.app",
+).split(",")
+# Strip whitespace so "https://a.com, https://b.com" matches browser Origin exactly.
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,

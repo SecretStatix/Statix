@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getApiBaseUrl } from '@/lib/apiBaseUrl';
 
 type TopPerformer = {
   rank: number;
@@ -18,7 +19,7 @@ export function TopPerformers() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const apiBase = getApiBaseUrl();
     fetch(`${apiBase}/api/dividends/top-performers`)
       .then(r => r.ok ? r.json() : [])
       .then((data: TopPerformer[]) => {
