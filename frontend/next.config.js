@@ -30,6 +30,10 @@ const nextConfig = {
         source: '/api/dividends/:path*',
         destination: `${apiUrl}/api/dividends/:path*`,
       },
+      {
+        source: '/api/h2h/:path*',
+        destination: `${apiUrl}/api/h2h/:path*`,
+      },
     ];
   },
 }
