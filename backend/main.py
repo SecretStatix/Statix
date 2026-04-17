@@ -66,7 +66,7 @@ async def health_db():
         }
 
     checks = {}
-    tables = ["users", "transactions", "dividend_claims"]
+    tables = ["profiles", "transactions", "dividend_claims"]
 
     for table in tables:
         try:
