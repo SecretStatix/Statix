@@ -245,10 +245,41 @@ export default function PlayerProfilePage() {
 
   const chartDataPrice = useMemo(() => {
     if (!priceHistory?.points?.length) return [];
-    return priceHistory.points.map((pt) => {
+    const rows = priceHistory.points.map((pt) => {
       const d = new Date(pt.timestamp);
-      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      return { label, price: Math.round(pt.price * 100) / 100 };
+      return { d, price: Math.round(pt.price * 100) / 100 };
+    });
+    const daySet = new Set(rows.map((r) => r.d.toDateString()));
+    const singleCalendarDay = daySet.size === 1;
+    const countByDay = new Map<string, number>();
+    for (const r of rows) {
+      const k = r.d.toDateString();
+      countByDay.set(k, (countByDay.get(k) ?? 0) + 1);
+    }
+    const seen = new Set<string>();
+    return rows.map(({ d, price }) => {
+      let base: string;
+      if (singleCalendarDay) {
+        base = d.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        });
+      } else {
+        const manyOnThisDay = (countByDay.get(d.toDateString()) ?? 0) > 1;
+        base = manyOnThisDay
+          ? `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+          : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      let label = base;
+      let n = 0;
+      while (seen.has(label)) {
+        n += 1;
+        label = `${base} (${n})`;
+      }
+      seen.add(label);
+      return { label, price };
     });
   }, [priceHistory]);
 
