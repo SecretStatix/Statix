@@ -178,7 +178,7 @@ async function main() {
     },
     faucetMode: isTestnet,
     faucetLimit: (isTestnet ? FAUCET_LIMIT : 0n).toString(),
-    players: PLAYERS.map((p, idx) => ({
+    players: [...PLAYERS.filter(p => TIER1_IDS.has(p.id)), ...PLAYERS.filter(p => TIER2_IDS.has(p.id)), ...PLAYERS.filter(p => !TIER1_IDS.has(p.id) && !TIER2_IDS.has(p.id))].map((p, idx) => ({
       index: idx,
       id: p.id,
       name: p.name,
