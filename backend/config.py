@@ -36,5 +36,27 @@ TOP_N_BY_ROUND: dict[int, int] = {1: 10, 2: 5, 3: 3, 4: 1}
 
 # ── Pool parameters ───────────────────────────────────────────────────────────
 PLAYER_COUNT: int = 80           # total deployed PlayerPool contracts
-INITIAL_POOL_PRICE: float = 10.0 # DBucks/share at listing (virtual curve start)
+INITIAL_POOL_PRICE: float = 10.0 # default listing price (tier 3)
 TOKEN_DECIMALS: int = 6          # DBucks/USDC on-chain decimals
+
+# ── Tiered listing prices ──────────────────────────────────────────────────────
+_TIER1_IDS: frozenset = frozenset([
+    "shai_gilgeous_alexander", "victor_wembanyama", "nikola_jokic", "luka_doncic",
+    "anthony_edwards", "jayson_tatum", "jalen_brunson", "donovan_mitchell",
+    "cade_cunningham", "stephen_curry",
+])
+_TIER2_IDS: frozenset = frozenset([
+    "jalen_williams", "chet_holmgren", "de_aaron_fox", "dylan_harper", "jamal_murray",
+    "lebron_james", "austin_reaves", "alperen_sengun", "kevin_durant", "amen_thompson",
+    "julius_randle", "devin_booker", "jalen_green", "kawhi_leonard", "jaylen_brown",
+    "karl_anthony_towns", "mikal_bridges", "evan_mobley", "james_harden", "paolo_banchero",
+    "franz_wagner", "lamelo_ball", "tyrese_maxey", "joel_embiid", "bam_adebayo",
+    "tyler_herro", "scottie_barnes", "brandon_ingram", "jalen_johnson", "og_anunoby",
+])
+
+def listing_price(player_id: str) -> float:
+    if player_id in _TIER1_IDS:
+        return 15.0
+    if player_id in _TIER2_IDS:
+        return 12.5
+    return 10.0
