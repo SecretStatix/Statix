@@ -1,7 +1,15 @@
 // API client for Statix backend
 // Demo mode: when NEXT_PUBLIC_DEMO_MODE=true, returns mock data from lib/demo-data.ts
 
-import { getDemoPlayers, getDemoPlayer, getDemoPlayerGames, getDemoPlayerPriceHistory, getDemoPlayerTransactions, getDemoRecentTransactions, getDemoLeaderboard } from './demo-data';
+import {
+  getDemoPlayers,
+  getDemoPlayer,
+  getDemoPlayerGames,
+  getDemoPlayerPriceHistory,
+  getDemoPlayerTransactions,
+  getDemoRecentTransactions,
+  getDemoLeaderboard,
+} from './demo-data';
 
 const DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'; // Remove this + 5 checks to disable demo
 
@@ -51,6 +59,28 @@ export async function getPlayerTransactions(playerIndex: number, limit = 10, day
 export async function getRecentTransactions(limit = 15) {
   if (DEMO) return getDemoRecentTransactions(limit);
   return fetchAPI(`/api/trading/transactions/recent?limit=${limit}`);
+}
+
+/** Current wallet's indexed trades from Supabase `transactions` (newest first). */
+export type WalletTransactionRow = {
+  wallet_address: string;
+  player_index: number;
+  player_name?: string | null;
+  side: string;
+  shares: number;
+  cost: number;
+  fee?: number;
+  price_per_share?: number;
+  tx_hash: string;
+  created_at: string;
+};
+
+export async function getWalletTransactionHistory(
+  walletAddress: string,
+  limit = 100
+): Promise<WalletTransactionRow[]> {
+  const w = walletAddress.trim().toLowerCase();
+  return fetchAPI(`/api/trading/history/${encodeURIComponent(w)}?limit=${limit}`);
 }
 
 // Teams with NBA games scheduled today (cached 30m on backend)

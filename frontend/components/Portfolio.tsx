@@ -11,7 +11,7 @@ import {
   useFaucetDBucks,
   useFaucetEligibility,
 } from '@/hooks/useContracts';
-import { getPlayers } from '@/lib/api';
+import { getPlayers, getWalletTransactionHistory, type WalletTransactionRow } from '@/lib/api';
 import { PlayerAvatar } from './PlayerAvatar';
 import type { AllocationSlice } from './portfolio/PortfolioCharts';
 
@@ -55,6 +55,9 @@ export function Portfolio() {
   const capReached = faucetMode === true && claimableHuman <= 0;
 
   const [playerMap, setPlayerMap] = useState<Map<number, PlayerMeta>>(new Map());
+  const [txRows, setTxRows] = useState<WalletTransactionRow[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
+  const [txError, setTxError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +87,29 @@ export function Portfolio() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!address) return;
+    let cancelled = false;
+    setTxLoading(true);
+    setTxError(null);
+    (async () => {
+      try {
+        const rows = await getWalletTransactionHistory(address, 100);
+        if (!cancelled) {
+          setTxRows(Array.isArray(rows) ? rows : []);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setTxRows([]);
+          setTxError(e instanceof Error ? e.message : 'Could not load trades');
+        }
+      } finally {
+        if (!cancelled) setTxLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [address]);
 
   const { balance, holdings, holdingsValue } = useMemo(() => {
     const bal = dbucksBalance ? parseFloat(formatUnits(dbucksBalance as bigint, 6)) : 0;
@@ -258,6 +284,95 @@ export function Portfolio() {
               ))}
             </ul>
           </>
+        )}
+      </section>
+
+      <section className="relative border-t border-white/[0.06] px-5 py-6 sm:px-8 sm:py-7">
+        <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">
+          Trade history
+        </h2>
+        <p className="mt-1 text-xs text-muted-foreground/80">
+          Indexed buys and sells from the network (V-Bucks = USD).
+        </p>
+        {txLoading ? (
+          <p className="mt-6 text-sm text-muted-foreground">Loading trades…</p>
+        ) : txError ? (
+          <p className="mt-6 text-sm text-destructive/90">{txError}</p>
+        ) : txRows.length === 0 ? (
+          <p className="mt-6 text-sm text-muted-foreground">No trades recorded for this wallet yet.</p>
+        ) : (
+          <div className="mt-5 overflow-x-auto -mx-2 sm:mx-0">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-white/[0.06] text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                  <th className="pb-2 pr-3 font-medium">Player</th>
+                  <th className="pb-2 pr-3 font-medium">Side</th>
+                  <th className="pb-2 pr-3 text-right font-medium tabular-nums">USD</th>
+                  <th className="pb-2 pr-3 text-right font-medium tabular-nums">Tokens</th>
+                  <th className="pb-2 pr-8 text-right font-medium tabular-nums">Avg / token</th>
+                  <th className="pb-2 pl-2 pr-3 font-medium">Date</th>
+                  <th className="pb-2 font-medium">Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.05]">
+                {txRows.map((tx) => {
+                  const dt = new Date(tx.created_at);
+                  const dateStr = Number.isNaN(dt.getTime())
+                    ? '—'
+                    : dt.toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      });
+                  const timeStr = Number.isNaN(dt.getTime())
+                    ? '—'
+                    : dt.toLocaleTimeString(undefined, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      });
+                  const side = (tx.side || '').toLowerCase();
+                  const avg =
+                    tx.price_per_share != null && Number.isFinite(tx.price_per_share)
+                      ? tx.price_per_share
+                      : tx.shares > 0
+                        ? tx.cost / tx.shares
+                        : 0;
+                  const label =
+                    tx.player_name?.trim() ||
+                    playerMap.get(tx.player_index)?.name ||
+                    `Player #${tx.player_index}`;
+                  return (
+                    <tr key={`${tx.tx_hash}-${tx.created_at}`} className="text-foreground">
+                      <td className="py-3 pr-3 align-middle text-muted-foreground">{label}</td>
+                      <td className="py-3 pr-3 align-middle">
+                        <span
+                          className={
+                            side === 'buy'
+                              ? 'rounded-md bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-400'
+                              : 'rounded-md bg-rose-500/15 px-2 py-0.5 text-xs font-semibold text-rose-400'
+                          }
+                        >
+                          {side === 'buy' ? 'Buy' : side === 'sell' ? 'Sell' : tx.side}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-3 text-right align-middle tabular-nums">
+                        ${tx.cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 pr-3 text-right align-middle tabular-nums">
+                        {tx.shares.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                      </td>
+                      <td className="py-3 pr-8 text-right align-middle tabular-nums text-muted-foreground">
+                        ${avg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 pl-2 pr-3 align-middle text-muted-foreground">{dateStr}</td>
+                      <td className="py-3 align-middle tabular-nums text-muted-foreground">{timeStr}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
