@@ -22,7 +22,9 @@ async function fetchAPI(path: string, options?: RequestInit) {
 // Players
 export async function getPlayers() {
   if (DEMO) return getDemoPlayers();
-  return fetchAPI("/api/players/");
+  // No trailing slash — Next.js 308-redirects `/api/players/` to `/api/players`,
+  // costing an extra ~100ms round-trip on every market load.
+  return fetchAPI("/api/players");
 }
 
 export async function getPlayer(id: string) {

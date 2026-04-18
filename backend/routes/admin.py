@@ -24,7 +24,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
 from pydantic import BaseModel
 from web3 import Web3
 
-from nba_stats import fetch_curated_players, get_weekly_actuals
+from nba_stats import fetch_curated_players, get_weekly_actuals  # get_weekly_actuals used by update-weekly-stats
 from routes.helpers import require_supabase, require_deployment
 from snapshot.job import run_snapshot_job
 
@@ -56,8 +56,8 @@ class WeeklyUpdate(BaseModel):
 
 class RoundUpdate(BaseModel):
     round: int
-    round_start: str  # YYYY-MM-DD
-    round_end: str    # YYYY-MM-DD
+    round_start: str   # YYYY-MM-DD
+    round_end: str     # YYYY-MM-DD
     top_n: int = 10
 
 
@@ -130,7 +130,15 @@ def _run_weekly_stats_job(job_id: str, update: WeeklyUpdate) -> None:
 
 
 def _run_round_stats_job(job_id: str, update: RoundUpdate) -> None:
-    """Background worker for update-round-stats. Writes result into _jobs[job_id]."""
+    """Background worker for update-round-stats. Reads from player_cache.json — no NBA API calls.
+
+    Filters each player's cached recent_games by date range, sums fantasy_points,
+    and computes avg_fpts. Instant and reliable vs. live NBA API which times out on cloud IPs.
+    Run update_daily.sh first to ensure the cache is fresh.
+    """
+    import json
+    from datetime import datetime
+    from pathlib import Path
     from db import get_supabase as _get_supabase
     from chain import get_deployment as _get_deployment
 
@@ -140,28 +148,40 @@ def _run_round_stats_job(job_id: str, update: RoundUpdate) -> None:
         if not deployment:
             raise RuntimeError("deployments.json missing")
         players = deployment.get("players", [])
-        results = []
 
+        # Load player_cache.json — keyed by nba_id
+        cache_path = Path(__file__).parent.parent / "player_cache.json"
+        if not cache_path.exists():
+            raise RuntimeError("player_cache.json not found — run update_daily.sh first")
+        with open(cache_path) as f:
+            cache_data = json.load(f)
+        nba_cache = {p["nba_id"]: p for p in cache_data.get("players", [])}
+
+        start = datetime.strptime(update.round_start, "%Y-%m-%d")
+        end = datetime.strptime(update.round_end, "%Y-%m-%d")
+
+        results = []
         for p in players:
             nba_id = p.get("nba_id")
             if not nba_id:
                 continue
-            try:
-                weekly = get_weekly_actuals(nba_id, update.round_start, update.round_end)
-                games_played = weekly["games_played"]
-                total_fpts = weekly["total_fantasy_points"]
-                avg_fpts = round(total_fpts / games_played, 4) if games_played >= 1 else 0.0
-                results.append({
-                    "player_index": p["index"],
-                    "name": p["name"],
-                    "nba_id": nba_id,
-                    "games_played": games_played,
-                    "total_fpts": round(total_fpts, 2),
-                    "avg_fpts": avg_fpts,
-                })
-            except Exception as e:
-                logger.warning("round stats failed for %s (nba_id=%s): %s", p["name"], nba_id, e)
-                results.append({"player_index": p["index"], "name": p["name"], "error": str(e)})
+            cached = nba_cache.get(nba_id, {})
+            recent_games = cached.get("recent_games", [])
+            round_games = [
+                g for g in recent_games
+                if start <= datetime.strptime(g["date"], "%b %d, %Y") <= end
+            ]
+            games_played = len(round_games)
+            total_fpts = sum(g["fantasy_points"] for g in round_games)
+            avg_fpts = round(total_fpts / games_played, 4) if games_played >= 1 else 0.0
+            results.append({
+                "player_index": p["index"],
+                "name": p["name"],
+                "nba_id": nba_id,
+                "games_played": games_played,
+                "total_fpts": round(total_fpts, 2),
+                "avg_fpts": avg_fpts,
+            })
 
         ok = [r for r in results if "error" not in r]
 
@@ -216,20 +236,19 @@ async def update_weekly_stats(
 
 
 @router.post("/update-round-stats")
-async def update_round_stats(
-    update: RoundUpdate,
-    background_tasks: BackgroundTasks,
-    _=Depends(verify_admin),
-):
-    """Kick off a background job to pull NBA stats for a playoff round window.
+async def update_round_stats(update: RoundUpdate, _=Depends(verify_admin)):
+    """Compute round stats from player_cache.json and return on_chain_data synchronously.
 
-    Returns immediately with a job_id. Poll GET /job-status/{job_id} for the result.
-    80 players × ~0.6s NBA API sleep ≈ 48s — must run in background to avoid timeouts.
+    Reads from local cache — instant, no NBA API calls. Run update_daily.sh first.
+    Returns on_chain_data directly so distribute-dividends.js can consume it immediately.
     """
     job_id = str(uuid.uuid4())
     _jobs[job_id] = {"status": "queued", "type": "round", "round": update.round}
-    background_tasks.add_task(_run_round_stats_job, job_id, update)
-    return {"job_id": job_id, "status": "queued", "message": "Poll GET /api/admin/job-status/" + job_id}
+    _run_round_stats_job(job_id, update)
+    job = _jobs[job_id]
+    if job["status"] == "error":
+        raise HTTPException(status_code=500, detail=job.get("error", "round stats failed"))
+    return job["result"]
 
 
 @router.get("/job-status/{job_id}")

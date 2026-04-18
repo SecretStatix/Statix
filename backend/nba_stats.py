@@ -163,6 +163,12 @@ def fetch_curated_players(season: str = None) -> List[dict]:
             continue
 
         stats = fetch_player_season_stats(nba_id, season)
+        try:
+            recent_games = fetch_player_game_log(nba_id, last_n_games=10)
+        except Exception as e:
+            logger.warning("[%d/%d] %s — game log failed: %s", i + 1, len(curated), p["name"], e)
+            recent_games = []
+
         if stats:
             players_list.append({
                 "nba_id": nba_id,
@@ -174,11 +180,12 @@ def fetch_curated_players(season: str = None) -> List[dict]:
                 "avg_fantasy_points": stats["avg_fantasy_points"],
                 "weekly_projection": stats["weekly_projection"],
                 "season_projection": stats["season_projection"],
+                "recent_games": recent_games,
             })
             logger.info(
-                "[%d/%d] %s — %d GP, %.1f FPts/G",
+                "[%d/%d] %s — %d GP, %.1f FPts/G, %d recent games",
                 i + 1, len(curated), p["name"],
-                stats["games_played"], stats["avg_fantasy_points"],
+                stats["games_played"], stats["avg_fantasy_points"], len(recent_games),
             )
         else:
             players_list.append({
@@ -191,6 +198,7 @@ def fetch_curated_players(season: str = None) -> List[dict]:
                 "avg_fantasy_points": 0,
                 "weekly_projection": 0,
                 "season_projection": 0,
+                "recent_games": recent_games,
             })
             logger.info("[%d/%d] %s — no data", i + 1, len(curated), p["name"])
 
@@ -207,31 +215,63 @@ def fetch_top_players(season: str = None, top_n: int = 80) -> List[dict]:
     return fetch_curated_players(season)[:top_n]
 
 
-def fetch_player_game_log(
-    player_id: int, season: str = None, last_n_games: int = 0
-) -> List[dict]:
-    """Fetch a player's game log for the season.
-
-    Returns a list of game dicts: {date, matchup, result, stats, fantasy_points}.
-    """
+def _fetch_game_log_for_type(player_id: int, season: str, season_type: str) -> list:
+    """Fetch game log rows for one season type. Returns [] on timeout/error."""
     from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 
-    if season is None:
-        season = _current_nba_season()
-
     def _fetch():
-        return playergamelog.PlayerGameLog(player_id=player_id, season=season, timeout=15)
+        return playergamelog.PlayerGameLog(
+            player_id=player_id, season=season,
+            season_type_all_star=season_type, timeout=15,
+        )
 
     with ThreadPoolExecutor(max_workers=1) as ex:
         future = ex.submit(_fetch)
         try:
-            log = future.result(timeout=20)
+            return future.result(timeout=20).get_data_frames()[0]
         except FuturesTimeout:
-            raise TimeoutError(f"NBA API timed out for player_id={player_id}")
+            logger.warning("NBA API timed out for player_id=%s season_type=%s", player_id, season_type)
+            return []
+        except Exception as e:
+            logger.warning("NBA API error for player_id=%s season_type=%s: %s", player_id, season_type, e)
+            return []
 
+
+def fetch_player_game_log(
+    player_id: int, season: str = None, last_n_games: int = 0,
+    season_type: str = "all",
+) -> List[dict]:
+    """Fetch a player's game log for the season.
+
+    season_type: "regular" | "playoffs" | "all" (default — merges both so
+    play-in and playoff games appear alongside regular season games).
+    Returns a list of game dicts sorted newest-first.
+    """
+    if season is None:
+        season = _current_nba_season()
+
+    if season_type == "playoffs":
+        dfs = [
+            _fetch_game_log_for_type(player_id, season, "Playoffs"),
+            _fetch_game_log_for_type(player_id, season, "PlayIn"),
+        ]
+    elif season_type == "regular":
+        dfs = [_fetch_game_log_for_type(player_id, season, "Regular Season")]
+    else:
+        dfs = [
+            _fetch_game_log_for_type(player_id, season, "Regular Season"),
+            _fetch_game_log_for_type(player_id, season, "Playoffs"),
+            _fetch_game_log_for_type(player_id, season, "PlayIn"),
+        ]
+
+    import pandas as pd
+    combined = [df for df in dfs if not (hasattr(df, 'empty') and df.empty) and len(df) > 0]
+    if not combined:
+        return []
+
+    df = pd.concat(combined, ignore_index=True) if len(combined) > 1 else combined[0]
     time.sleep(0.6)
 
-    df = log.get_data_frames()[0]
     has_fg3m = "FG3M" in df.columns
     games = []
 
@@ -256,6 +296,8 @@ def fetch_player_game_log(
             "fantasy_points": round(fpts, 2),
         })
 
+    # Sort newest first so play-in/playoff games appear before older regular season games
+    games.sort(key=lambda g: datetime.strptime(g["date"], "%b %d, %Y"), reverse=True)
     if last_n_games > 0:
         games = games[:last_n_games]
     return games
@@ -266,13 +308,15 @@ def get_weekly_actuals(
     week_start: str,
     week_end: str,
     season: str = None,
+    season_type: str = "playoffs",
 ) -> dict:
     """Get a player's actual fantasy points for a date window.
 
     week_start / week_end in 'YYYY-MM-DD' format.
+    season_type defaults to "playoffs" since this is used for playoff round stats.
     Returns {player_id, week_start, week_end, games_played, total_fantasy_points, games}.
     """
-    games = fetch_player_game_log(player_id, season)
+    games = fetch_player_game_log(player_id, season, season_type=season_type)
     start = datetime.strptime(week_start, "%Y-%m-%d")
     end = datetime.strptime(week_end, "%Y-%m-%d")
 

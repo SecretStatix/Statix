@@ -26,7 +26,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from chain import get_deployment, get_abi
-from config import INITIAL_POOL_PRICE
+from config import INITIAL_POOL_PRICE, listing_price
 from db import get_supabase
 from nba_stats import (
     fetch_player_game_log,
@@ -271,7 +271,9 @@ def _build_price_history(
             )
         )
 
-    # Anchor chart at listing $10 immediately before first trade (backend-side).
+    base_price = listing_price(player_id)
+
+    # Anchor chart at listing price immediately before first trade (backend-side).
     if points:
         t0 = _parse_ts(points[0].timestamp)
         anchor_ts = (t0 - timedelta(seconds=1)).isoformat()
@@ -279,14 +281,14 @@ def _build_price_history(
             0,
             PriceHistoryPoint(
                 timestamp=anchor_ts,
-                price=INITIAL_POOL_PRICE,
+                price=base_price,
                 block_number=0,
                 log_index=-1,
             ),
         )
 
     current_source = "default"
-    current_price = INITIAL_POOL_PRICE
+    current_price = base_price
     if chain_price is not None:
         current_price = chain_price
         current_source = "chain"
@@ -294,19 +296,19 @@ def _build_price_history(
         current_price = points[-1].price
         current_source = "snapshot"
 
-    # No indexer rows yet but chain works: minimal line from listing to spot.
+    # No indexer rows yet but chain works: flat line at listing price (no fake movement).
     if not raw and chain_price is not None:
         now = datetime.now(timezone.utc)
         points = [
             PriceHistoryPoint(
                 timestamp=(now - timedelta(hours=1)).isoformat(),
-                price=INITIAL_POOL_PRICE,
+                price=base_price,
                 block_number=0,
                 log_index=-1,
             ),
             PriceHistoryPoint(
                 timestamp=now.isoformat(),
-                price=round(chain_price, 6),
+                price=base_price,
                 block_number=0,
                 log_index=-2,
             ),
@@ -330,7 +332,7 @@ def _build_price_history(
             range_change_pct = round((b - a) / a * 100, 4)
 
     vs_listing = round(
-        (current_price - INITIAL_POOL_PRICE) / INITIAL_POOL_PRICE * 100,
+        (current_price - base_price) / base_price * 100,
         4,
     )
 
@@ -441,7 +443,7 @@ async def get_player(player_id: str):
 
 @router.get("/{player_id}/games")
 async def get_player_games(player_id: str, last_n: int = Query(default=10, le=82)):
-    """Get a player's recent game log."""
+    """Get a player's recent game log. Serves from player_cache.json; live NBA API fallback."""
     target = _resolve_player(player_id)
     if not target:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -450,9 +452,16 @@ async def get_player_games(player_id: str, last_n: int = Query(default=10, le=82
     if not nba_id:
         raise HTTPException(status_code=404, detail="No NBA ID for player")
 
+    # Serve from cache first (Railway can't reach stats.nba.com)
+    nba_cache = _load_nba_cache()
+    cached = nba_cache.get(nba_id)
+    if cached and cached.get("recent_games"):
+        games = cached["recent_games"][:last_n]
+        return {"player_id": player_id, "games": games, "source": "cache"}
+
     try:
         games = fetch_player_game_log(nba_id, last_n_games=last_n)
-        return {"player_id": player_id, "games": games}
+        return {"player_id": player_id, "games": games, "source": "live"}
     except Exception as e:
         logger.error("game log fetch failed for %s (nba_id=%s): %s", player_id, nba_id, e)
         raise HTTPException(status_code=500, detail="Failed to fetch game log")

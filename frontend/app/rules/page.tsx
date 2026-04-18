@@ -14,31 +14,34 @@ export default function RulesPage() {
         {/* Section: Overview */}
         <Section title="Overview">
           <p>
-            Statix is a simulated NBA player stock market for the 2025 playoffs. Buy and sell shares in 80 players
-            using V-Bucks. Each playoff round, the fees collected from trading are distributed back to
-            shareholders as dividends — with a bonus pool for holders of the top fantasy scorers.
+            Statix is a simulated NBA player stock market for the 2026 playoffs. Buy and sell shares in 80 players
+            using V-Bucks — the in-game currency. Each playoff round, the trading fees collected are distributed back
+            to shareholders as dividends, with a bigger bonus pool reserved for holders of the top fantasy scorers.
           </p>
           <p className="mt-2">
-            The contest ends when the NBA Champion is crowned. Final portfolio value determines the winners.
+            The contest runs through the NBA Finals. Your final portfolio value — cash + share value + unclaimed dividends — determines your standing on the leaderboard.
           </p>
         </Section>
 
         {/* Section: Starting balance */}
         <Section title="Starting balance">
           <p>
-            Every approved user receives <span className="font-semibold text-foreground">300 V-Bucks</span> to start.
-            V-Bucks are the in-game currency — they&apos;re not real money, but prizes are.
+            Every approved user receives <span className="font-semibold text-foreground">300 V-Bucks</span> for free via the faucet.
+            V-Bucks are the in-game currency used to buy and sell shares — they&apos;re not real money, but the prizes are.
+          </p>
+          <p className="mt-2">
+            A <span className="font-semibold text-foreground">100 V-Bucks top-up</span> will be periodically airdropped to all users throughout the contest — simulating the ability to deposit more funds over time.
           </p>
         </Section>
 
         {/* Section: Trading */}
         <Section title="Trading">
           <ul className="space-y-2">
-            <li><Bullet />Each player has their own AMM pool using a constant-product formula (<code className="text-xs bg-white/[0.06] px-1 py-0.5 rounded">x × y = k</code>).</li>
-            <li><Bullet />Prices rise as more shares are bought and fall as shares are sold — just like a real market.</li>
+            <li><Bullet />Each player has their own liquidity pool. Prices are set automatically by supply and demand — no order books.</li>
+            <li><Bullet />Buying shares drives the price up. Selling drives it down. Early buyers get better prices.</li>
             <li><Bullet />A <span className="font-semibold text-foreground">2% fee</span> is charged on every trade.</li>
-            <li><Bullet />67% of fees go to the dividend pool. 33% goes to the protocol.</li>
-            <li><Bullet />Trading may be paused between playoff rounds. A banner will appear when trading is frozen.</li>
+            <li><Bullet />67% of all fees accumulate in the dividend pool and are paid out at the end of each round.</li>
+            <li><Bullet />Trading is paused briefly during dividend distribution between rounds. A banner will appear when trading is frozen.</li>
           </ul>
         </Section>
 
