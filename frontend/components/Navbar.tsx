@@ -29,8 +29,16 @@ export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const username = user?.user_metadata?.username || user?.email?.split('@')[0] || '';
-  const profileLabel = username || user?.email?.split('@')[0] || 'Account';
+  const [profileUsername, setProfileUsername] = useState<string>('');
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('profiles').select('username').eq('id', user.id).single().then(({ data }) => {
+      if (data?.username) setProfileUsername(data.username);
+    });
+  }, [user?.id]);
+
+  const profileLabel = profileUsername || user?.user_metadata?.username || user?.email?.split('@')[0] || 'Account';
   const fundedRef = useRef(false);
 
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || '');
