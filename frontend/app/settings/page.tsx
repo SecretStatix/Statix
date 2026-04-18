@@ -1,12 +1,21 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const username = user?.user_metadata?.username as string | undefined;
+  const [username, setUsername] = useState<string>('');
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('profiles').select('username').eq('id', user.id).single().then(({ data }) => {
+      if (data?.username) setUsername(data.username);
+    });
+  }, [user?.id]);
 
   return (
     <div className="space-y-10 pb-12">
