@@ -277,8 +277,11 @@ export default function PlayerProfilePage() {
     const recentAvg = chartDataFpts.slice(mid).reduce((s, g) => s + g.fpts, 0) / (chartDataFpts.length - mid);
     percentChange = olderAvg > 0 ? ((recentAvg - olderAvg) / olderAvg) * 100 : 0;
   }
+  const TIER1_IDS = new Set(['shai_gilgeous_alexander','victor_wembanyama','nikola_jokic','luka_doncic','anthony_edwards','jayson_tatum','jalen_brunson','donovan_mitchell','cade_cunningham','stephen_curry']);
+  const TIER2_IDS = new Set(['jalen_williams','chet_holmgren','de_aaron_fox','dylan_harper','jamal_murray','lebron_james','austin_reaves','alperen_sengun','kevin_durant','amen_thompson','julius_randle','devin_booker','jalen_green','kawhi_leonard','jaylen_brown','karl_anthony_towns','mikal_bridges','evan_mobley','james_harden','paolo_banchero','franz_wagner','lamelo_ball','tyrese_maxey','joel_embiid','bam_adebayo','tyler_herro','scottie_barnes','brandon_ingram','jalen_johnson','og_anunoby']);
+  const listingPrice = player ? (TIER1_IDS.has(player.id) ? 15 : TIER2_IDS.has(player.id) ? 12.5 : 10) : 10;
   const priceChangeVsListing =
-    currentPrice != null ? ((currentPrice - 10) / 10) * 100 : 0;
+    currentPrice != null ? ((currentPrice - listingPrice) / listingPrice) * 100 : 0;
   const displayChange =
     chartMode === 'price'
       ? priceHistory?.range_change_pct ?? priceHistory?.vs_listing_pct ?? priceChangeVsListing

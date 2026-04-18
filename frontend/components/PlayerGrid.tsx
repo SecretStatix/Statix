@@ -155,7 +155,10 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
     if (activeTab === 'trending') {
       list.sort((a, b) => b.avgFantasyPoints - a.avgFantasyPoints);
     } else if (activeTab === 'movers') {
-      list.sort((a, b) => Math.abs(b.price - 10) - Math.abs(a.price - 10));
+      const TIER1 = new Set(['shai_gilgeous_alexander','victor_wembanyama','nikola_jokic','luka_doncic','anthony_edwards','jayson_tatum','jalen_brunson','donovan_mitchell','cade_cunningham','stephen_curry']);
+      const TIER2 = new Set(['jalen_williams','chet_holmgren','de_aaron_fox','dylan_harper','jamal_murray','lebron_james','austin_reaves','alperen_sengun','kevin_durant','amen_thompson','julius_randle','devin_booker','jalen_green','kawhi_leonard','jaylen_brown','karl_anthony_towns','mikal_bridges','evan_mobley','james_harden','paolo_banchero','franz_wagner','lamelo_ball','tyrese_maxey','joel_embiid','bam_adebayo','tyler_herro','scottie_barnes','brandon_ingram','jalen_johnson','og_anunoby']);
+      const base = (id: string) => TIER1.has(id) ? 15 : TIER2.has(id) ? 12.5 : 10;
+      list.sort((a, b) => Math.abs(b.price - base(b.id)) - Math.abs(a.price - base(a.id)));
     } else if (activeTab === 'all') {
       list.sort((a, b) => a.name.localeCompare(b.name));
     } else {
