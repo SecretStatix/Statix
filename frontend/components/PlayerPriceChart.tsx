@@ -58,21 +58,34 @@ export default function PlayerPriceChart({
         />
         <Tooltip
           cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }}
-          contentStyle={{
-            backgroundColor: 'rgba(20, 21, 24, 0.92)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '8px',
-            fontSize: '12px',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.55)',
-            padding: '8px 12px',
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            const row = payload[0].payload as { price?: number; fpts?: number };
+            const isPrice = chartMode === 'price';
+            const raw = isPrice ? row.price : row.fpts;
+            if (raw === undefined) return null;
+            const main = isPrice ? `$${Number(raw).toFixed(2)}` : `${Number(raw).toFixed(1)}`;
+            const unit = isPrice ? 'Price' : 'FPts';
+            return (
+              <div
+                style={{
+                  backgroundColor: 'rgba(20, 21, 24, 0.92)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.55)',
+                  padding: '8px 12px',
+                }}
+              >
+                <p style={{ color: 'rgba(139, 141, 149, 0.7)', marginBottom: '2px', fontSize: '11px' }}>
+                  {label}
+                </p>
+                <p style={{ color: chartColor, margin: 0 }}>
+                  {unit}: {main}
+                </p>
+              </div>
+            );
           }}
-          labelStyle={{ color: 'rgba(139, 141, 149, 0.7)', marginBottom: '2px', fontSize: '11px' }}
-          itemStyle={{ color: chartColor }}
-          formatter={(value: number | undefined) =>
-            chartMode === 'price'
-              ? [`$${(value ?? 0).toFixed(2)}`, 'Price']
-              : [`${(value ?? 0).toFixed(1)}`, 'FPts']
-          }
         />
         {chartMode === 'price' && (
           <ReferenceLine y={currentPrice} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />

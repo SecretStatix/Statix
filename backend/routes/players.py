@@ -9,6 +9,7 @@ Data sources:
 Endpoints:
   GET /                         — list all players with stats
   GET /games-today              — team tri-codes with games scheduled today
+  GET /upcoming-games           — league games with tip-off in the next N hours (schedule feed)
   GET /{player_id}              — player detail with NBA stats
   GET /{player_id}/games        — player game log
   GET /{player_id}/price-history — price chart data
@@ -34,6 +35,7 @@ from nba_stats import (
     fetch_player_season_stats,
 )
 from routes.helpers import require_deployment
+from nba_schedule import get_upcoming_games_within_hours
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -398,6 +400,29 @@ async def get_games_today():
         if _games_today_cache["date"] == today and _games_today_cache.get("teams") is not None:
             return {"date": today, "teams": _games_today_cache["teams"], "stale": True}
         return {"date": today, "teams": []}
+
+
+@router.get("/upcoming-games")
+async def get_upcoming_games(
+    hours: int = Query(
+        default=24,
+        ge=1,
+        le=168,
+        description="Include games whose scheduled tip-off (UTC) falls in [now, now + hours)",
+    ),
+):
+    """
+    Full league schedule (ScheduleLeagueV2), filtered to tip-offs in the next `hours`
+    hours. Cached server-side to limit NBA API usage. Arena fields come from the schedule feed.
+    """
+    try:
+        return await asyncio.to_thread(get_upcoming_games_within_hours, hours)
+    except Exception as e:
+        logger.warning("upcoming-games failed: %s", e)
+        raise HTTPException(
+            status_code=503,
+            detail="Could not load NBA schedule",
+        ) from e
 
 
 @router.get("/{player_id}/price-history", response_model=PlayerPriceHistoryResponse)
