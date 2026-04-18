@@ -25,7 +25,7 @@ export function PriceTicker({ players, loading }: PriceTickerProps) {
   const loop = [...top, ...top, ...top];
 
   return (
-    <div className="relative overflow-hidden bg-card border border-white/[0.06] rounded-xl h-10">
+    <div className="ticker-mask relative overflow-hidden h-10">
       <div className="ticker-track flex items-center h-full whitespace-nowrap will-change-transform">
         {loop.map((p, i) => {
           const up = p.pct >= 0;
@@ -51,8 +51,6 @@ export function PriceTicker({ players, loading }: PriceTickerProps) {
           );
         })}
       </div>
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-card to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-card to-transparent" />
     </div>
   );
 }

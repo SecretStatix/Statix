@@ -238,9 +238,13 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
       {!search && !mobileExpanded && filtered.length > MOBILE_INITIAL_COUNT && (
         <button
           onClick={() => setMobileExpanded(true)}
-          className="md:hidden w-full mt-4 py-3 rounded-xl bg-card border border-white/[0.06] text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+          className="view-more-btn md:hidden w-full mt-6 flex items-center gap-3 text-sm text-muted-foreground hover:text-primary active:text-primary transition-colors group"
         >
-          View more players ({filtered.length - MOBILE_INITIAL_COUNT} more)
+          <span className="flex-1 h-px bg-white/[0.08] group-hover:bg-primary/40 group-active:bg-primary transition-colors" />
+          <span className="font-medium whitespace-nowrap">
+            View more players ({filtered.length - MOBILE_INITIAL_COUNT} more)
+          </span>
+          <span className="flex-1 h-px bg-white/[0.08] group-hover:bg-primary/40 group-active:bg-primary transition-colors" />
         </button>
       )}
 

@@ -107,7 +107,7 @@ export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => { setTradeMode('buy'); setTradeModalOpen(true); }}
-                className="h-9 px-4 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary-600 transition-colors"
+                className="h-9 px-4 rounded-lg text-sm font-semibold bg-success text-black hover:bg-success/90 transition-colors"
               >
                 Buy
               </button>
