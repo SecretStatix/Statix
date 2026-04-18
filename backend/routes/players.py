@@ -14,6 +14,7 @@ Endpoints:
   GET /{player_id}/price-history — price chart data
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -350,6 +351,26 @@ def _build_price_history(
 
 _games_today_cache: dict = {"ts": 0.0, "teams": [], "date": ""}
 _GAMES_TODAY_TTL = 1800  # 30 minutes
+# nba_api uses this as requests timeout (seconds). 8s matched user-visible ~8s stalls.
+_GAMES_TODAY_NBA_TIMEOUT = max(2, int(os.getenv("NBA_SCOREBOARD_TIMEOUT", "5")))
+
+
+def _fetch_scoreboard_team_tricodes(game_date: str, timeout: int) -> List[str]:
+    """Blocking call to stats.nba.com — must run in a thread from async routes."""
+    from nba_api.stats.endpoints import scoreboardv2
+
+    sb = scoreboardv2.ScoreboardV2(game_date=game_date, timeout=timeout)
+    line_score = sb.line_score.get_dict()
+    headers = line_score.get("headers", [])
+    rows = line_score.get("data", [])
+    idx = headers.index("TEAM_ABBREVIATION") if "TEAM_ABBREVIATION" in headers else None
+    teams_playing: set[str] = set()
+    if idx is not None:
+        for row in rows:
+            tri = row[idx]
+            if tri:
+                teams_playing.add(tri)
+    return sorted(teams_playing)
 
 
 @router.get("/games-today")
@@ -364,26 +385,18 @@ async def get_games_today():
         return {"date": today, "teams": _games_today_cache["teams"]}
 
     try:
-        from nba_api.stats.endpoints import scoreboardv2
-        from nba_api.stats.static import teams as nba_teams
-
-        sb = scoreboardv2.ScoreboardV2(game_date=today, timeout=8)
-        line_score = sb.line_score.get_dict()
-        headers = line_score.get("headers", [])
-        rows = line_score.get("data", [])
-        idx = headers.index("TEAM_ABBREVIATION") if "TEAM_ABBREVIATION" in headers else None
-        teams_playing: set[str] = set()
-        if idx is not None:
-            for row in rows:
-                tri = row[idx]
-                if tri:
-                    teams_playing.add(tri)
-
-        result = sorted(teams_playing)
+        result = await asyncio.to_thread(
+            _fetch_scoreboard_team_tricodes,
+            today,
+            _GAMES_TODAY_NBA_TIMEOUT,
+        )
         _games_today_cache.update({"ts": now, "teams": result, "date": today})
         return {"date": today, "teams": result}
     except Exception as e:
         logger.warning("games-today fetch failed: %s", e)
+        # After TTL expiry, NBA can be slow; return last good list for today if we have it.
+        if _games_today_cache["date"] == today and _games_today_cache.get("teams") is not None:
+            return {"date": today, "teams": _games_today_cache["teams"], "stale": True}
         return {"date": today, "teams": []}
 
 
