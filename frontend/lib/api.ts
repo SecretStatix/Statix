@@ -54,7 +54,7 @@ export async function getRecentTransactions(limit = 15) {
 }
 
 // Teams with NBA games scheduled today (cached 30m on backend)
-export async function getGamesToday(): Promise<{ date: string; teams: string[] }> {
+export async function getGamesToday(): Promise<{ date: string; teams: string[]; stale?: boolean }> {
   if (DEMO) return { date: new Date().toISOString().slice(0, 10), teams: [] };
   try {
     return await fetchAPI(`/api/players/games-today`);
