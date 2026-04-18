@@ -28,9 +28,11 @@ export default function PlayerPriceChart({
   dataKey,
   currentPrice,
 }: PlayerPriceChartProps) {
+  const chartData = chartMode === 'fpts' ? [...data].reverse() : data;
+
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+      <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={chartColor} stopOpacity={0.18} />
@@ -51,7 +53,7 @@ export default function PlayerPriceChart({
           tick={{ fill: 'rgba(139, 141, 149, 0.4)', fontSize: 10 }}
           tickLine={false}
           axisLine={false}
-          width={40}
+          width={52}
           tickFormatter={chartMode === 'price' ? (v: number) => `$${v}` : undefined}
         />
         <Tooltip
