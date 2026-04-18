@@ -41,12 +41,22 @@ function HomeContent() {
   // No extra API call — just re-maps the already-fetched rawPlayers.
   useEffect(() => {
     if (!rawPlayers.length) return;
+    // Defensive extraction: onChainData is the `getAllPlayers` tuple
+    // [names, symbols, prices, totalShares]. If wagmi returns an unexpected
+    // shape (transient state, RPC hiccup, ABI drift), we must NOT throw —
+    // the grid has to render on the API price alone.
+    const chainPrices: readonly bigint[] | null =
+      Array.isArray(onChainData) && Array.isArray((onChainData as any)[2])
+        ? ((onChainData as any)[2] as readonly bigint[])
+        : null;
     const mapped: PlayerData[] = rawPlayers.map((p: any) => {
       let price = p.price || 10;
-      if (onChainData) {
-        const [, , prices] = onChainData as [string[], string[], bigint[], bigint[]];
-        if (prices[p.index]) {
-          price = parseFloat(formatUnits(prices[p.index], 6));
+      const raw = chainPrices?.[p.index];
+      if (raw !== undefined && raw !== null) {
+        try {
+          price = parseFloat(formatUnits(raw as bigint, 6));
+        } catch {
+          // Keep API fallback on decode failure.
         }
       }
       return {
