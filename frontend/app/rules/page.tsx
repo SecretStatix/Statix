@@ -30,7 +30,7 @@ export default function RulesPage() {
             V-Bucks are the in-game currency used to buy and sell shares — they&apos;re not real money, but the prizes are.
           </p>
           <p className="mt-2">
-            An additional <span className="font-semibold text-foreground">100 V-Bucks bonus</span> will be airdropped to all users before the playoffs begin.
+            A <span className="font-semibold text-foreground">100 V-Bucks top-up</span> will be periodically airdropped to all users throughout the contest — simulating the ability to deposit more funds over time.
           </p>
         </Section>
 
