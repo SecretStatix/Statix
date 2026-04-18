@@ -105,26 +105,59 @@ async function main() {
   console.log("   Factory wired.");
   await delay(3000);
 
-  // 7. Create player pools in batches of 10
-  console.log(`\n7. Creating ${PLAYERS.length} player pools in batches...\n`);
+  // 7. Create player pools with tiered starting prices
+  // Tier 1 ($15): top 10 stars — 1000 shares / 15,000 cash
+  // Tier 2 ($12.50): next 30 — 1000 shares / 12,500 cash
+  // Tier 3 ($10): remaining 40 — 1000 shares / 10,000 cash
+  const TIER1_IDS = new Set([
+    "shai_gilgeous_alexander", "victor_wembanyama", "nikola_jokic", "luka_doncic",
+    "anthony_edwards", "jayson_tatum", "jalen_brunson", "donovan_mitchell",
+    "cade_cunningham", "stephen_curry",
+  ]);
+  const TIER2_IDS = new Set([
+    "jalen_williams", "chet_holmgren", "de_aaron_fox", "dylan_harper", "jamal_murray",
+    "lebron_james", "austin_reaves", "alperen_sengun", "kevin_durant", "amen_thompson",
+    "julius_randle", "devin_booker", "jalen_green", "kawhi_leonard", "jaylen_brown",
+    "karl_anthony_towns", "mikal_bridges", "evan_mobley", "james_harden", "paolo_banchero",
+    "franz_wagner", "lamelo_ball", "tyrese_maxey", "joel_embiid", "bam_adebayo",
+    "tyler_herro", "scottie_barnes", "brandon_ingram", "jalen_johnson", "og_anunoby",
+  ]);
+
+  const TIERS = [
+    { label: "Tier 1 ($15)",   ids: TIER1_IDS,  shares: 1000n * 10n**6n, cash: 15000n * 10n**6n },
+    { label: "Tier 2 ($12.50)", ids: TIER2_IDS, shares: 1000n * 10n**6n, cash: 12500n * 10n**6n },
+    { label: "Tier 3 ($10)",   ids: null,        shares: 1000n * 10n**6n, cash: 10000n * 10n**6n },
+  ];
+
+  console.log(`\n7. Creating ${PLAYERS.length} player pools with tiered pricing...\n`);
   const BATCH_SIZE = 5;
 
-  for (let i = 0; i < PLAYERS.length; i += BATCH_SIZE) {
-    const batch = PLAYERS.slice(i, i + BATCH_SIZE);
+  for (const tier of TIERS) {
+    const tierPlayers = tier.ids === null
+      ? PLAYERS.filter((p) => !TIER1_IDS.has(p.id) && !TIER2_IDS.has(p.id))
+      : PLAYERS.filter((p) => tier.ids.has(p.id));
 
-    const names = batch.map((p) => p.name);
-    const symbols = batch.map((p) => p.symbol);
-    const playerIds = batch.map((p) => p.id);
-
-    process.stdout.write(
-      `   Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${batch.map((p) => p.symbol).join(", ")}...`
-    );
+    if (tierPlayers.length === 0) continue;
+    console.log(`   ${tier.label} — ${tierPlayers.length} players`);
 
     gas = await getGasOverrides(deployer);
-    const tx = await factory.createPoolsBatch(names, symbols, playerIds, gas);
-    await tx.wait();
-    console.log(" done");
-    await delay(3000);
+    await (await factory.setDefaults(tier.shares, tier.cash, gas)).wait();
+    await delay(2000);
+
+    for (let i = 0; i < tierPlayers.length; i += BATCH_SIZE) {
+      const batch = tierPlayers.slice(i, i + BATCH_SIZE);
+      const names = batch.map((p) => p.name);
+      const symbols = batch.map((p) => p.symbol);
+      const playerIds = batch.map((p) => p.id);
+
+      process.stdout.write(`     Batch: ${batch.map((p) => p.symbol).join(", ")}...`);
+
+      gas = await getGasOverrides(deployer);
+      const tx = await factory.createPoolsBatch(names, symbols, playerIds, gas);
+      await tx.wait();
+      console.log(" done");
+      await delay(3000);
+    }
   }
 
   // 8. Verify pool count
