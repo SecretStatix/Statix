@@ -29,6 +29,9 @@ export default function RulesPage() {
             Every approved user receives <span className="font-semibold text-foreground">300 V-Bucks</span> for free via the faucet.
             V-Bucks are the in-game currency used to buy and sell shares — they&apos;re not real money, but the prizes are.
           </p>
+          <p className="mt-2">
+            An additional <span className="font-semibold text-foreground">100 V-Bucks bonus</span> will be airdropped to all users before the playoffs begin.
+          </p>
         </Section>
 
         {/* Section: Trading */}
