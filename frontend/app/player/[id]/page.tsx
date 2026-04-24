@@ -168,7 +168,7 @@ export default function PlayerProfilePage() {
     async function loadGames() {
       if (!player) return;
       try {
-        const data = await getPlayerGames(playerId, 20);
+        const data = await getPlayerGames(playerId, 10);
         setGames(data.games || []);
       } catch {
         console.error('Failed to load game log');
