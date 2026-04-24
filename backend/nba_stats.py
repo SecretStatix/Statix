@@ -169,6 +169,17 @@ def fetch_curated_players(season: str = None) -> List[dict]:
             logger.warning("[%d/%d] %s — game log failed: %s", i + 1, len(curated), p["name"], e)
             recent_games = []
 
+        # avg_fantasy_points from last 10 games (sliding window — updates as new games are played).
+        # Falls back to full season avg if fewer than 3 recent games exist (e.g. early season).
+        if len(recent_games) >= 3:
+            recent_avg_fp = round(
+                sum(g["fantasy_points"] for g in recent_games) / len(recent_games), 2
+            )
+        elif stats:
+            recent_avg_fp = stats["avg_fantasy_points"]
+        else:
+            recent_avg_fp = 0.0
+
         if stats:
             players_list.append({
                 "nba_id": nba_id,
@@ -177,15 +188,15 @@ def fetch_curated_players(season: str = None) -> List[dict]:
                 "position": p.get("position", "F"),
                 "games_played": stats["games_played"],
                 "avg_stats": stats["avg_stats"],
-                "avg_fantasy_points": stats["avg_fantasy_points"],
-                "weekly_projection": stats["weekly_projection"],
-                "season_projection": stats["season_projection"],
+                "avg_fantasy_points": recent_avg_fp,
+                "weekly_projection": round(recent_avg_fp * 3.5, 2),
+                "season_projection": round(recent_avg_fp * 82, 2),
                 "recent_games": recent_games,
             })
             logger.info(
-                "[%d/%d] %s — %d GP, %.1f FPts/G, %d recent games",
+                "[%d/%d] %s — %d GP, %.1f FPts/G (last %d games)",
                 i + 1, len(curated), p["name"],
-                stats["games_played"], stats["avg_fantasy_points"], len(recent_games),
+                stats["games_played"], recent_avg_fp, len(recent_games),
             )
         else:
             players_list.append({
