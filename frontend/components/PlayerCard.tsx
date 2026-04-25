@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 interface PlayerCardProps {
   player: PlayerData;
   onTrade: () => void;
-  playingTonight?: boolean;
   flashSide?: 'buy' | 'sell' | null;
 }
 
@@ -66,7 +65,7 @@ function getTeamAccentStyle(team: string): CSSProperties {
   } as CSSProperties;
 }
 
-export function PlayerCard({ player, onTrade, playingTonight = false, flashSide = null }: PlayerCardProps) {
+export function PlayerCard({ player, onTrade, flashSide = null }: PlayerCardProps) {
   const TIER1 = new Set(['shai_gilgeous_alexander','victor_wembanyama','nikola_jokic','luka_doncic','anthony_edwards','jayson_tatum','jalen_brunson','donovan_mitchell','cade_cunningham','stephen_curry']);
   const TIER2 = new Set(['jalen_williams','chet_holmgren','de_aaron_fox','dylan_harper','jamal_murray','lebron_james','austin_reaves','alperen_sengun','kevin_durant','amen_thompson','julius_randle','devin_booker','jalen_green','kawhi_leonard','jaylen_brown','karl_anthony_towns','mikal_bridges','evan_mobley','james_harden','paolo_banchero','franz_wagner','lamelo_ball','tyrese_maxey','joel_embiid','bam_adebayo','tyler_herro','scottie_barnes','brandon_ingram','jalen_johnson','og_anunoby']);
   const base = TIER1.has(player.id) ? 15 : TIER2.has(player.id) ? 12.5 : 10;
@@ -96,18 +95,6 @@ export function PlayerCard({ player, onTrade, playingTonight = false, flashSide 
         e.currentTarget.style.boxShadow = '';
       }}
     >
-      {playingTonight && (
-        <span
-          className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary ring-1 ring-primary/30"
-          title="Playing tonight"
-        >
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-          </span>
-          Tonight
-        </span>
-      )}
       <Link href={`/player/${player.id}`} className="block p-4">
         <div className="flex items-center gap-3">
           <PlayerAvatar name={player.name} nbaId={player.nbaId} size="md" />

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { PlayerCard } from './PlayerCard';
 import { TradeModal } from './TradeModal';
 import { isGuardPosition, isForwardPosition, isCenterPosition } from '@/lib/positions';
-import { getGamesToday, getRecentTransactions } from '@/lib/api';
+import { getRecentTransactions } from '@/lib/api';
 
 export interface PlayerData {
   index: number;
@@ -45,7 +45,6 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerData | null>(null);
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('trending');
-  const [teamsTonight, setTeamsTonight] = useState<Set<string>>(new Set());
   const [flashMap, setFlashMap] = useState<Record<number, 'buy' | 'sell'>>({});
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const seenTxRef = useRef<Set<string>>(new Set());
@@ -53,21 +52,6 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
 
   const searchParams = useSearchParams();
   const search = searchParams.get('q') || '';
-
-  // Fetch teams playing tonight (cached 30m on backend; refresh every 15m client-side).
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const data = await getGamesToday();
-      if (!cancelled) setTeamsTonight(new Set((data.teams || []).map((t) => t.toUpperCase())));
-    }
-    load();
-    const id = setInterval(load, 15 * 60 * 1000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
 
   // Poll recent trades and flash matching cards on new entries.
   useEffect(() => {
@@ -227,7 +211,6 @@ export function PlayerGrid({ players, loading, expanded = false }: PlayerGridPro
               <PlayerCard
                 player={player}
                 onTrade={() => handleTrade(player)}
-                playingTonight={teamsTonight.has((player.team || '').toUpperCase())}
                 flashSide={flashMap[player.index] ?? null}
               />
             </div>
