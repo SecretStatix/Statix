@@ -9,10 +9,11 @@ import { supabase } from '@/lib/supabase';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { useBalance } from 'wagmi';
 import { formatUnits } from 'viem';
-import { TrendingUp, BarChart3, User as UserIcon, Info, BookOpen, Search } from 'lucide-react';
+import { TrendingUp, BarChart3, User as UserIcon, Info, BookOpen, Search, X } from 'lucide-react';
 import { useDBucksBalance } from '@/hooks/useContracts';
 import { cn } from '@/lib/utils';
 import { ProfileMenu } from '@/components/ProfileMenu';
+import { getPlayers } from '@/lib/api';
 
 const NAV_LINKS = [
   { href: '/', label: 'Market', icon: TrendingUp },
@@ -43,6 +44,9 @@ export function Navbar() {
 
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || '');
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; team: string; position: string }[]>([]);
+  const [mobileSearchFocused, setMobileSearchFocused] = useState(false);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
   const activeWallet = embeddedWallet || wallets[0];
@@ -100,6 +104,31 @@ export function Navbar() {
     }
     await signOut();
   };
+
+  // Fetch players once for the mobile search dropdown
+  useEffect(() => {
+    getPlayers().then((data: any[]) =>
+      setAllPlayers(data.map((p) => ({ id: p.id, name: p.name, team: p.team, position: p.position || '' })))
+    ).catch(() => {});
+  }, []);
+
+  // Close mobile dropdown when clicking outside
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (mobileSearchRef.current && !mobileSearchRef.current.contains(e.target as Node)) {
+        setMobileSearchFocused(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const mobileDropdownResults = searchValue.trim().length > 0
+    ? allPlayers.filter(p =>
+        p.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+        p.team.toLowerCase().includes(searchValue.toLowerCase())
+      ).slice(0, 6)
+    : [];
 
   const pushSearch = useCallback((value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -202,17 +231,49 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile search bar — its own row so the top row isn't crowded */}
-        <div className="md:hidden pb-2">
+        {/* Mobile search bar — dropdown overlay so results appear above keyboard */}
+        <div className="md:hidden pb-2" ref={mobileSearchRef}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               type="text"
               placeholder="Search players..."
               value={searchValue}
               onChange={handleSearchChange}
-              className="w-full h-9 bg-secondary border border-white/[0.06] rounded-lg pl-9 pr-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200"
+              onFocus={() => setMobileSearchFocused(true)}
+              className="w-full h-9 bg-secondary border border-white/[0.06] rounded-lg pl-9 pr-8 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/30 transition-all duration-200"
             />
+            {searchValue && (
+              <button
+                onMouseDown={(e) => { e.preventDefault(); setSearchValue(''); pushSearch(''); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Dropdown results — shown above keyboard */}
+            {mobileSearchFocused && mobileDropdownResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-white/[0.10] rounded-xl shadow-2xl overflow-hidden z-50">
+                {mobileDropdownResults.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/player/${p.id}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { setSearchValue(''); pushSearch(''); setMobileSearchFocused(false); }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/60 transition-colors border-b border-white/[0.04] last:border-0"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-secondary/70 flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-bold text-muted-foreground">{p.position}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">{p.team}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

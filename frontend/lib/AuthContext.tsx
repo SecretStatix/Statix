@@ -98,11 +98,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = session?.user ?? null;
 
-  if (loading) {
+  const isPublicPath = PUBLIC_PATHS.includes(pathname);
+  const isPendingPath = pathname === '/pending';
+
+  // Show blank screen while loading OR while a redirect is about to fire —
+  // prevents a one-render flash of protected content before router.push lands.
+  const redirectImminent =
+    !loading && (
+      (!session && !isPublicPath) ||
+      (session && isPublicPath) ||
+      (session && !isApproved && !isPendingPath && !isPublicPath && pathname !== '/reset-password') ||
+      (session && isApproved && isPendingPath)
+    );
+
+  if (loading || redirectImminent) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground text-lg">Loading...</div>
-      </div>
+      <div className="min-h-screen bg-background" />
     );
   }
 
