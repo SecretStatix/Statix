@@ -51,7 +51,7 @@ FastAPI server with 4 route groups:
 |---------|------|-------------|
 | `fabulous-nourishment` | Web | FastAPI backend — player data, trading, dividends |
 | `MVP` | Worker | Chain indexer — polls Base Sepolia, writes to Supabase |
-| `statix-bots` | Worker | 30 bot scheduler — fires every 8h, logs to `bot_activity` |
+| `statix-bots` | Worker | 30 bot scheduler — fires at 11am + 6pm Pacific, logs to `bot_activity` |
 | `portfolio-snapshot` | Cron `0 * * * *` | Hourly NAV snapshot → `wallet_portfolio_snapshots` |
 
 ## Daily Ops (run locally every morning)
@@ -61,14 +61,22 @@ cd backend && ./update_daily.sh
 Fetches last-10-games + season stats for 80 players, commits `player_cache.json`, pushes to GitHub. Railway redeploys backend in ~2 min. Bots and the UI both pick up fresh data automatically. **Must run from local machine — Railway blocks the NBA API.**
 
 ## Bots (samsyy23/MVP-Bots)
-- 15 StatHead bots (rank-based, rule filter) + 15 Scout bots (Gemini-powered)
-- Staggered 4 min apart across a 2-hour window, 3 epochs/day
+- 15 StatHead bots (rank-based, rule filter) + 15 Scout bots (Gemini-powered, `gemini-2.5-flash`)
+- Staggered 4 min apart across a 2-hour window per epoch
+- **Schedule:** 11:00 AM Pacific (18:00 UTC) and 6:00 PM Pacific (01:00 UTC) — fixed wall-clock times, no drift
 - All decisions logged to Supabase → `bot_activity`
+- Bots require Base Sepolia ETH for gas — each trade costs ~0.0005–0.001 ETH
+- Deployer wallet: `0x639Daa0d790Ff595A2203db01552A28b2339a3f4` — top up via faucets, refill bots with `python3 scripts/refill_bots.py`
 - See MVP-Bots repo README for full details
 
-## avg_fantasy_points
-Uses a last-10-games sliding window (not season average). Calculated in `nba_stats.py` and served via `/api/players/`. UI game log also shows last 10 games only (cache-only, no live NBA calls).
+## Eliminated Teams (Playoff Tracking)
+As teams are eliminated from the playoffs, update `ELIMINATED_TEAMS` in `MVP-Bots/src/statix_bots/data/statix_api.py` and redeploy the bots service. This filter prevents bots from buying eliminated players and also removes them from the tier pricing lists.
 
-## Known Issues (as of 2026-04-24)
+**Current eliminated teams (as of 2026-04-28):** MIA, CHA, GSW, LAC, PHX
+
+## avg_fantasy_points
+Uses a last-10-games sliding window (not season average). Calculated in `nba_stats.py` and served via `/api/players/`. The NBA API is called with all three season types (Regular Season, PlayIn, Playoffs) and merged newest-first — so playoff games appear before older regular season games. UI game log also shows last 10 games only (cache-only, no live NBA calls).
+
+## Known Issues (as of 2026-04-28)
 - Gas funding API (/api/fund-gas) has no rate limiting
 - Demo data (15 players, hyphenated IDs) doesn't match real data (80 players, underscored IDs)
