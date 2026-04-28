@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-27T23:18:47.880773",
+  "timestamp": "2026-04-28T00:47:08.325924",
   "season": "2025-26",
   "players": [
     {
@@ -4713,11 +4713,19 @@
       "name": "Jayson Tatum",
       "team": "BOS",
       "position": "SF",
-      "games_played": 0,
-      "avg_stats": {},
-      "avg_fantasy_points": 0,
-      "weekly_projection": 0,
-      "season_projection": 0,
+      "games_played": 16,
+      "avg_stats": {
+        "PTS": 21.8,
+        "REB": 10.0,
+        "AST": 5.3,
+        "STL": 1.4,
+        "BLK": 0.2,
+        "FG3M": 2.9,
+        "TOV": 2.4
+      },
+      "avg_fantasy_points": 51.79,
+      "weekly_projection": 181.26,
+      "season_projection": 4246.78,
       "recent_games": [
         {
           "date": "Apr 26, 2026",
@@ -14298,15 +14306,14 @@
       "name": "V.J. Edgecombe",
       "team": "PHI",
       "position": "SG",
-      "games_played": 75,
+      "games_played": 0,
       "avg_stats": {
-        "PTS": 16.0,
-        "REB": 5.6,
-        "AST": 4.2,
-        "STL": 1.4,
-        "BLK": 0.5,
-        "FG3M": 2.0,
-        "TOV": 1.8
+        "PTS": 15.6,
+        "REB": 7.4,
+        "AST": 4.0,
+        "STL": 1.6,
+        "BLK": 0.4,
+        "TOV": 2.1
       },
       "avg_fantasy_points": 32.68,
       "weekly_projection": 114.38,

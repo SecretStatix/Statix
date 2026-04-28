@@ -199,19 +199,36 @@ def fetch_curated_players(season: str = None) -> List[dict]:
                 stats["games_played"], recent_avg_fp, len(recent_games),
             )
         else:
+            # Season stats fetch failed — compute avg_stats from recent games so the
+            # player doesn't show 0 on the market. recent_avg_fp is already calculated above.
+            if recent_games:
+                stat_keys = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV']
+                avg_stats_fallback = {
+                    k: round(sum(g['stats'].get(k, 0) for g in recent_games) / len(recent_games), 1)
+                    for k in stat_keys
+                }
+                logger.warning(
+                    "[%d/%d] %s — season stats fetch FAILED, falling back to %d recent games (%.1f FPts/G)",
+                    i + 1, len(curated), p["name"], len(recent_games), recent_avg_fp,
+                )
+            else:
+                avg_stats_fallback = {}
+                logger.error(
+                    "[%d/%d] %s — NO DATA AT ALL (season stats and game log both failed)",
+                    i + 1, len(curated), p["name"],
+                )
             players_list.append({
                 "nba_id": nba_id,
                 "name": p["name"],
                 "team": p.get("team", ""),
                 "position": p.get("position", "F"),
                 "games_played": 0,
-                "avg_stats": {},
-                "avg_fantasy_points": 0,
-                "weekly_projection": 0,
-                "season_projection": 0,
+                "avg_stats": avg_stats_fallback,
+                "avg_fantasy_points": recent_avg_fp,
+                "weekly_projection": round(recent_avg_fp * 3.5, 2),
+                "season_projection": round(recent_avg_fp * 82, 2),
                 "recent_games": recent_games,
             })
-            logger.info("[%d/%d] %s — no data", i + 1, len(curated), p["name"])
 
     with open(CACHE_FILE, "w") as f:
         json.dump({"timestamp": datetime.now().isoformat(), "season": season, "players": players_list}, f, indent=2)
