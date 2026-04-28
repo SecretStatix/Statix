@@ -79,7 +79,7 @@ function formatDateLabel(dateStr: string): string {
   return trimmed;
 }
 
-function AnimatedValue({ value, decimals = 1 }: { value: number; decimals?: number }) {
+function AnimatedValue({ value, decimals = 1, inverse = false }: { value: number; decimals?: number; inverse?: boolean }) {
   const [display, setDisplay] = useState(value);
   const [color, setColor] = useState<'text-foreground' | 'text-success' | 'text-destructive'>('text-foreground');
   const prevRef = useRef(value);
@@ -99,7 +99,8 @@ function AnimatedValue({ value, decimals = 1 }: { value: number; decimals?: numb
     const actualSteps = Math.min(totalSteps, maxSteps);
     const stepSize = (to - from) / actualSteps;
 
-    setColor(direction > 0 ? 'text-success' : 'text-destructive');
+    const isGood = inverse ? direction < 0 : direction > 0;
+    setColor(isGood ? 'text-success' : 'text-destructive');
 
     let current = 0;
     const tick = () => {
@@ -594,7 +595,7 @@ export default function PlayerProfilePage() {
               </h3>
               <div className="flex items-center gap-0.5">
                 {([
-                  { key: 'season' as StatsPeriod, label: 'Season' },
+                  { key: 'season' as StatsPeriod, label: 'Last 10' },
                   { key: 'last5' as StatsPeriod, label: 'Last 5' },
                   { key: 'last1' as StatsPeriod, label: 'Last Game' },
                 ]).map(({ key, label }) => (
@@ -621,7 +622,7 @@ export default function PlayerProfilePage() {
                   } ${i >= 3 ? 'border-t border-white/[0.05] sm:border-t-0' : ''}`}
                 >
                   <p className="text-lg md:text-xl font-bold tabular-nums">
-                    <AnimatedValue value={parseFloat(s.value)} />
+                    <AnimatedValue value={parseFloat(s.value)} inverse={s.key === 'tov'} />
                   </p>
                   <p className="text-[10px] text-muted-foreground/50 mt-1 uppercase tracking-wider font-medium">
                     {s.label}
