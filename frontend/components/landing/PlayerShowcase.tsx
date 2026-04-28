@@ -68,10 +68,6 @@ export function PlayerShowcase() {
             </p>
             <p className="truncate text-xs font-bold text-white sm:text-sm">{s.name}</p>
           </div>
-          {/* Symbol badge */}
-          <div className="absolute right-2 top-2 z-10 rounded-md bg-black/40 px-1.5 py-0.5 text-[9px] font-mono font-bold text-white/90 backdrop-blur">
-            ${s.symbol.slice(0, 4)}
-          </div>
         </motion.div>
       ))}
     </div>

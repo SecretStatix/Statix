@@ -31,7 +31,7 @@ import {
   RevealItem,
 } from '@/components/landing/RevealOnScroll';
 
-const HEADLINE_LINE_1 = ['Trade', 'NBA', 'players'];
+const HEADLINE_LINE_1 = ['Commoditizing', 'Ball', 'Knowledge'];
 const HEADLINE_LINE_2 = ['like', 'the', 'stock', 'market'];
 
 export default function LandingPage() {
@@ -153,7 +153,7 @@ export default function LandingPage() {
                 transition={{ duration: 0.7, delay: 1.0 }}
                 className="mt-6 max-w-lg text-base text-muted-foreground sm:text-lg"
               >
-                Build a portfolio of 80 NBA stars. Buy and sell shares through an automated market maker, earn dividends every playoff round, and compete for real cash prizes.
+                Build a portfolio of NBA stars. Buy and sell shares through an open market, earn dividends every playoff round, and compete for real cash prizes.
               </motion.p>
 
               <motion.div
@@ -184,10 +184,7 @@ export default function LandingPage() {
                 transition={{ duration: 1, delay: 1.4 }}
                 className="mt-10 flex items-center gap-5 text-xs text-muted-foreground"
               >
-                <div className="flex items-center gap-2">
-                  <SpinningBasketball size={28} />
-                  <span>Real NBA stats</span>
-                </div>
+    
                 <div className="hidden sm:block h-3 w-px bg-white/10" />
                 <div className="hidden sm:flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5" />
@@ -203,8 +200,9 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Live ticker — full bleed under the hero */}
-        <div className="mt-4 sm:mt-8">
+        {/* Live price marquee — no top/bottom divider lines, just the
+            scrolling row of player chips fading into the page edges. */}
+        <div className="mt-6 sm:mt-10">
           <PlayerTicker />
         </div>
       </section>
