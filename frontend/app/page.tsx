@@ -25,6 +25,7 @@ import { TiltCard } from '@/components/landing/TiltCard';
 import { MagneticButton } from '@/components/landing/MagneticButton';
 import { AnimatedNumber } from '@/components/landing/AnimatedNumber';
 import { SpinningBasketball } from '@/components/landing/SpinningBasketball';
+import { BouncingBasketball } from '@/components/landing/BouncingBasketball';
 import {
   RevealOnScroll,
   RevealStagger,
@@ -554,32 +555,38 @@ export default function LandingPage() {
                 animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.9, 0.6] }}
                 transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
               />
-              {/* Spinning basketball accent */}
-              <div className="relative flex justify-center">
-                <SpinningBasketball size={64} duration={10} />
-              </div>
-              <h2 className="relative mt-6 text-3xl font-bold tracking-tight sm:text-5xl">
-                Ready to draft your portfolio?
-              </h2>
-              <p className="relative mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-                Sign up, get 300 V-Bucks, and start trading the 2026 NBA Playoffs. The closed beta is open now — spots are first-come, first-approved.
-              </p>
-              <div className="relative mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <MagneticButton
-                  href={ctaHref}
-                  className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-8 py-4 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/40 transition hover:glow-primary"
-                >
-                  {ctaLabel}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </MagneticButton>
-                {!signedIn && (
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center px-6 py-4 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+
+              {/* Pool-ball-style basketball bouncing in the background.
+                  Constant momentum, spins as it travels, never escapes the
+                  panel because of its parent's `overflow-hidden`. Sits
+                  underneath the headline/CTA via z-index. */}
+              <BouncingBasketball size={104} speed={4.2} opacity={0.85} />
+
+              {/* Foreground content — elevated above the bouncing ball. */}
+              <div className="relative z-10">
+                <h2 className="text-3xl font-bold tracking-tight sm:text-5xl">
+                  Ready to draft your portfolio?
+                </h2>
+                <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
+                  Sign up and start trading the 2026 NBA Playoffs. The closed beta is open now.
+                </p>
+                <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  <MagneticButton
+                    href={ctaHref}
+                    className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-8 py-4 text-sm font-semibold text-primary-foreground shadow-xl shadow-primary/40 transition hover:glow-primary"
                   >
-                    Already have an account? Sign in
-                  </Link>
-                )}
+                    {ctaLabel}
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </MagneticButton>
+                  {!signedIn && (
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center px-6 py-4 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Already have an account? Sign in
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           </RevealOnScroll>
