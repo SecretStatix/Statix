@@ -25,7 +25,14 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-const PUBLIC_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password'];
+// Paths that don't require auth at all — anyone can view them.
+const PUBLIC_PATHS = ['/', '/login', '/signup', '/forgot-password', '/reset-password'];
+
+// Paths that should bounce signed-in (approved) users away — landing on /login
+// while already logged in is a no-op the user almost never wants. The marketing
+// landing page (/) intentionally does NOT live here so signed-in users can
+// still browse it (we just swap the CTA copy to "Open Market").
+const AUTH_PATHS = ['/login', '/signup', '/forgot-password'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -73,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (loading) return;
 
     const isPublicPath = PUBLIC_PATHS.includes(pathname);
+    const isAuthPath = AUTH_PATHS.includes(pathname);
     const isPendingPath = pathname === '/pending';
     const isResetPath = pathname === '/reset-password';
 
@@ -82,18 +90,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!session && !isPublicPath) {
       router.push('/login');
-    } else if (session && isPublicPath) {
-      router.push(isApproved ? '/' : '/pending');
+    } else if (session && isAuthPath) {
+      router.push(isApproved ? '/market' : '/pending');
     } else if (session && !isApproved && !isPendingPath && !isPublicPath) {
       router.push('/pending');
     } else if (session && isApproved && isPendingPath) {
-      router.push('/');
+      router.push('/market');
     }
   }, [session, loading, isApproved, pathname, router]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push('/');
   };
 
   const user = session?.user ?? null;

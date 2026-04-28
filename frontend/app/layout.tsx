@@ -2,6 +2,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { AuthProvider } from '@/lib/AuthContext';
 import { NavbarWrapper } from '@/components/NavbarWrapper';
+import { MainContainer } from '@/components/MainContainer';
 
 export const metadata = {
   title: 'Statix | Athlete Stock Market',
@@ -19,9 +20,7 @@ export default function RootLayout({
         <AuthProvider>
           <Providers>
             <NavbarWrapper />
-            <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 py-8 sm:py-10 pb-20 md:pb-10">
-              {children}
-            </main>
+            <MainContainer>{children}</MainContainer>
           </Providers>
         </AuthProvider>
       </body>

@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/AuthContext';
 // Public routes that don't touch wallets — skip Privy/Wagmi init there so these
 // pages paint faster on mobile.
 const PUBLIC_PATHS = new Set([
+  '/',
   '/login',
   '/signup',
   '/forgot-password',

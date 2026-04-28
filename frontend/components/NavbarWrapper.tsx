@@ -6,7 +6,7 @@ import { Navbar } from './Navbar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { TradingFreezeBanner } from './TradingFreezeBanner';
 
-const HIDE_NAVBAR_PATHS = ['/login', '/signup', '/pending', '/forgot-password', '/reset-password'];
+const HIDE_NAVBAR_PATHS = ['/', '/login', '/signup', '/pending', '/forgot-password', '/reset-password'];
 
 export function NavbarWrapper() {
   const pathname = usePathname();

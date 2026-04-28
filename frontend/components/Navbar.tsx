@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { ProfileMenu } from '@/components/ProfileMenu';
 
 const NAV_LINKS = [
-  { href: '/', label: 'Market', icon: TrendingUp },
+  { href: '/market', label: 'Market', icon: TrendingUp },
   { href: '/portfolio', label: 'Portfolio', icon: UserIcon },
   { href: '/dividends', label: 'Dividends', icon: BarChart3 },
   { href: '/leaderboard', label: 'Leaderboard', icon: Info },
@@ -108,9 +108,8 @@ export function Navbar() {
     } else {
       params.delete('q');
     }
-    const target = pathname === '/' ? `/?${params.toString()}` : `/?${params.toString()}`;
-    router.push(target);
-  }, [router, pathname, searchParams]);
+    router.push(`/market?${params.toString()}`);
+  }, [router, searchParams]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -124,7 +123,7 @@ export function Navbar() {
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex h-14 items-center justify-between gap-4">
           <div className="flex items-center gap-4 lg:gap-6">
-            <Link href="/" className="flex items-center gap-2 group shrink-0">
+            <Link href="/market" className="flex items-center gap-2 group shrink-0">
               <Image src="/logo.png" alt="Statix" width={32} height={32} className="rounded-lg" />
               <span className="text-lg font-bold text-foreground hidden sm:inline tracking-tight">
                 Statix
