@@ -63,24 +63,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // `.finally` guarantees we exit the loading state even if `getSession` or
-    // `checkApproval` rejects. Without this, a stale/invalid session in
-    // localStorage would hang the entire app on the "Loading..." screen.
-    supabase.auth
-      .getSession()
-      .then(async ({ data: { session } }) => {
+    let cancelled = false;
+
+    // Hard ceiling on the loading screen. supabase-js v2 coordinates token
+    // refreshes via `navigator.locks`; if a previous tab/page exits mid-refresh
+    // the lock can stay held and `getSession()` will hang forever with no
+    // rejection. Without this fallback, refreshing the page after a stuck lock
+    // produces an infinite loading screen.
+    const hardCeiling = setTimeout(() => {
+      if (!cancelled) {
+        console.warn('[auth] auth init exceeded 6s — forcing loading=false');
+        setLoading(false);
+      }
+    }, 6000);
+
+    async function init() {
+      try {
+        // Race getSession against a 4s timeout so a stuck lock can't hang us.
+        const result = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('getSession timeout')), 4000)
+          ),
+        ]);
+        if (cancelled) return;
+
+        const session = result.data.session;
         setSession(session);
         if (session?.user) {
           await checkApproval(session.user.id);
         }
-      })
-      .catch((err) => {
-        console.warn('[auth] getSession failed:', err);
-      })
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.warn('[auth] init failed:', err);
+      } finally {
+        if (!cancelled) {
+          clearTimeout(hardCeiling);
+          setLoading(false);
+        }
+      }
+    }
+
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (cancelled) return;
         setSession(session);
         try {
           if (session?.user) {
@@ -89,12 +116,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsApproved(false);
           }
         } finally {
-          setLoading(false);
+          if (!cancelled) setLoading(false);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      clearTimeout(hardCeiling);
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

@@ -7,7 +7,6 @@ import Link from 'next/link';
 
 const NDA_TEXT = `NON-DISCLOSURE AND NON-COMPETE AGREEMENT
 
-
 This Non-Disclosure and Non-Compete Agreement (the "Agreement") is entered into as of the date the Tester accepts these terms (the "Effective Date"), between Statix (the "Company") and the individual accepting this Agreement (the "Tester").
 
 1. Confidential Information
