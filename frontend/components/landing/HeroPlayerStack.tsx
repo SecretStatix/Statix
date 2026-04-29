@@ -43,7 +43,7 @@ export function HeroPlayerStack() {
   const cards: DemoCard[] = [
     FEATURED_STARS[5], // SGA
     FEATURED_STARS[2], // Jokic
-    FEATURED_STARS[1], // Curry — center, frontmost
+    FEATURED_STARS[7], // Wemby — center, frontmost
     FEATURED_STARS[0], // LeBron
     FEATURED_STARS[4], // Tatum
   ].map(buildDemo);
