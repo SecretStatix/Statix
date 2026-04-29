@@ -109,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, session) => {
         if (cancelled) return;
         setSession(session);
+        if (session?.user) setLoading(true); // hold loading screen while approval check runs — prevents /pending flash
         try {
           if (session?.user) {
             await checkApproval(session.user.id);
