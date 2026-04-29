@@ -208,83 +208,86 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Stats ─────────────────────────────────────────────────────────── */}
-      <section className="relative py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <RevealStagger className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {[
-              { label: 'NBA Players', value: 80, prefix: '', suffix: '' },
-              { label: 'Starting Play Money', value: 300, prefix: '$', suffix: '' },
-              { label: 'Playoff Rounds', value: 4, prefix: '', suffix: '' },
-              { label: 'Top Prize', value: 250, prefix: '$', suffix: '' },
-            ].map((s) => (
-              <RevealItem key={s.label}>
-                <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.01] px-4 py-7 text-center backdrop-blur">
-                  <div className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
-                    <AnimatedNumber value={s.value} prefix={s.prefix} suffix={s.suffix} />
-                  </div>
-                  <p className="mt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {s.label}
-                  </p>
-                </div>
-              </RevealItem>
-            ))}
-          </RevealStagger>
-        </div>
-      </section>
-
       {/* ── How it works ──────────────────────────────────────────────────── */}
-      <section id="how" className="relative py-20 sm:py-28">
+      <section id="how" className="relative py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <RevealOnScroll className="mx-auto max-w-2xl text-center">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
-              Three simple steps
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              How Statix works
-            </h2>
-            <p className="mt-4 text-base text-muted-foreground">
-              From signup to dividends in three simple steps. The whole contest runs through the NBA Finals.
+          <RevealOnScroll className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <h2 className="text-3xl font-semibold tracking-tight sm:text-5xl">
+                How Statix works.
+              </h2>
+            </div>
+            <p className="max-w-md text-base leading-relaxed text-muted-foreground sm:text-right">
+              Sign up, trade shares of 80 NBA players, and collect dividends after every playoff round — all the way through the Finals.
             </p>
           </RevealOnScroll>
 
-          <RevealStagger className="mt-16 grid gap-6 lg:grid-cols-3" stagger={0.12}>
-            {[
-              {
-                step: '01',
-                icon: Coins,
-                title: 'Sign up & get $300 in play money',
-                desc: 'Every approved tester is funded with $300 of play money for free. Periodic top-ups keep your buying power fresh as the playoffs unfold.',
-              },
-              {
-                step: '02',
-                icon: TrendingUp,
-                title: 'Trade shares of 80 players',
-                desc: 'Every player has their own AMM pool — prices move with supply and demand. Buy low, sell high, or hold for dividends.',
-              },
-              {
-                step: '03',
-                icon: Trophy,
-                title: 'Earn dividends each round',
-                desc: 'Every playoff round, accumulated trading fees are distributed back to shareholders. Holders of top fantasy scorers earn a bigger slice.',
-              },
-            ].map(({ step, icon: Icon, title, desc }) => (
-              <RevealItem key={step}>
-                <TiltCard className="group h-full rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-7 transition-all hover:border-primary/30 hover:bg-white/[0.04]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
-                      <Icon className="h-5 w-5" />
+          <div className="relative mt-20 sm:mt-24">
+            {/* Connecting hairline that runs through the icon nodes on desktop */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-0 right-0 top-[2.625rem] hidden lg:block"
+            >
+              <div className="mx-auto h-px w-full max-w-5xl bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
+
+            <RevealStagger
+              className="grid gap-16 lg:grid-cols-3 lg:gap-12"
+              stagger={0.12}
+            >
+              {[
+                {
+                  step: '01',
+                  icon: Coins,
+                  title: 'Sign up, get funded.',
+                  desc: 'Every approved tester is funded with play money for free. Periodic top-ups keep your buying power fresh as the playoffs unfold.',
+                },
+                {
+                  step: '02',
+                  icon: TrendingUp,
+                  title: 'Trade shares of 80 players.',
+                  desc: 'Every player has their own market — prices move with supply and demand. Buy low, sell high, or hold for dividends.',
+                },
+                {
+                  step: '03',
+                  icon: Trophy,
+                  title: 'Collect dividends each round.',
+                  desc: 'Every playoff round, accumulated trading fees are distributed back to shareholders. Holders of top fantasy scorers earn a bigger slice.',
+                },
+              ].map(({ step, icon: Icon, title, desc }) => (
+                <RevealItem key={step}>
+                  <div className="group relative flex flex-col">
+                    {/* Icon node — sits on the connecting line on desktop */}
+                    <div className="relative inline-flex">
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute -left-2 -top-10 select-none text-[5.5rem] font-bold leading-none tracking-tighter text-white/[0.04]"
+                      >
+                        {step}
+                      </span>
+                      <div className="relative z-10 flex h-[5.25rem] w-[5.25rem] items-center justify-center rounded-full bg-background">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/15 group-hover:ring-primary/40">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-xs font-semibold tracking-widest text-muted-foreground/60">
-                      {step}
-                    </span>
+
+                    <div className="mt-8">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/80">
+                        Step {step}
+                      </p>
+                      <h3 className="mt-3 text-xl font-semibold tracking-tight sm:text-[1.35rem]">
+                        {title}
+                      </h3>
+                      <p className="mt-3 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
+                        {desc}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="mt-5 text-lg font-semibold">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{desc}</p>
-                </TiltCard>
-              </RevealItem>
-            ))}
-          </RevealStagger>
+                </RevealItem>
+              ))}
+            </RevealStagger>
+          </div>
         </div>
       </section>
 
@@ -314,7 +317,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <RevealStagger className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
-              { icon: Zap, label: 'Real-time AMM', desc: 'Constant-product trading. No order books, no waiting.' },
+              { icon: Zap, label: 'Real-time trading', desc: 'Instant buys and sells. No order books, no waiting.' },
               { icon: BarChart3, label: 'Live performance', desc: 'Stats pulled directly from real NBA games.' },
               { icon: Users, label: 'Compete with friends', desc: 'Climb the leaderboard against every other tester.' },
               { icon: ShieldCheck, label: 'Closed beta', desc: 'Approved testers only. Spots are limited.' },
