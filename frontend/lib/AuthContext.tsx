@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isApproved: boolean;
+  isAdmin: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   isApproved: false,
+  isAdmin: false,
   signOut: async () => {},
 });
 
@@ -38,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isApproved, setIsApproved] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -46,19 +49,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // safer than `.single()` which rejects on missing/duplicate rows and used
     // to leave us hung on the loading screen forever.
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('profiles')
-        .select('is_approved')
+        .select('is_approved, is_admin')
         .eq('id', userId)
         .maybeSingle();
+
+      // If the `is_admin` column hasn't been added to this Supabase project
+      // yet, the combined query errors and `data` comes back null — which used
+      // to bounce already-approved users to /pending. Fall back to the legacy
+      // shape so the approval gate keeps working until the migration runs.
+      if (error && /is_admin/i.test(error.message)) {
+        const fallback = await supabase
+          .from('profiles')
+          .select('is_approved')
+          .eq('id', userId)
+          .maybeSingle();
+        data = fallback.data as typeof data;
+        error = fallback.error;
+      }
 
       if (error) {
         console.warn('[auth] approval check failed:', error.message);
       }
       setIsApproved(data?.is_approved ?? false);
+      setIsAdmin((data as { is_admin?: boolean } | null)?.is_admin ?? false);
     } catch (err) {
       console.warn('[auth] approval check threw:', err);
       setIsApproved(false);
+      setIsAdmin(false);
     }
   }
 
@@ -114,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await checkApproval(session.user.id);
           } else {
             setIsApproved(false);
+            setIsAdmin(false);
           }
         } finally {
           if (!cancelled) setLoading(false);
@@ -187,7 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isApproved, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isApproved, isAdmin, signOut }}>
       {children}
     </AuthContext.Provider>
   );

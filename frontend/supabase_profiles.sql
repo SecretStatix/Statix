@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     last_name TEXT,
     date_of_birth DATE,
     is_approved BOOLEAN DEFAULT FALSE,
+    is_admin BOOLEAN DEFAULT FALSE,
     nda_accepted BOOLEAN DEFAULT FALSE,
     nda_accepted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
