@@ -149,7 +149,7 @@ export function Portfolio() {
     if (totalValue <= 0) return [];
     const rows: AllocationSlice[] = [];
     if (balance > 0) {
-      rows.push({ name: 'Cash (V-Bucks)', value: balance, pct: (balance / totalValue) * 100 });
+      rows.push({ name: 'Cash (Play Money)', value: balance, pct: (balance / totalValue) * 100 });
     }
     holdings.forEach((h) => {
       rows.push({
@@ -202,7 +202,7 @@ export function Portfolio() {
                 ? 'Minting...'
                 : minted
                   ? 'Got it!'
-                  : `Get ${claimableHuman.toLocaleString()} V-Bucks`}
+                  : `Get $${claimableHuman.toLocaleString()} play money`}
             </button>
             {capReached && (
               <p className="max-w-[14rem] text-right text-[11px] text-muted-foreground">
@@ -292,7 +292,7 @@ export function Portfolio() {
           Trade history
         </h2>
         <p className="mt-1 text-xs text-muted-foreground/80">
-          Indexed buys and sells from the network (V-Bucks = USD).
+          Indexed buys and sells from the network (play money = USD).
         </p>
         {txLoading ? (
           <p className="mt-6 text-sm text-muted-foreground">Loading trades…</p>

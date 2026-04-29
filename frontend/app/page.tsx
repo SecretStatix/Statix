@@ -214,7 +214,7 @@ export default function LandingPage() {
           <RevealStagger className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[
               { label: 'NBA Players', value: 80, prefix: '', suffix: '' },
-              { label: 'Starting V-Bucks', value: 300, prefix: '', suffix: '' },
+              { label: 'Starting Play Money', value: 300, prefix: '$', suffix: '' },
               { label: 'Playoff Rounds', value: 4, prefix: '', suffix: '' },
               { label: 'Top Prize', value: 250, prefix: '$', suffix: '' },
             ].map((s) => (
@@ -253,8 +253,8 @@ export default function LandingPage() {
               {
                 step: '01',
                 icon: Coins,
-                title: 'Sign up & get 300 V-Bucks',
-                desc: 'Every approved tester is funded with 300 V-Bucks for free. Periodic top-ups keep your buying power fresh as the playoffs unfold.',
+                title: 'Sign up & get $300 in play money',
+                desc: 'Every approved tester is funded with $300 of play money for free. Periodic top-ups keep your buying power fresh as the playoffs unfold.',
               },
               {
                 step: '02',

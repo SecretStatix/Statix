@@ -68,7 +68,7 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
   const needsApproval = mode === 'buy' && quote && allowance !== undefined &&
     (allowance as bigint) < BigInt(Math.ceil(quote.total * 1e6));
 
-  /** Matches `useBuyShares` maxCost (`quote.total * 1.05`) — need enough V-Bucks for worst-case debit. */
+  /** Matches `useBuyShares` maxCost (`quote.total * 1.05`) — need enough play money for worst-case debit. */
   const buyMaxSpend = mode === 'buy' && quote ? quote.total * 1.05 : 0;
   const insufficientBuyFunds =
     mode === 'buy' && quote !== null && shares > 0 && balance + 1e-6 < buyMaxSpend;
@@ -186,7 +186,7 @@ export function PlayerTradingPanel({ playerIndex, price }: PlayerTradingPanelPro
               : blockchainUnavailable
                 ? 'Blockchain unavailable'
                 : insufficientBuyFunds
-                  ? 'Insufficient V-Bucks'
+                  ? 'Insufficient play money'
                   : insufficientSellShares
                     ? 'Insufficient shares'
                     : needsApproval

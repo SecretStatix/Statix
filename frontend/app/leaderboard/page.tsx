@@ -37,7 +37,7 @@ export default function LeaderboardPage() {
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Leaderboard</p>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Portfolio rankings</h1>
         <p className="max-w-lg text-sm text-muted-foreground">
-          Users ranked by total portfolio value — V-Bucks balance + share value + unclaimed dividends.
+          Users ranked by total portfolio value — play-money balance + share value + unclaimed dividends.
         </p>
       </header>
 
@@ -122,7 +122,7 @@ export default function LeaderboardPage() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground/60">
-        Portfolio value = V-Bucks balance + (shares × current price) + unclaimed dividends. Updated periodically.
+        Portfolio value = play-money balance + (shares × current price) + unclaimed dividends. Updated periodically.
       </p>
     </div>
   );

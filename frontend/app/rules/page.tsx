@@ -15,7 +15,7 @@ export default function RulesPage() {
         <Section title="Overview">
           <p>
             Statix is a simulated NBA player stock market for the 2026 playoffs. Buy and sell shares in 80 players
-            using V-Bucks — the in-game currency. Each playoff round, the trading fees collected are distributed back
+            using play money — the in-game currency. Each playoff round, the trading fees collected are distributed back
             to shareholders as dividends, with a bigger bonus pool reserved for holders of the top fantasy scorers.
           </p>
           <p className="mt-2">
@@ -26,11 +26,11 @@ export default function RulesPage() {
         {/* Section: Starting balance */}
         <Section title="Starting balance">
           <p>
-            Every approved user receives <span className="font-semibold text-foreground">300 V-Bucks</span> for free via the faucet.
-            V-Bucks are the in-game currency used to buy and sell shares — they&apos;re not real money, but the prizes are.
+            Every approved user receives <span className="font-semibold text-foreground">$300 in play money</span> for free via the faucet.
+            Play money is the in-game currency used to buy and sell shares — it&apos;s not real money, but the prizes are.
           </p>
           <p className="mt-2">
-            A <span className="font-semibold text-foreground">100 V-Bucks top-up</span> will be periodically airdropped to all users throughout the contest — simulating the ability to deposit more funds over time.
+            A <span className="font-semibold text-foreground">$100 play-money top-up</span> will be periodically airdropped to all users throughout the contest — simulating the ability to deposit more funds over time.
           </p>
         </Section>
 
@@ -150,7 +150,7 @@ export default function RulesPage() {
             ))}
           </div>
           <p className="mt-3 text-xs text-muted-foreground/80">
-            Portfolio value = V-Bucks cash balance + (shares held × current price) + unclaimed dividends.
+            Portfolio value = play-money cash balance + (shares held × current price) + unclaimed dividends.
           </p>
         </Section>
 
