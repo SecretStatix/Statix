@@ -20,7 +20,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-10 pb-12">
       <Link
-        href="/"
+        href="/market"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />

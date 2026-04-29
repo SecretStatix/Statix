@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
           </div>
           <h2 className="text-xl font-semibold text-foreground mb-3">Password Updated</h2>
           <p className="text-muted-foreground text-sm mb-6">Your password has been reset successfully.</p>
-          <button onClick={() => router.push('/')} className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary-600 hover:to-accent hover:glow-primary transition">
+          <button onClick={() => router.push('/market')} className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary-600 hover:to-accent hover:glow-primary transition">
             Go to App
           </button>
         </div>

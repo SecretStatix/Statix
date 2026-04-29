@@ -360,7 +360,7 @@ export default function PlayerProfilePage() {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-6">
         <p className="text-muted-foreground">{error || 'Player not found'}</p>
-        <Link href="/" className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary-600 font-medium transition-colors">
+        <Link href="/market" className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary-600 font-medium transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Back to Market
         </Link>
@@ -399,7 +399,7 @@ export default function PlayerProfilePage() {
 
       {/* Back link — minimal */}
       <Link
-        href="/"
+        href="/market"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="w-3.5 h-3.5" />

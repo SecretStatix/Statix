@@ -231,7 +231,7 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
             <>
               {needsApproval && !isPending && !insufficientBuyFunds && (
                 <p className="text-center text-xs text-muted-foreground mb-2">
-                  First-time buy requires 2 confirmations — one to unlock V-Bucks, one to complete the trade.
+                  First-time buy requires 2 confirmations — one to unlock play money, one to complete the trade.
                 </p>
               )}
               <button
@@ -244,7 +244,7 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
                 }`}
               >
                 {approving || approvingConfirming
-                  ? 'Unlocking V-Bucks... (1/2)'
+                  ? 'Unlocking play money... (1/2)'
                   : buying || buyingConfirming
                   ? 'Buying... (2/2)'
                   : selling || sellingConfirming
@@ -254,7 +254,7 @@ export function TradeModal({ isOpen, onClose, player, initialMode = 'buy' }: Tra
                   : blockchainUnavailable
                   ? 'Blockchain unavailable'
                   : insufficientBuyFunds
-                  ? 'Insufficient V-Bucks'
+                  ? 'Insufficient play money'
                   : insufficientSellShares
                   ? 'Insufficient shares'
                   : needsApproval

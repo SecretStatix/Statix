@@ -3,6 +3,12 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'cdn.nba.com' },
+      { protocol: 'https', hostname: 'a.espncdn.com' },
+    ],
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -17,7 +23,13 @@ const nextConfig = {
   },
   async rewrites() {
     const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    const apiUrl = raw.trim().replace(/\/+$/, '');
+    let apiUrl = raw.trim().replace(/\/+$/, '');
+    // Next.js requires rewrite destinations to start with `/`, `http://`, or
+    // `https://`. If the env var was set without a protocol (e.g. a bare
+    // Railway hostname), prepend https:// so we don't crash on boot.
+    if (!/^https?:\/\//i.test(apiUrl) && !apiUrl.startsWith('/')) {
+      apiUrl = `https://${apiUrl}`;
+    }
     return [
       {
         source: '/api/players/:path*',

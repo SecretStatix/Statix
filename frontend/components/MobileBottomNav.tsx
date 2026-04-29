@@ -6,7 +6,7 @@ import { TrendingUp, BarChart3, User as UserIcon, Info, BookOpen } from 'lucide-
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Market', icon: TrendingUp },
+  { href: '/market', label: 'Market', icon: TrendingUp },
   { href: '/portfolio', label: 'Portfolio', icon: UserIcon },
   { href: '/dividends', label: 'Dividends', icon: BarChart3 },
   { href: '/leaderboard', label: 'Board', icon: Info },
