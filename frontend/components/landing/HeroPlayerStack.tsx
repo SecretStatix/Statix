@@ -227,7 +227,6 @@ function HeroCard({ card }: { card: DemoCard }) {
           <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-white/55">
             {card.team} · {card.position}
           </p>
-          <p className="truncate text-sm font-bold text-white">{card.name}</p>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           <button

@@ -36,7 +36,7 @@ export function PlayerTicker() {
               key={`${p.id}-${i}`}
               className="inline-flex items-center gap-2 px-5 text-sm h-full"
             >
-              <span className="font-semibold text-foreground">{p.name}</span>
+              <span className="font-semibold text-foreground">{p.name.split(' ')[0]}</span>
               <span className="font-mono text-xs text-muted-foreground">${p.price.toFixed(2)}</span>
               <span
                 className={`inline-flex items-center gap-0.5 text-xs font-semibold ${
