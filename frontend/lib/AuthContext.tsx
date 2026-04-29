@@ -42,32 +42,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   async function checkApproval(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('is_approved')
-      .eq('id', userId)
-      .single();
+    // `maybeSingle()` returns `null` instead of erroring when no row is found —
+    // safer than `.single()` which rejects on missing/duplicate rows and used
+    // to leave us hung on the loading screen forever.
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_approved')
+        .eq('id', userId)
+        .maybeSingle();
 
-    setIsApproved(data?.is_approved ?? false);
+      if (error) {
+        console.warn('[auth] approval check failed:', error.message);
+      }
+      setIsApproved(data?.is_approved ?? false);
+    } catch (err) {
+      console.warn('[auth] approval check threw:', err);
+      setIsApproved(false);
+    }
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        checkApproval(session.user.id).then(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+    // `.finally` guarantees we exit the loading state even if `getSession` or
+    // `checkApproval` rejects. Without this, a stale/invalid session in
+    // localStorage would hang the entire app on the "Loading..." screen.
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
         setSession(session);
         if (session?.user) {
-          checkApproval(session.user.id).then(() => setLoading(false));
-        } else {
-          setIsApproved(false);
+          await checkApproval(session.user.id);
+        }
+      })
+      .catch((err) => {
+        console.warn('[auth] getSession failed:', err);
+      })
+      .finally(() => setLoading(false));
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        setSession(session);
+        try {
+          if (session?.user) {
+            await checkApproval(session.user.id);
+          } else {
+            setIsApproved(false);
+          }
+        } finally {
           setLoading(false);
         }
       }
@@ -107,27 +128,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user = session?.user ?? null;
 
   const isPublicPath = PUBLIC_PATHS.includes(pathname);
+  const isAuthPath = AUTH_PATHS.includes(pathname);
   const isPendingPath = pathname === '/pending';
+  const isResetPath = pathname === '/reset-password';
 
-  // Show blank screen while loading OR while a redirect is about to fire —
-  // prevents a one-render flash of protected content before router.push lands.
+  // Show blank screen while a redirect is about to fire — prevents a one-render
+  // flash of protected content before router.push lands. Conditions here MUST
+  // mirror the redirect logic in the useEffect above; previously they didn't
+  // (a stray `session && isPublicPath` clause blanked the landing page for any
+  // signed-in user with no matching redirect, leaving them stuck forever).
   const redirectImminent =
-    !loading && (
+    !loading &&
+    !(isResetPath && session) &&
+    (
       (!session && !isPublicPath) ||
-      (session && isPublicPath) ||
-      (session && !isApproved && !isPendingPath && !isPublicPath && pathname !== '/reset-password') ||
+      (session && isAuthPath) ||
+      (session && !isApproved && !isPendingPath && !isPublicPath) ||
       (session && isApproved && isPendingPath)
     );
 
-  if (loading || redirectImminent) {
-    return (
-      <div className="min-h-screen bg-background" />
-    );
+  if (loading) {
+    return <AuthLoadingScreen />;
+  }
+
+  if (redirectImminent) {
+    return <div className="min-h-screen bg-background" />;
   }
 
   return (
     <AuthContext.Provider value={{ user, session, loading, isApproved, signOut }}>
       {children}
     </AuthContext.Provider>
+  );
+}
+
+// Visible loading state with a recovery escape hatch. If a stale Supabase
+// session ever stalls the app again (network blip, RLS migration, etc.), the
+// user can clear it themselves instead of seeing a blank screen.
+function AuthLoadingScreen() {
+  const [showRecover, setShowRecover] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowRecover(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+
+  async function clearAndReload() {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore — we're nuking local state regardless
+    }
+    try {
+      // Strip any stale Supabase tokens that survive signOut.
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith('sb-') || k.includes('supabase'))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // localStorage may be unavailable in some embedded contexts
+    }
+    window.location.assign('/');
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <div className="h-8 w-8 rounded-full border-2 border-white/10 border-t-primary animate-spin" />
+      <div className="text-foreground text-base font-medium">Loading…</div>
+      {showRecover && (
+        <div className="mt-2 max-w-sm text-sm text-muted-foreground">
+          Stuck here?{' '}
+          <button
+            type="button"
+            onClick={clearAndReload}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Clear session and reload
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
