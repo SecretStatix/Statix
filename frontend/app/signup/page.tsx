@@ -7,37 +7,39 @@ import Link from 'next/link';
 
 const NDA_TEXT = `NON-DISCLOSURE AND NON-COMPETE AGREEMENT
 
+
 This Non-Disclosure and Non-Compete Agreement (the "Agreement") is entered into as of the date the Tester accepts these terms (the "Effective Date"), between Statix (the "Company") and the individual accepting this Agreement (the "Tester").
+
 
 1. Confidential Information
 "Confidential Information" means any non-public information about the Company's platform, business, or technology disclosed to or observed by the Tester, including but not limited to:
-  - Platform mechanics, including the automated market maker trading model, dividend distribution model, and fantasy scoring methodology;
-  - User interface, user experience, designs, screens, and visual elements;
-  - Smart contract architecture, code, and deployment details on Base (Ethereum L2);
-  - Business model, monetization strategy, roadmap, and any proprietary technology or know-how;
-  - The existence, scope, and participants of the closed beta itself;
-  - The core concept of trading shares of NBA players via an AMM with dividend payouts based on real player statistics.
+ - Platform mechanics, including the market and fee model, how trades take place, and fantasy scoring methodology;
+ - User interface, user experience, designs, screens, and visual elements;
+ - Contract architecture, code, and deployment details on all blockchains;
+ - Business model, monetization strategy, and any proprietary technology or know-how;
+ - The existence, scope, and participants of the closed beta itself;
+ - The core concept of trading shares of NBA players based on real player statistics.
 
 2. Acknowledgment of Novelty
-The Tester acknowledges that the concept, mechanics, and implementation of Statix — including the combination of AMM-based trading of NBA player shares with dividend payouts driven by real-world performance statistics — are original to and proprietary to the Company. The Tester agrees not to dispute the Company's authorship or ownership of these ideas.
+The Tester acknowledges that the concept, mechanics, and implementation of Statix — including the combination of trading and real world statistics — are original to and proprietary to the Company. The Tester agrees not to dispute the Company's authorship or ownership of these ideas.
 
 3. Non-Disclosure
 The Tester shall not share, describe, screenshot, screen-record, post, publish, or otherwise disclose any Confidential Information to any person who is not a confirmed participant in the closed beta. This restriction applies to all channels, including social media, group chats, blogs, podcasts, public or private messages, and in-person conversations. The Tester shall use Confidential Information solely for the purpose of testing and providing feedback to the Company.
 
 4. Non-Compete and Non-Use
-For a period of one (1) year following the end of the Tester's beta access, the Tester shall not, directly or indirectly, use any Confidential Information to build, develop, launch, advise, consult for, employ, or invest in any product, service, or venture that competes with Statix — including any platform involving tokenized or share-based trading of athletes with performance-linked payouts.
+For a period of one (1) year following the end of the Tester's beta access, the Tester shall not, directly or indirectly, use any Confidential Information to build, develop, launch, advise, consult for, employ, or invest in any product, service, or venture that competes with Statix — including but not limited to any platform involving tokenized or share-based trading of athletes with performance-linked payouts.
 
 5. No Reverse Engineering
-The Tester shall not attempt to reverse-engineer, decompile, disassemble, fork, copy, or derive the source code, smart contracts, algorithms, data models, or platform architecture of Statix, whether by inspecting on-chain data, intercepting network traffic, or any other means.
+The Tester shall not attempt to reverse-engineer, decompile, disassemble, fork, copy, or derive the source code, blockchain contracts, algorithms, data models, or platform architecture of Statix, whether by inspecting on-chain data, intercepting network traffic, or any other means.
 
 6. Beta Disclaimer
-The Tester understands that the beta uses simulated currency ("DBucks"), which has no real-world monetary value and cannot be redeemed for cash, cryptocurrency, or anything of value. The platform is provided "as is" for testing purposes only, with no warranties or guarantees of any kind. Nothing in the beta constitutes a security, investment, or financial product.
+The Tester understands that the beta uses simulated currency ("Play Money"), which has no real-world monetary value and cannot be redeemed for cash, cryptocurrency, or anything of value. The platform is provided "as is" for testing purposes only, with no warranties or guarantees of any kind. Nothing in the beta constitutes a security, investment, or financial product.
 
 7. Feedback Ownership
 Any feedback, suggestions, ideas, bug reports, or improvements the Tester provides to the Company in connection with the beta ("Feedback") shall become the sole property of the Company. The Tester hereby assigns all right, title, and interest in such Feedback to the Company, with no obligation of compensation or attribution.
 
 8. Remedies
-The Tester acknowledges that any breach of this Agreement may cause irreparable harm to the Company for which monetary damages alone would be inadequate. Accordingly, the Company shall be entitled to seek injunctive relief and specific performance, in addition to any other remedies available at law or in equity, including monetary damages and recovery of reasonable legal fees.
+The Tester acknowledges that any breach of this Agreement may cause irreparable harm to the Company for which monetary damages alone would be inadequate. Accordingly, the Company shall be entitled to seek injunctive relief and specific performance, in addition to any other remedies available at law or in equity, including monetary damages and recovery of legal fees.
 
 9. Term
 This Agreement takes effect on the Effective Date, and the obligations herein — particularly those of confidentiality, non-use, non-compete, and no reverse engineering — shall survive for one (1) year after the Tester's beta access ends.
@@ -48,7 +50,9 @@ This Agreement is governed by the laws of the Province of British Columbia and t
 11. Entire Agreement
 This Agreement constitutes the entire agreement between the parties regarding its subject matter and supersedes any prior discussions or understandings. It may only be modified in writing signed by the Company. If any provision is held unenforceable, the remainder shall remain in full force.
 
-By checking the box below, you acknowledge that you have read, understood, and agree to be bound by the terms of this Agreement.`;
+By checking the box below, you acknowledge that you have read, understood, and agree to be bound by the terms of this Agreement`
+
+
 
 export default function SignupPage() {
   const [step, setStep] = useState<'info' | 'nda'>('info');
