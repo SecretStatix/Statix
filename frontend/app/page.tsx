@@ -31,8 +31,8 @@ import {
   RevealItem,
 } from '@/components/landing/RevealOnScroll';
 
-const HEADLINE_LINE_1 = ['Commoditizing', 'Ball', 'Knowledge'];
-const HEADLINE_LINE_2 = ['like', 'the', 'stock', 'market'];
+const HEADLINE_LINE_1 = ['Turn', 'Sports'];
+const HEADLINE_LINE_2 = ['into', 'Strategy'];
 
 export default function LandingPage() {
   const { session, loading } = useAuth();
