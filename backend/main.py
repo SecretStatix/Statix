@@ -4,11 +4,14 @@ NBA athlete stock market with weekly dividends.
 """
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 
-load_dotenv()
+# Always load backend/.env (cwd is often wrong when uvicorn is started from repo root).
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from routes.players import router as players_router
 from routes.trading import router as trading_router
