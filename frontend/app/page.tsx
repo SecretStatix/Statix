@@ -142,7 +142,7 @@ export default function LandingPage() {
               <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
                 <StaggerWords words={HEADLINE_LINE_1} />
                 <br />
-                <StaggerWords words={HEADLINE_LINE_2} delayBase={0.4} wordClassName="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent" />
+                <StaggerWords words={HEADLINE_LINE_2} delayBase={0.4} wordClassName="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent" noWillChange />
               </h1>
 
               <motion.p
@@ -601,7 +601,7 @@ export default function LandingPage() {
 
 // Word-by-word stagger for the hero headline. Lives below the page so the
 // page component above stays focused on layout.
-function StaggerWords({ words, delayBase = 0, wordClassName = '' }: { words: string[]; delayBase?: number; wordClassName?: string }) {
+function StaggerWords({ words, delayBase = 0, wordClassName = '', noWillChange = false }: { words: string[]; delayBase?: number; wordClassName?: string; noWillChange?: boolean }) {
   return (
     <span className="inline-flex flex-wrap gap-x-[0.25em]">
       {words.map((w, i) => (
@@ -614,7 +614,7 @@ function StaggerWords({ words, delayBase = 0, wordClassName = '' }: { words: str
             ease: [0.22, 1, 0.36, 1],
             delay: delayBase + i * 0.08,
           }}
-          className={`inline-block will-change-transform ${wordClassName}`}
+          className={`inline-block ${noWillChange ? '' : 'will-change-transform'} ${wordClassName}`}
         >
           {w}
         </motion.span>
