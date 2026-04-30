@@ -8,6 +8,7 @@ All endpoints require the ADMIN_KEY header (Bearer token). Workflow:
   4. GET  /snapshot-wallets      — list approved wallet addresses (used by distribute-dividends.js)
   5. POST /run-snapshot          — trigger an immediate portfolio NAV snapshot
   6. GET  /refresh-players       — bust player_cache.json and re-fetch from NBA API
+  7. POST /approve-user          — set profiles.is_approved; optional Resend welcome email (see approval_email.py)
 
 Supabase upserts use batch inserts (single call per table) rather than per-row loops.
 Long-running NBA API fetches (80 players × 0.6s ≈ 48s) run as background tasks and
@@ -21,9 +22,10 @@ import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from web3 import Web3
 
+from approval_email import ApprovalEmailSendResult, send_account_approval_email
 from nba_stats import fetch_curated_players, get_weekly_actuals  # get_weekly_actuals used by update-weekly-stats
 from routes.helpers import require_supabase, require_deployment
 from snapshot.job import run_snapshot_job
@@ -64,6 +66,14 @@ class RoundUpdate(BaseModel):
 class ManualPerformance(BaseModel):
     week: int
     performances: List[dict]  # [{player_index, actual_points}]
+
+
+class ApproveUserBody(BaseModel):
+    email: str = Field(..., min_length=3, max_length=320)
+    resend_notification: bool = Field(
+        False,
+        description="If true and the user is already approved, send the welcome email again.",
+    )
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -355,3 +365,99 @@ async def run_snapshot(_=Depends(verify_admin)):
         return result
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
+
+
+def _find_profile_by_email(supabase, email: str) -> Optional[dict]:
+    """Return one profile row or None. Uses ILIKE for case-insensitive match."""
+    clean = email.strip()
+    if not clean or "@" not in clean:
+        return None
+    res = (
+        supabase.table("profiles")
+        .select("id, email, username, first_name, is_approved")
+        .ilike("email", clean)
+        .limit(2)
+        .execute()
+    )
+    rows = res.data or []
+    if len(rows) > 1:
+        raise HTTPException(
+            status_code=409,
+            detail="Multiple profiles match this email — resolve manually in Supabase.",
+        )
+    return rows[0] if rows else None
+
+
+def _display_name_for_profile(row: dict, fallback_email: str) -> str:
+    return (
+        (row.get("username") or "").strip()
+        or (row.get("first_name") or "").strip()
+        or (row.get("email") or fallback_email).split("@", 1)[0]
+        or "there"
+    )
+
+
+@router.post("/approve-user")
+async def approve_user(body: ApproveUserBody, _=Depends(verify_admin)):
+    """Set ``profiles.is_approved`` to true and send welcome email via ``approval_email`` (optional Resend).
+
+    Body: ``{"email":"..."}`` — case-insensitive match. Use ``resend_notification: true`` to send
+    the email again for an already-approved user (e.g. after configuring ``RESEND_API_KEY``).
+    """
+    supabase = require_supabase()
+
+    row = _find_profile_by_email(supabase, body.email)
+    if not row:
+        raise HTTPException(status_code=404, detail="No profile found for that email")
+
+    uid = row["id"]
+    to_addr = (row.get("email") or body.email).strip()
+    display = _display_name_for_profile(row, body.email)
+
+    if row.get("is_approved") is True:
+        if body.resend_notification and "@" in to_addr:
+            mail = await send_account_approval_email(to_email=to_addr, display_name=display)
+            return {
+                "ok": True,
+                "already_approved": True,
+                "id": uid,
+                "email": to_addr,
+                "email_sent": mail.sent,
+                "email_detail": mail.detail,
+            }
+        return {
+            "ok": True,
+            "already_approved": True,
+            "id": uid,
+            "email": to_addr,
+            "email_sent": False,
+            "email_detail": "skipped_use_resend_notification_true_to_email_again",
+        }
+
+    try:
+        supabase.table("profiles").update({"is_approved": True}).eq("id", uid).execute()
+    except Exception as e:
+        logger.error("approve-user: update failed: %s", e)
+        raise HTTPException(status_code=503, detail=f"Could not update profile: {e}") from e
+
+    if "@" not in to_addr:
+        logger.warning("approve-user: missing usable email — skipping send")
+        mail = ApprovalEmailSendResult(False, "no_at_in_profile_email")
+    else:
+        mail = await send_account_approval_email(to_email=to_addr, display_name=display)
+
+    logger.info(
+        "approve-user: approved profile %s (%s) email_sent=%s detail=%s",
+        uid,
+        to_addr,
+        mail.sent,
+        mail.detail,
+    )
+    return {
+        "ok": True,
+        "already_approved": False,
+        "id": uid,
+        "email": to_addr,
+        "email_sent": mail.sent,
+        "email_detail": mail.detail,
+    }
