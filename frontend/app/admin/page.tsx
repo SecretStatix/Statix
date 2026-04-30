@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { BackendHealthPanel } from '@/components/admin/BackendHealthPanel';
 import { ActivityPanel } from '@/components/admin/ActivityPanel';
+import { ApiDebugPanel } from '@/components/admin/ApiDebugPanel';
 
 type GateState = 'checking' | 'allowed' | 'denied';
 
@@ -114,6 +115,8 @@ export default function AdminPage() {
           </section>
         </div>
       </div>
+
+      <ApiDebugPanel />
     </div>
   );
 }
