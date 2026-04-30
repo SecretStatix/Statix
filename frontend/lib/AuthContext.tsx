@@ -82,17 +82,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         if (cancelled) return;
         setSession(session);
-        if (session?.user) setLoading(true);
-        try {
-          if (session?.user) {
+        // Only re-check approval on actual sign-in events, not token refreshes.
+        // Token refreshes don't change the user or their approval status, and
+        // re-running checkApproval risks a failed query setting isApproved=false.
+        if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+          try {
             await checkApproval(session.user.id);
-          } else {
-            setIsApproved(false);
+          } finally {
+            if (!cancelled) setLoading(false);
           }
-        } finally {
+        } else if (!session) {
+          setIsApproved(false);
           if (!cancelled) setLoading(false);
         }
       }
