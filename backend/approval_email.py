@@ -77,13 +77,12 @@ async def send_account_approval_email(*, to_email: str, display_name: str) -> Ap
         return ApprovalEmailSendResult(False, "missing_RESEND_API_KEY_in_server_env")
 
     from_addr = os.getenv("RESEND_FROM", "Statix <hello@playstatix.ca>")
-    app_url = "https://www.playstatix.ca"
 
     subject = "You're approved — welcome to Statix"
     body_html = build_approval_email_html(
         recipient_email=to_email,
         display_name=display_name,
-        app_url=app_url,
+        app_url="https://www.playstatix.ca",
     )
 
     try:
