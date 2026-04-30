@@ -6,6 +6,7 @@ import { ArrowLeft, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { BackendHealthPanel } from '@/components/admin/BackendHealthPanel';
+import { ActivityPanel } from '@/components/admin/ActivityPanel';
 
 type GateState = 'checking' | 'allowed' | 'denied';
 
@@ -101,14 +102,7 @@ export default function AdminPage() {
         <div className="pointer-events-none absolute -right-28 -top-28 h-[22rem] w-[22rem] rounded-full bg-primary/[0.04] blur-[120px]" />
         <div className="relative space-y-0 divide-y divide-white/[0.06]">
           <BackendHealthPanel />
-          <section className="px-5 py-6 sm:px-8">
-            <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">
-              Coming soon
-            </h2>
-            <p className="mt-2 text-sm text-foreground">
-              User approvals, dividend distribution status, bot activity, NAV snapshots, and trading analytics.
-            </p>
-          </section>
+          <ActivityPanel />
           <section className="px-5 py-6 sm:px-8">
             <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">
               Signed in as
