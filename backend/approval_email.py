@@ -76,8 +76,8 @@ async def send_account_approval_email(*, to_email: str, display_name: str) -> Ap
         logger.info("approval email skipped — set RESEND_API_KEY to enable")
         return ApprovalEmailSendResult(False, "missing_RESEND_API_KEY_in_server_env")
 
-    from_addr = os.getenv("RESEND_FROM", "Statix <onboarding@resend.dev>")
-    app_url = os.getenv("STATIX_APP_URL", "https://statix.app").strip()
+    from_addr = os.getenv("RESEND_FROM", "Statix <hello@playstatix.ca>")
+    app_url = "https://www.playstatix.ca"
 
     subject = "You're approved — welcome to Statix"
     body_html = build_approval_email_html(
