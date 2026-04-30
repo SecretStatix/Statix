@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDownRight, ArrowUpRight, TrendingUp, Users } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Search, TrendingUp, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/AuthContext';
 import deploymentsFallback from '@/deployments.json';
 
 type Tab = 'players' | 'users';
@@ -74,7 +75,9 @@ async function fetchTradesPaged(
 }
 
 export function ActivityPanel() {
+  const { session } = useAuth();
   const [tab, setTab] = useState<Tab>('players');
+  const [listQuery, setListQuery] = useState('');
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [playersLoading, setPlayersLoading] = useState(true);
@@ -86,6 +89,9 @@ export function ActivityPanel() {
 
   const [trades, setTrades] = useState<Trade[]>([]);
   const [tradesLoading, setTradesLoading] = useState(false);
+
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [approveFlash, setApproveFlash] = useState<string | null>(null);
 
   // Players: same-origin proxy is /api/players/* (see next.config.js). Fallback
   // to bundled deployments.json if the API is down or returns an empty list.
@@ -172,6 +178,73 @@ export function ActivityPanel() {
   const labelForTradeWallet = (wallet: string) =>
     walletLabelByAddress.get(wallet.toLowerCase()) ?? truncateWallet(wallet);
 
+  const filteredPlayers = useMemo(() => {
+    const q = listQuery.trim().toLowerCase();
+    if (!q) return players;
+    return players.filter(p => p.name.toLowerCase().includes(q));
+  }, [players, listQuery]);
+
+  const filteredUsers = useMemo(() => {
+    const q = listQuery.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(u => {
+      const hay = `${u.username ?? ''} ${u.email ?? ''} ${u.id}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [users, listQuery]);
+
+  async function handleApproveUser(u: UserProfile) {
+    const email = u.email?.trim();
+    if (!email) {
+      setApproveFlash('No email on profile — cannot approve');
+      return;
+    }
+    if (!session?.access_token) {
+      setApproveFlash('Not signed in');
+      return;
+    }
+    setApprovingId(u.id);
+    setApproveFlash(null);
+    try {
+      const r = await fetch('/api/admin/approve-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+      const j = (await r.json()) as {
+        ok?: boolean;
+        detail?: unknown;
+        error?: string;
+        email_sent?: boolean;
+        email_detail?: string;
+      };
+      if (!r.ok) {
+        const d = j.detail;
+        const detail =
+          typeof d === 'string'
+            ? d
+            : Array.isArray(d)
+              ? d.map((x: { msg?: string }) => x.msg).filter(Boolean).join(', ')
+              : undefined;
+        setApproveFlash(detail || j.error || `Request failed (${r.status})`);
+        return;
+      }
+      setUsers(prev =>
+        prev.map(x => (x.id === u.id ? { ...x, is_approved: true } : x))
+      );
+      const mail = j.email_sent ? 'Email sent.' : `No email (${j.email_detail ?? 'unknown'}).`;
+      setApproveFlash(`Approved ${email}. ${mail}`);
+    } catch (e) {
+      console.warn('[admin] approve failed:', e);
+      setApproveFlash('Network error');
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
   // Load trades for selected player
   useEffect(() => {
     if (!selectedPlayer) return;
@@ -246,6 +319,8 @@ export function ActivityPanel() {
 
   const handleTabSwitch = (t: Tab) => {
     setTab(t);
+    setListQuery('');
+    setApproveFlash(null);
     setSelectedPlayer(null);
     setSelectedUser(null);
     setTrades([]);
@@ -297,40 +372,67 @@ export function ActivityPanel() {
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
+      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,300px)_1fr]">
         {/* ── Left: list ── */}
         <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+          {!listLoading && (
+            <div className="border-b border-white/[0.06] p-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={listQuery}
+                  onChange={e => setListQuery(e.target.value)}
+                  placeholder={tab === 'players' ? 'Search players…' : 'Search users…'}
+                  className="h-8 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] py-1 pl-8 pr-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-primary/30 focus:outline-none focus:ring-1 focus:ring-primary/20"
+                />
+              </div>
+              {tab === 'users' && approveFlash && (
+                <p className="mt-2 text-[11px] leading-snug text-muted-foreground">{approveFlash}</p>
+              )}
+            </div>
+          )}
           {listLoading ? (
             <div className="flex h-40 items-center justify-center">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-primary" />
             </div>
           ) : tab === 'players' ? (
-            <ul className="max-h-[420px] divide-y divide-white/[0.04] overflow-y-auto">
-              {players.map(p => (
-                <li key={p.id}>
-                  <button
-                    onClick={() => handleSelectPlayer(p)}
-                    className={`w-full px-4 py-3 text-left text-sm transition hover:bg-white/[0.04] ${
-                      selectedPlayer?.id === p.id
-                        ? 'bg-primary/10 font-medium text-primary'
-                        : 'text-foreground'
-                    }`}
-                  >
-                    {p.name}
-                  </button>
-                </li>
-              ))}
+            <ul className="max-h-[380px] divide-y divide-white/[0.04] overflow-y-auto">
+              {filteredPlayers.length === 0 ? (
+                <li className="px-4 py-8 text-center text-xs text-muted-foreground">No matching players</li>
+              ) : (
+                filteredPlayers.map(p => (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPlayer(p)}
+                      className={`w-full px-4 py-3 text-left text-sm transition hover:bg-white/[0.04] ${
+                        selectedPlayer?.id === p.id
+                          ? 'bg-primary/10 font-medium text-primary'
+                          : 'text-foreground'
+                      }`}
+                    >
+                      {p.name}
+                    </button>
+                  </li>
+                ))
+              )}
             </ul>
           ) : (
-            <ul className="max-h-[420px] divide-y divide-white/[0.04] overflow-y-auto">
-              {users.map(u => {
+            <ul className="max-h-[380px] divide-y divide-white/[0.04] overflow-y-auto">
+              {filteredUsers.length === 0 ? (
+                <li className="px-4 py-8 text-center text-xs text-muted-foreground">No matching users</li>
+              ) : (
+                filteredUsers.map(u => {
                 const bot = isBot(u);
                 const selected = selectedUser?.id === u.id;
+                const showApprove = !u.is_approved && !bot && u.email;
                 return (
-                  <li key={u.id}>
+                  <li key={u.id} className="flex items-stretch divide-x divide-white/[0.06]">
                     <button
+                      type="button"
                       onClick={() => handleSelectUser(u)}
-                      className={`w-full px-4 py-2.5 text-left transition hover:bg-white/[0.04] ${
+                      className={`min-w-0 flex-1 px-4 py-2.5 text-left transition hover:bg-white/[0.04] ${
                         selected ? 'bg-primary/10' : ''
                       }`}
                     >
@@ -358,6 +460,11 @@ export function ActivityPanel() {
                               {u.email}
                             </p>
                           )}
+                          {u.email && !u.username && (
+                            <p className={`truncate text-xs ${bot ? 'text-amber-400/50' : 'text-muted-foreground'}`}>
+                              {u.email}
+                            </p>
+                          )}
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
                           {bot && (
@@ -378,9 +485,23 @@ export function ActivityPanel() {
                         </div>
                       </div>
                     </button>
+                    {showApprove && (
+                      <button
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          void handleApproveUser(u);
+                        }}
+                        disabled={approvingId === u.id}
+                        className="shrink-0 bg-primary/15 px-2.5 text-[11px] font-medium text-primary transition hover:bg-primary/25 disabled:opacity-50"
+                      >
+                        {approvingId === u.id ? '…' : 'Approve'}
+                      </button>
+                    )}
                   </li>
                 );
-              })}
+              })
+              )}
             </ul>
           )}
         </div>

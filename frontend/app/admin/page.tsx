@@ -94,7 +94,10 @@ export default function AdminPage() {
           Admin & Analytics
         </h1>
         <p className="max-w-lg text-sm text-muted-foreground">
-          Operations dashboard for Statix. Approvals, weekly stats, and platform analytics will live here.
+          Health checks, trading activity, and user approvals. Set{' '}
+          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px]">ADMIN_KEY</code> in{' '}
+          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[11px]">frontend/.env.local</code>{' '}
+          (same as the FastAPI backend) so Approve can run server-side.
         </p>
       </header>
 
