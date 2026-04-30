@@ -2,11 +2,13 @@
 
 import { useAccount } from 'wagmi';
 import { Portfolio } from '@/components/Portfolio';
+import { AuthGate } from '@/components/AuthGate';
 
 export default function PortfolioPage() {
   const { isConnected } = useAccount();
 
   return (
+    <AuthGate>
     <div className="space-y-10 pb-12">
       <header className="space-y-1">
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Portfolio</p>
@@ -24,5 +26,6 @@ export default function PortfolioPage() {
         </div>
       )}
     </div>
+    </AuthGate>
   );
 }

@@ -35,10 +35,11 @@ const HEADLINE_LINE_1 = ['Commoditizing', 'Ball', 'Knowledge'];
 const HEADLINE_LINE_2 = ['like', 'the', 'stock', 'market'];
 
 export default function LandingPage() {
-  const { session, isApproved } = useAuth();
+  const { session, loading } = useAuth();
   const signedIn = Boolean(session);
-  const ctaHref = signedIn ? (isApproved ? '/market' : '/pending') : '/signup';
-  const ctaLabel = signedIn ? (isApproved ? 'Open Market' : 'Continue') : 'Get Started';
+  // While auth is still loading show a neutral state — prevents the "Continue → /pending" flash.
+  const ctaHref = loading ? '#' : signedIn ? '/market' : '/signup';
+  const ctaLabel = loading ? 'Loading…' : signedIn ? 'Open Market' : 'Get Started';
 
   // Parallax: hero glow drifts up as you scroll the hero section.
   const heroRef = useRef<HTMLElement>(null);

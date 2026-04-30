@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { getPlayers } from '@/lib/api';
+import { AuthGate } from '@/components/AuthGate';
 import { useAllPlayers } from '@/hooks/useContracts';
 import { formatUnits } from 'viem';
 import { PlayerGrid, PlayerData } from '@/components/PlayerGrid';
@@ -117,8 +118,10 @@ function MarketContent() {
 
 export default function MarketPage() {
   return (
-    <Suspense fallback={<div className="text-center py-12 text-muted-foreground">Loading...</div>}>
-      <MarketContent />
-    </Suspense>
+    <AuthGate>
+      <Suspense fallback={<div className="text-center py-12 text-muted-foreground">Loading...</div>}>
+        <MarketContent />
+      </Suspense>
+    </AuthGate>
   );
 }
