@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getLeaderboard } from '@/lib/api';
 import { AnimatedDividendPool } from '@/components/AnimatedDividendPool';
+import { AuthGate } from '@/components/AuthGate';
 
 const PRIZES = [
   { rank: 1, label: '1st Place', amount: '$250', color: 'text-amber-400' },
@@ -32,6 +33,7 @@ export default function LeaderboardPage() {
   }, []);
 
   return (
+    <AuthGate>
     <div className="space-y-8 pb-12">
       <header className="space-y-1">
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Leaderboard</p>
@@ -125,5 +127,6 @@ export default function LeaderboardPage() {
         Portfolio value = play-money balance + (shares × current price) + unclaimed dividends. Updated periodically.
       </p>
     </div>
+    </AuthGate>
   );
 }

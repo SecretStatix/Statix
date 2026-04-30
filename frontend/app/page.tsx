@@ -20,7 +20,6 @@ import {
 
 import { HeroPlayerStack } from '@/components/landing/HeroPlayerStack';
 import { PlayerTicker } from '@/components/landing/PlayerTicker';
-import { PlayerShowcase } from '@/components/landing/PlayerShowcase';
 import { TiltCard } from '@/components/landing/TiltCard';
 import { MagneticButton } from '@/components/landing/MagneticButton';
 import { AnimatedNumber } from '@/components/landing/AnimatedNumber';
@@ -32,14 +31,15 @@ import {
   RevealItem,
 } from '@/components/landing/RevealOnScroll';
 
-const HEADLINE_LINE_1 = ['Commoditizing', 'Ball', 'Knowledge'];
-const HEADLINE_LINE_2 = ['like', 'the', 'stock', 'market'];
+const HEADLINE_LINE_1 = ['Turn', 'Sports'];
+const HEADLINE_LINE_2 = ['into', 'Strategy'];
 
 export default function LandingPage() {
-  const { session, isApproved } = useAuth();
+  const { session, loading } = useAuth();
   const signedIn = Boolean(session);
-  const ctaHref = signedIn ? (isApproved ? '/market' : '/pending') : '/signup';
-  const ctaLabel = signedIn ? (isApproved ? 'Open Market' : 'Continue') : 'Get Started';
+  // While auth is still loading show a neutral state — prevents the "Continue → /pending" flash.
+  const ctaHref = loading ? '#' : signedIn ? '/market' : '/signup';
+  const ctaLabel = loading ? 'Loading…' : signedIn ? 'Open Market' : 'Get Started';
 
   // Parallax: hero glow drifts up as you scroll the hero section.
   const heroRef = useRef<HTMLElement>(null);
@@ -76,7 +76,6 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-1 text-sm">
             {[
               ['#how', 'How it works'],
-              ['#players', 'Players'],
               ['#scoring', 'Scoring'],
               ['#dividends', 'Dividends'],
               ['#prizes', 'Prizes'],
@@ -137,7 +136,7 @@ export default function LandingPage() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
                 </span>
-                Live for the 2026 NBA Playoffs
+                Live for the 2026 Playoffs
               </motion.div>
 
               <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
@@ -154,7 +153,7 @@ export default function LandingPage() {
                 transition={{ duration: 0.7, delay: 1.0 }}
                 className="mt-6 max-w-lg text-base text-muted-foreground sm:text-lg"
               >
-                Build a portfolio of NBA stars. Buy and sell shares through an open market, earn dividends every playoff round, and compete for real cash prizes.
+                Build a portfolio of basketball stars. Buy and sell shares through an open market, earn dividends every playoff round, and compete for real cash prizes.
               </motion.p>
 
               <motion.div
@@ -218,7 +217,7 @@ export default function LandingPage() {
               </h2>
             </div>
             <p className="max-w-md text-base leading-relaxed text-muted-foreground sm:text-right">
-              Sign up, trade shares of 80 NBA players, and collect dividends after every playoff round — all the way through the Finals.
+              Sign up, trade shares of 80 players, and collect dividends after every playoff round — all the way through the Finals.
             </p>
           </RevealOnScroll>
 
@@ -291,34 +290,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Player showcase ───────────────────────────────────────────────── */}
-      <section id="players" className="relative py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <RevealOnScroll className="mx-auto max-w-2xl text-center">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
-              The roster
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              80 stars. One market.
-            </h2>
-            <p className="mt-4 text-base text-muted-foreground">
-              From MVPs to rising rookies, every meaningful playoff player has their own pool. Pick your roster and ride their performance.
-            </p>
-          </RevealOnScroll>
-
-          <div className="mt-14">
-            <PlayerShowcase />
-          </div>
-        </div>
-      </section>
-
       {/* ── Features ──────────────────────────────────────────────────────── */}
       <section className="relative py-12 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <RevealStagger className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
               { icon: Zap, label: 'Real-time trading', desc: 'Instant buys and sells. No order books, no waiting.' },
-              { icon: BarChart3, label: 'Live performance', desc: 'Stats pulled directly from real NBA games.' },
+              { icon: BarChart3, label: 'Live performance', desc: 'Stats pulled directly from real games.' },
               { icon: Users, label: 'Compete with friends', desc: 'Climb the leaderboard against every other tester.' },
               { icon: ShieldCheck, label: 'Closed beta', desc: 'Approved testers only. Spots are limited.' },
             ].map(({ icon: Icon, label, desc }) => (
@@ -370,7 +348,7 @@ export default function LandingPage() {
                 <li className="flex items-start gap-3">
                   <Target className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   <span>
-                    <span className="font-semibold text-foreground">Live data</span> straight from the NBA — your dividends update with every game.
+                    <span className="font-semibold text-foreground">Live data</span> straight from the source — your dividends update with every game.
                   </span>
                 </li>
               </ul>
@@ -481,7 +459,7 @@ export default function LandingPage() {
                 { round: 'Round 1', topN: 'Top 10' },
                 { round: 'Round 2', topN: 'Top 5' },
                 { round: 'Conf Finals', topN: 'Top 3' },
-                { round: 'NBA Finals', topN: 'Top 1' },
+                { round: 'Finals', topN: 'Top 1' },
               ].map(({ round, topN }, i) => (
                 <motion.div
                   key={round}
@@ -513,7 +491,7 @@ export default function LandingPage() {
               Real cash for the top three
             </h2>
             <p className="mt-4 text-base text-muted-foreground">
-              Final standings are determined by total portfolio value at the end of the NBA Finals — cash + share value + unclaimed dividends.
+              Final standings are determined by total portfolio value at the end of the Finals — cash + share value + unclaimed dividends.
             </p>
           </RevealOnScroll>
 
@@ -571,7 +549,7 @@ export default function LandingPage() {
                   Ready to draft your portfolio?
                 </h2>
                 <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-                  Sign up and start trading the 2026 NBA Playoffs. The closed beta is open now.
+                  Sign up and start trading the 2026 Playoffs. The closed beta is open now.
                 </p>
                 <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <MagneticButton
@@ -598,20 +576,25 @@ export default function LandingPage() {
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="border-t border-white/[0.06]">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 text-xs text-muted-foreground sm:flex-row sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Statix" width={20} height={20} className="rounded" />
-            <span className="font-medium text-foreground/80">Statix</span>
-            <span className="text-muted-foreground/60">— closed beta. Simulated currency, real prizes.</span>
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-between gap-4 text-xs text-muted-foreground sm:flex-row">
+            <div className="flex items-center gap-2">
+              <Image src="/logo.png" alt="Statix" width={20} height={20} className="rounded" />
+              <span className="font-medium text-foreground/80">Statix</span>
+              <span className="text-muted-foreground/60">— closed beta. Simulated currency, real prizes.</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href="/login" className="hover:text-foreground transition-colors">
+                Sign in
+              </Link>
+              <Link href="/signup" className="hover:text-foreground transition-colors">
+                Sign up
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="hover:text-foreground transition-colors">
-              Sign in
-            </Link>
-            <Link href="/signup" className="hover:text-foreground transition-colors">
-              Sign up
-            </Link>
-          </div>
+          <p className="mt-6 border-t border-white/[0.06] pt-6 text-center text-[11px] leading-relaxed text-muted-foreground/70">
+            Statix is not affiliated with, endorsed by, or sponsored by the NBA, NBPA, any NBA team, or any player.
+          </p>
         </div>
       </footer>
     </div>

@@ -43,7 +43,7 @@ export function HeroPlayerStack() {
   const cards: DemoCard[] = [
     FEATURED_STARS[5], // SGA
     FEATURED_STARS[2], // Jokic
-    FEATURED_STARS[1], // Curry — center, frontmost
+    FEATURED_STARS[7], // Wemby — center, frontmost
     FEATURED_STARS[0], // LeBron
     FEATURED_STARS[4], // Tatum
   ].map(buildDemo);
@@ -227,7 +227,6 @@ function HeroCard({ card }: { card: DemoCard }) {
           <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-white/55">
             {card.team} · {card.position}
           </p>
-          <p className="truncate text-sm font-bold text-white">{card.name}</p>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           <button

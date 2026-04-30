@@ -13,7 +13,7 @@ export type FeaturedStar = {
 
 export const FEATURED_STARS: FeaturedStar[] = [
   { id: 'lebron_james',           name: 'LeBron James',           symbol: 'JAMEL',  team: 'LAL', nbaId: 2544,    accent: '#FDB927' },
-  { id: 'stephen_curry',          name: 'Stephen Curry',          symbol: 'CURRS',  team: 'GSW', nbaId: 201939,  accent: '#FFC72C' },
+  { id: 'cade_cunningham',        name: 'Cade Cunningham',        symbol: 'CUNNC',  team: 'DET', nbaId: 1630595, accent: '#C8102E' },
   { id: 'nikola_jokic',           name: 'Nikola Jokic',           symbol: 'JOKIN',  team: 'DEN', nbaId: 203999,  accent: '#FEC524' },
   { id: 'luka_doncic',            name: 'Luka Doncic',            symbol: 'DONCL',  team: 'LAL', nbaId: 1629029, accent: '#552583' },
   { id: 'jayson_tatum',           name: 'Jayson Tatum',           symbol: 'TATUJ',  team: 'BOS', nbaId: 1628369, accent: '#007A33' },
@@ -23,7 +23,7 @@ export const FEATURED_STARS: FeaturedStar[] = [
   { id: 'kevin_durant',           name: 'Kevin Durant',           symbol: 'DURAK',  team: 'PHX', nbaId: 201142,  accent: '#E56020' },
   { id: 'jalen_brunson',          name: 'Jalen Brunson',          symbol: 'BRUNJ',  team: 'NYK', nbaId: 1628973, accent: '#F58426' },
   { id: 'donovan_mitchell',       name: 'Donovan Mitchell',       symbol: 'MITCD',  team: 'CLE', nbaId: 1628378, accent: '#860038' },
-  { id: 'cade_cunningham',        name: 'Cade Cunningham',        symbol: 'CUNNC',  team: 'DET', nbaId: 1630595, accent: '#C8102E' },
+  { id: 'stephen_curry',          name: 'Stephen Curry',          symbol: 'CURRS',  team: 'GSW', nbaId: 201939,  accent: '#FFC72C' },
 ];
 
 export function headshotUrl(nbaId: number, size: '260x190' | '1040x760' = '1040x760') {

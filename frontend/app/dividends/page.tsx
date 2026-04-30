@@ -4,11 +4,13 @@ import { useAccount } from 'wagmi';
 import { DividendSummary } from '@/components/DividendSummary';
 import { AnimatedDividendPool } from '@/components/AnimatedDividendPool';
 import { TopPerformers } from '@/components/TopPerformers';
+import { AuthGate } from '@/components/AuthGate';
 
 export default function DividendsPage() {
   const { isConnected } = useAccount();
 
   return (
+    <AuthGate>
     <div className="space-y-8 pb-12">
       <header className="space-y-1">
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">Dividends</p>
@@ -30,5 +32,6 @@ export default function DividendsPage() {
         </div>
       )}
     </div>
+    </AuthGate>
   );
 }
