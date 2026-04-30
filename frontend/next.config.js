@@ -31,6 +31,15 @@ const nextConfig = {
       apiUrl = `https://${apiUrl}`;
     }
     return [
+      // Same-origin proxy for admin health checks (avoids browser CORS to Railway).
+      {
+        source: '/statix-backend/health',
+        destination: `${apiUrl}/health`,
+      },
+      {
+        source: '/statix-backend/health/db',
+        destination: `${apiUrl}/health/db`,
+      },
       {
         source: '/api/players/:path*',
         destination: `${apiUrl}/api/players/:path*`,

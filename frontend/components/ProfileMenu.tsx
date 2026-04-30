@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
+import { ChevronDown, User, Settings, LogOut, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 interface ProfileMenuProps {
   email?: string;
@@ -11,6 +12,7 @@ interface ProfileMenuProps {
 }
 
 export function ProfileMenu({ email, label, onSignOut }: ProfileMenuProps) {
+  const { isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -66,6 +68,17 @@ export function ProfileMenu({ email, label, onSignOut }: ProfileMenuProps) {
             <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
             Profile settings
           </Link>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              role="menuitem"
+              className="flex items-center gap-2 px-3 py-2.5 text-sm text-foreground hover:bg-white/[0.05]"
+              onClick={() => setOpen(false)}
+            >
+              <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
+              Admin
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"
