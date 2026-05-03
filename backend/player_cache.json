@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-05-01T16:12:25.117700",
+  "timestamp": "2026-05-03T12:41:10.503849",
   "season": "2025-26",
   "players": [
     {
@@ -1646,10 +1646,26 @@
         "FG3M": 1.3,
         "TOV": 3.0
       },
-      "avg_fantasy_points": 44.53,
-      "weekly_projection": 155.86,
-      "season_projection": 3651.46,
+      "avg_fantasy_points": 46.55,
+      "weekly_projection": 162.92,
+      "season_projection": 3817.1,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "LAL @ HOU",
+          "result": "W",
+          "stats": {
+            "PTS": 28.0,
+            "REB": 7.0,
+            "AST": 8.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 3.0,
+            "MIN": 37.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 44.9
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "LAL vs. HOU",
@@ -1793,22 +1809,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 61.8
-        },
-        {
-          "date": "Apr 02, 2026",
-          "matchup": "LAL @ OKC",
-          "result": "L",
-          "stats": {
-            "PTS": 13.0,
-            "REB": 6.0,
-            "AST": 2.0,
-            "STL": 1.0,
-            "BLK": 1.0,
-            "TOV": 2.0,
-            "MIN": 26.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 24.7
         }
       ]
     },
@@ -1827,10 +1827,26 @@
         "FG3M": 2.3,
         "TOV": 3.0
       },
-      "avg_fantasy_points": 33.26,
-      "weekly_projection": 116.41,
-      "season_projection": 2727.32,
+      "avg_fantasy_points": 32.66,
+      "weekly_projection": 114.31,
+      "season_projection": 2678.12,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "LAL @ HOU",
+          "result": "W",
+          "stats": {
+            "PTS": 15.0,
+            "REB": 3.0,
+            "AST": 2.0,
+            "STL": 0.0,
+            "BLK": 3.0,
+            "TOV": 2.0,
+            "MIN": 31.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 24.6
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "LAL vs. HOU",
@@ -1974,22 +1990,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 28.0
-        },
-        {
-          "date": "Mar 18, 2026",
-          "matchup": "LAL @ HOU",
-          "result": "W",
-          "stats": {
-            "PTS": 14.0,
-            "REB": 3.0,
-            "AST": 8.0,
-            "STL": 0.0,
-            "BLK": 1.0,
-            "TOV": 1.0,
-            "MIN": 39.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 30.6
         }
       ]
     },
@@ -2008,10 +2008,26 @@
         "FG3M": 0.6,
         "TOV": 3.2
       },
-      "avg_fantasy_points": 38.84,
-      "weekly_projection": 135.94,
-      "season_projection": 3184.88,
+      "avg_fantasy_points": 39.33,
+      "weekly_projection": 137.66,
+      "season_projection": 3225.06,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "HOU vs. LAL",
+          "result": "L",
+          "stats": {
+            "PTS": 17.0,
+            "REB": 11.0,
+            "AST": 1.0,
+            "STL": 0.0,
+            "BLK": 2.0,
+            "TOV": 4.0,
+            "MIN": 38.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 31.7
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "HOU @ LAL",
@@ -2155,22 +2171,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 43.2
-        },
-        {
-          "date": "Apr 03, 2026",
-          "matchup": "HOU vs. UTA",
-          "result": "W",
-          "stats": {
-            "PTS": 19.0,
-            "REB": 4.0,
-            "AST": 5.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 3.0,
-            "MIN": 28.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 26.8
         }
       ]
     },
@@ -2189,10 +2189,26 @@
         "FG3M": 0.3,
         "TOV": 2.4
       },
-      "avg_fantasy_points": 41.4,
-      "weekly_projection": 144.9,
-      "season_projection": 3394.8,
+      "avg_fantasy_points": 41.0,
+      "weekly_projection": 143.5,
+      "season_projection": 3362.0,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "HOU vs. LAL",
+          "result": "L",
+          "stats": {
+            "PTS": 18.0,
+            "REB": 8.0,
+            "AST": 3.0,
+            "STL": 0.0,
+            "BLK": 3.0,
+            "TOV": 2.0,
+            "MIN": 45.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 35.1
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "HOU @ LAL",
@@ -2336,22 +2352,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 31.1
-        },
-        {
-          "date": "Apr 03, 2026",
-          "matchup": "HOU vs. UTA",
-          "result": "W",
-          "stats": {
-            "PTS": 21.0,
-            "REB": 8.0,
-            "AST": 4.0,
-            "STL": 2.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 32.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 39.1
         }
       ]
     },
@@ -4180,10 +4180,26 @@
         "FG3M": 2.0,
         "TOV": 3.7
       },
-      "avg_fantasy_points": 37.28,
-      "weekly_projection": 130.48,
-      "season_projection": 3056.96,
+      "avg_fantasy_points": 37.92,
+      "weekly_projection": 132.72,
+      "season_projection": 3109.44,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "DET @ ORL",
+          "result": "W",
+          "stats": {
+            "PTS": 32.0,
+            "REB": 10.0,
+            "AST": 3.0,
+            "STL": 4.0,
+            "BLK": 1.0,
+            "TOV": 4.0,
+            "MIN": 42.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 55.5
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "DET vs. ORL",
@@ -4327,22 +4343,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 8.9
-        },
-        {
-          "date": "Mar 15, 2026",
-          "matchup": "DET @ TOR",
-          "result": "L",
-          "stats": {
-            "PTS": 33.0,
-            "REB": 3.0,
-            "AST": 9.0,
-            "STL": 2.0,
-            "BLK": 0.0,
-            "TOV": 4.0,
-            "MIN": 37.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 49.1
         }
       ]
     },
@@ -4361,10 +4361,26 @@
         "FG3M": 0.0,
         "TOV": 1.9
       },
-      "avg_fantasy_points": 29.15,
-      "weekly_projection": 102.02,
-      "season_projection": 2390.3,
+      "avg_fantasy_points": 26.35,
+      "weekly_projection": 92.23,
+      "season_projection": 2160.7,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "DET @ ORL",
+          "result": "W",
+          "stats": {
+            "PTS": 8.0,
+            "REB": 9.0,
+            "AST": 1.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 2.0,
+            "MIN": 32.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 17.3
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "DET vs. ORL",
@@ -4508,22 +4524,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 27.4
-        },
-        {
-          "date": "Apr 02, 2026",
-          "matchup": "DET vs. MIN",
-          "result": "W",
-          "stats": {
-            "PTS": 22.0,
-            "REB": 14.0,
-            "AST": 4.0,
-            "STL": 1.0,
-            "BLK": 2.0,
-            "TOV": 5.0,
-            "MIN": 36.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 45.3
         }
       ]
     },
@@ -4542,10 +4542,26 @@
         "FG3M": 2.0,
         "TOV": 3.6
       },
-      "avg_fantasy_points": 34.99,
-      "weekly_projection": 122.47,
-      "season_projection": 2869.18,
+      "avg_fantasy_points": 36.51,
+      "weekly_projection": 127.78,
+      "season_projection": 2993.82,
       "recent_games": [
+        {
+          "date": "May 02, 2026",
+          "matchup": "BOS vs. PHI",
+          "result": "L",
+          "stats": {
+            "PTS": 33.0,
+            "REB": 9.0,
+            "AST": 4.0,
+            "STL": 0.0,
+            "BLK": 3.0,
+            "TOV": 3.0,
+            "MIN": 40.0,
+            "FG3M": 3.0
+          },
+          "fantasy_points": 52.8
+        },
         {
           "date": "Apr 30, 2026",
           "matchup": "BOS @ PHI",
@@ -4689,22 +4705,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 34.7
-        },
-        {
-          "date": "Apr 03, 2026",
-          "matchup": "BOS @ MIL",
-          "result": "W",
-          "stats": {
-            "PTS": 26.0,
-            "REB": 3.0,
-            "AST": 4.0,
-            "STL": 2.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 30.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 37.6
         }
       ]
     },
@@ -4904,10 +4904,26 @@
         "FG3M": 2.7,
         "TOV": 1.7
       },
-      "avg_fantasy_points": 19.9,
-      "weekly_projection": 69.65,
-      "season_projection": 1631.8,
+      "avg_fantasy_points": 21.9,
+      "weekly_projection": 76.65,
+      "season_projection": 1795.8,
       "recent_games": [
+        {
+          "date": "May 02, 2026",
+          "matchup": "BOS vs. PHI",
+          "result": "L",
+          "stats": {
+            "PTS": 26.0,
+            "REB": 6.0,
+            "AST": 4.0,
+            "STL": 0.0,
+            "BLK": 3.0,
+            "TOV": 0.0,
+            "MIN": 45.0,
+            "FG3M": 5.0
+          },
+          "fantasy_points": 47.7
+        },
         {
           "date": "Apr 30, 2026",
           "matchup": "BOS @ PHI",
@@ -5051,22 +5067,6 @@
             "FG3M": 4.0
           },
           "fantasy_points": 21.4
-        },
-        {
-          "date": "Apr 05, 2026",
-          "matchup": "BOS vs. TOR",
-          "result": "W",
-          "stats": {
-            "PTS": 10.0,
-            "REB": 6.0,
-            "AST": 6.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 35.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 27.7
         }
       ]
     },
@@ -5809,10 +5809,26 @@
         "FG3M": 3.2,
         "TOV": 2.8
       },
-      "avg_fantasy_points": 37.2,
-      "weekly_projection": 130.2,
-      "season_projection": 3050.4,
+      "avg_fantasy_points": 35.91,
+      "weekly_projection": 125.68,
+      "season_projection": 2944.62,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "CLE @ TOR",
+          "result": "L",
+          "stats": {
+            "PTS": 24.0,
+            "REB": 5.0,
+            "AST": 2.0,
+            "STL": 0.0,
+            "BLK": 1.0,
+            "TOV": 3.0,
+            "MIN": 41.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 31.5
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "CLE vs. TOR",
@@ -5956,22 +5972,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 19.6
-        },
-        {
-          "date": "Mar 30, 2026",
-          "matchup": "CLE @ UTA",
-          "result": "W",
-          "stats": {
-            "PTS": 34.0,
-            "REB": 2.0,
-            "AST": 5.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 36.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 44.4
         }
       ]
     },
@@ -5990,10 +5990,26 @@
         "FG3M": 1.0,
         "TOV": 1.9
       },
-      "avg_fantasy_points": 32.83,
-      "weekly_projection": 114.91,
-      "season_projection": 2692.06,
+      "avg_fantasy_points": 36.13,
+      "weekly_projection": 126.46,
+      "season_projection": 2962.66,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "CLE @ TOR",
+          "result": "L",
+          "stats": {
+            "PTS": 26.0,
+            "REB": 14.0,
+            "AST": 3.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 3.0,
+            "MIN": 41.0,
+            "FG3M": 3.0
+          },
+          "fantasy_points": 48.3
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "CLE vs. TOR",
@@ -6137,22 +6153,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 35.5
-        },
-        {
-          "date": "Mar 31, 2026",
-          "matchup": "CLE @ LAL",
-          "result": "L",
-          "stats": {
-            "PTS": 6.0,
-            "REB": 4.0,
-            "AST": 4.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 22.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 15.3
         }
       ]
     },
@@ -6171,10 +6171,26 @@
         "FG3M": 3.1,
         "TOV": 3.5
       },
-      "avg_fantasy_points": 32.41,
-      "weekly_projection": 113.43,
-      "season_projection": 2657.62,
+      "avg_fantasy_points": 34.69,
+      "weekly_projection": 121.41,
+      "season_projection": 2844.58,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "CLE @ TOR",
+          "result": "L",
+          "stats": {
+            "PTS": 16.0,
+            "REB": 9.0,
+            "AST": 9.0,
+            "STL": 2.0,
+            "BLK": 1.0,
+            "TOV": 4.0,
+            "MIN": 44.0,
+            "FG3M": 1.0
+          },
+          "fantasy_points": 40.8
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "CLE vs. TOR",
@@ -6318,22 +6334,6 @@
             "FG3M": 3.0
           },
           "fantasy_points": 24.4
-        },
-        {
-          "date": "Mar 31, 2026",
-          "matchup": "CLE @ LAL",
-          "result": "L",
-          "stats": {
-            "PTS": 17.0,
-            "REB": 0.0,
-            "AST": 3.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 3.0,
-            "MIN": 28.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 18.0
         }
       ]
     },
@@ -6352,10 +6352,26 @@
         "FG3M": 0.0,
         "TOV": 1.3
       },
-      "avg_fantasy_points": 26.42,
-      "weekly_projection": 92.47,
-      "season_projection": 2166.44,
+      "avg_fantasy_points": 26.01,
+      "weekly_projection": 91.04,
+      "season_projection": 2132.82,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "CLE @ TOR",
+          "result": "L",
+          "stats": {
+            "PTS": 14.0,
+            "REB": 7.0,
+            "AST": 1.0,
+            "STL": 1.0,
+            "BLK": 2.0,
+            "TOV": 0.0,
+            "MIN": 34.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 29.9
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "CLE vs. TOR",
@@ -6499,22 +6515,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 26.3
-        },
-        {
-          "date": "Mar 27, 2026",
-          "matchup": "CLE vs. MIA",
-          "result": "W",
-          "stats": {
-            "PTS": 18.0,
-            "REB": 10.0,
-            "AST": 0.0,
-            "STL": 0.0,
-            "BLK": 1.0,
-            "TOV": 0.0,
-            "MIN": 18.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 34.0
         }
       ]
     },
@@ -6895,10 +6895,26 @@
         "FG3M": 0.8,
         "TOV": 2.6
       },
-      "avg_fantasy_points": 40.17,
-      "weekly_projection": 140.59,
-      "season_projection": 3293.94,
+      "avg_fantasy_points": 43.64,
+      "weekly_projection": 152.74,
+      "season_projection": 3578.48,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "TOR vs. CLE",
+          "result": "W",
+          "stats": {
+            "PTS": 25.0,
+            "REB": 7.0,
+            "AST": 14.0,
+            "STL": 3.0,
+            "BLK": 3.0,
+            "TOV": 3.0,
+            "MIN": 48.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 63.9
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "TOR @ CLE",
@@ -7042,22 +7058,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 45.6
-        },
-        {
-          "date": "Apr 05, 2026",
-          "matchup": "TOR @ BOS",
-          "result": "L",
-          "stats": {
-            "PTS": 10.0,
-            "REB": 6.0,
-            "AST": 8.0,
-            "STL": 3.0,
-            "BLK": 0.0,
-            "TOV": 4.0,
-            "MIN": 32.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 29.2
         }
       ]
     },
@@ -7076,10 +7076,26 @@
         "FG3M": 1.7,
         "TOV": 1.7
       },
-      "avg_fantasy_points": 34.87,
-      "weekly_projection": 122.04,
-      "season_projection": 2859.34,
+      "avg_fantasy_points": 34.89,
+      "weekly_projection": 122.12,
+      "season_projection": 2860.98,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "TOR vs. CLE",
+          "result": "W",
+          "stats": {
+            "PTS": 24.0,
+            "REB": 9.0,
+            "AST": 3.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 5.0,
+            "MIN": 43.0,
+            "FG3M": 4.0
+          },
+          "fantasy_points": 35.8
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "TOR @ CLE",
@@ -7223,22 +7239,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 25.0
-        },
-        {
-          "date": "Apr 03, 2026",
-          "matchup": "TOR @ MEM",
-          "result": "W",
-          "stats": {
-            "PTS": 25.0,
-            "REB": 3.0,
-            "AST": 4.0,
-            "STL": 0.0,
-            "BLK": 1.0,
-            "TOV": 2.0,
-            "MIN": 29.0,
-            "FG3M": 4.0
-          },
-          "fantasy_points": 35.6
         }
       ]
     },
@@ -7619,10 +7619,26 @@
         "FG3M": 1.2,
         "TOV": 3.1
       },
-      "avg_fantasy_points": 42.02,
-      "weekly_projection": 147.07,
-      "season_projection": 3445.64,
+      "avg_fantasy_points": 42.46,
+      "weekly_projection": 148.61,
+      "season_projection": 3481.72,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "ORL vs. DET",
+          "result": "L",
+          "stats": {
+            "PTS": 17.0,
+            "REB": 10.0,
+            "AST": 6.0,
+            "STL": 2.0,
+            "BLK": 0.0,
+            "TOV": 1.0,
+            "MIN": 41.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 42.5
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "ORL @ DET",
@@ -7766,22 +7782,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 33.8
-        },
-        {
-          "date": "Apr 08, 2026",
-          "matchup": "ORL vs. MIN",
-          "result": "W",
-          "stats": {
-            "PTS": 20.0,
-            "REB": 8.0,
-            "AST": 6.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 29.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 38.1
         }
       ]
     },
@@ -7800,10 +7800,26 @@
         "FG3M": 2.0,
         "TOV": 2.0
       },
-      "avg_fantasy_points": 27.38,
-      "weekly_projection": 95.83,
-      "season_projection": 2245.16,
+      "avg_fantasy_points": 27.31,
+      "weekly_projection": 95.58,
+      "season_projection": 2239.42,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "ORL vs. DET",
+          "result": "L",
+          "stats": {
+            "PTS": 17.0,
+            "REB": 3.0,
+            "AST": 1.0,
+            "STL": 2.0,
+            "BLK": 0.0,
+            "TOV": 0.0,
+            "MIN": 38.0,
+            "FG3M": 3.0
+          },
+          "fantasy_points": 27.6
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "ORL @ DET",
@@ -7947,22 +7963,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 11.7
-        },
-        {
-          "date": "Apr 08, 2026",
-          "matchup": "ORL vs. MIN",
-          "result": "W",
-          "stats": {
-            "PTS": 18.0,
-            "REB": 4.0,
-            "AST": 6.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 4.0,
-            "MIN": 30.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 28.3
         }
       ]
     },
@@ -8524,10 +8524,26 @@
         "FG3M": 3.1,
         "TOV": 2.4
       },
-      "avg_fantasy_points": 42.01,
-      "weekly_projection": 147.03,
-      "season_projection": 3444.82,
+      "avg_fantasy_points": 44.07,
+      "weekly_projection": 154.25,
+      "season_projection": 3613.74,
       "recent_games": [
+        {
+          "date": "May 02, 2026",
+          "matchup": "PHI @ BOS",
+          "result": "W",
+          "stats": {
+            "PTS": 30.0,
+            "REB": 11.0,
+            "AST": 7.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 1.0,
+            "MIN": 45.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 55.2
+        },
         {
           "date": "Apr 30, 2026",
           "matchup": "PHI vs. BOS",
@@ -8671,22 +8687,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 52.1
-        },
-        {
-          "date": "Apr 09, 2026",
-          "matchup": "PHI @ HOU",
-          "result": "L",
-          "stats": {
-            "PTS": 24.0,
-            "REB": 3.0,
-            "AST": 5.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 33.0,
-            "FG3M": 5.0
-          },
-          "fantasy_points": 34.6
         }
       ]
     },
@@ -8705,10 +8705,26 @@
         "FG3M": 1.4,
         "TOV": 2.9
       },
-      "avg_fantasy_points": 46.85,
-      "weekly_projection": 163.97,
-      "season_projection": 3841.7,
+      "avg_fantasy_points": 49.07,
+      "weekly_projection": 171.75,
+      "season_projection": 4023.74,
       "recent_games": [
+        {
+          "date": "May 02, 2026",
+          "matchup": "PHI @ BOS",
+          "result": "W",
+          "stats": {
+            "PTS": 34.0,
+            "REB": 12.0,
+            "AST": 6.0,
+            "STL": 0.0,
+            "BLK": 1.0,
+            "TOV": 1.0,
+            "MIN": 39.0,
+            "FG3M": 1.0
+          },
+          "fantasy_points": 60.4
+        },
         {
           "date": "Apr 30, 2026",
           "matchup": "PHI vs. BOS",
@@ -8852,22 +8868,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 47.2
-        },
-        {
-          "date": "Feb 24, 2026",
-          "matchup": "PHI @ IND",
-          "result": "W",
-          "stats": {
-            "PTS": 27.0,
-            "REB": 6.0,
-            "AST": 5.0,
-            "STL": 0.0,
-            "BLK": 1.0,
-            "TOV": 4.0,
-            "MIN": 26.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 38.2
         }
       ]
     },
@@ -9791,10 +9791,26 @@
         "FG3M": 2.3,
         "TOV": 1.4
       },
-      "avg_fantasy_points": 32.35,
-      "weekly_projection": 113.23,
-      "season_projection": 2652.7,
+      "avg_fantasy_points": 32.59,
+      "weekly_projection": 114.07,
+      "season_projection": 2672.38,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "HOU vs. LAL",
+          "result": "L",
+          "stats": {
+            "PTS": 9.0,
+            "REB": 12.0,
+            "AST": 3.0,
+            "STL": 0.0,
+            "BLK": 1.0,
+            "TOV": 1.0,
+            "MIN": 42.0,
+            "FG3M": 1.0
+          },
+          "fantasy_points": 28.9
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "HOU @ LAL",
@@ -9938,22 +9954,6 @@
             "FG3M": 5.0
           },
           "fantasy_points": 34.8
-        },
-        {
-          "date": "Apr 03, 2026",
-          "matchup": "HOU vs. UTA",
-          "result": "W",
-          "stats": {
-            "PTS": 18.0,
-            "REB": 5.0,
-            "AST": 0.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 24.0,
-            "FG3M": 4.0
-          },
-          "fantasy_points": 26.5
         }
       ]
     },
@@ -9972,10 +9972,26 @@
         "FG3M": 2.8,
         "TOV": 1.5
       },
-      "avg_fantasy_points": 23.66,
-      "weekly_projection": 82.81,
-      "season_projection": 1940.12,
+      "avg_fantasy_points": 23.56,
+      "weekly_projection": 82.46,
+      "season_projection": 1931.92,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "HOU vs. LAL",
+          "result": "L",
+          "stats": {
+            "PTS": 10.0,
+            "REB": 0.0,
+            "AST": 1.0,
+            "STL": 2.0,
+            "BLK": 2.0,
+            "TOV": 1.0,
+            "MIN": 36.0,
+            "FG3M": 1.0
+          },
+          "fantasy_points": 18.5
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "HOU @ LAL",
@@ -10119,22 +10135,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 21.0
-        },
-        {
-          "date": "Apr 05, 2026",
-          "matchup": "HOU @ GSW",
-          "result": "W",
-          "stats": {
-            "PTS": 11.0,
-            "REB": 0.0,
-            "AST": 2.0,
-            "STL": 2.0,
-            "BLK": 1.0,
-            "TOV": 1.0,
-            "MIN": 26.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 19.5
         }
       ]
     },
@@ -10882,7 +10882,7 @@
       "season_projection": 2277.96,
       "recent_games": [
         {
-          "date": "APR 30, 2026",
+          "date": "Apr 30, 2026",
           "matchup": "DEN @ MIN",
           "result": "L",
           "stats": {
@@ -10898,7 +10898,7 @@
           "fantasy_points": 42.6
         },
         {
-          "date": "APR 27, 2026",
+          "date": "Apr 27, 2026",
           "matchup": "DEN vs. MIN",
           "result": "W",
           "stats": {
@@ -10914,7 +10914,7 @@
           "fantasy_points": 38.2
         },
         {
-          "date": "APR 25, 2026",
+          "date": "Apr 25, 2026",
           "matchup": "DEN @ MIN",
           "result": "L",
           "stats": {
@@ -10930,7 +10930,7 @@
           "fantasy_points": 15.9
         },
         {
-          "date": "APR 23, 2026",
+          "date": "Apr 23, 2026",
           "matchup": "DEN @ MIN",
           "result": "L",
           "stats": {
@@ -10946,7 +10946,7 @@
           "fantasy_points": 11.9
         },
         {
-          "date": "APR 20, 2026",
+          "date": "Apr 20, 2026",
           "matchup": "DEN vs. MIN",
           "result": "L",
           "stats": {
@@ -10962,7 +10962,7 @@
           "fantasy_points": 19.7
         },
         {
-          "date": "APR 18, 2026",
+          "date": "Apr 18, 2026",
           "matchup": "DEN vs. MIN",
           "result": "W",
           "stats": {
@@ -11058,10 +11058,26 @@
         "FG3M": 0.5,
         "TOV": 0.6
       },
-      "avg_fantasy_points": 8.46,
-      "weekly_projection": 29.61,
-      "season_projection": 693.72,
+      "avg_fantasy_points": 7.93,
+      "weekly_projection": 27.75,
+      "season_projection": 650.26,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "LAL @ HOU",
+          "result": "W",
+          "stats": {
+            "PTS": 0.0,
+            "REB": 1.0,
+            "AST": 1.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 0.0,
+            "MIN": 3.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 4.7
+        },
         {
           "date": "Apr 26, 2026",
           "matchup": "LAL @ HOU",
@@ -11205,22 +11221,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 7.0
-        },
-        {
-          "date": "Apr 02, 2026",
-          "matchup": "LAL @ OKC",
-          "result": "L",
-          "stats": {
-            "PTS": 10.0,
-            "REB": 0.0,
-            "AST": 1.0,
-            "STL": 0.0,
-            "BLK": 1.0,
-            "TOV": 3.0,
-            "MIN": 18.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 10.0
         }
       ]
     },
@@ -11239,10 +11239,26 @@
         "FG3M": 1.5,
         "TOV": 0.8
       },
-      "avg_fantasy_points": 27.11,
-      "weekly_projection": 94.88,
-      "season_projection": 2223.02,
+      "avg_fantasy_points": 22.95,
+      "weekly_projection": 80.33,
+      "season_projection": 1881.9,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "LAL @ HOU",
+          "result": "W",
+          "stats": {
+            "PTS": 3.0,
+            "REB": 3.0,
+            "AST": 3.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 1.0,
+            "MIN": 29.0,
+            "FG3M": 1.0
+          },
+          "fantasy_points": 12.1
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "LAL vs. HOU",
@@ -11386,22 +11402,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 27.9
-        },
-        {
-          "date": "Apr 05, 2026",
-          "matchup": "LAL @ DAL",
-          "result": "L",
-          "stats": {
-            "PTS": 15.0,
-            "REB": 16.0,
-            "AST": 11.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 3.0,
-            "MIN": 41.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 53.7
         }
       ]
     },
@@ -11420,10 +11420,26 @@
         "FG3M": 1.7,
         "TOV": 0.6
       },
-      "avg_fantasy_points": 25.78,
-      "weekly_projection": 90.23,
-      "season_projection": 2113.96,
+      "avg_fantasy_points": 25.91,
+      "weekly_projection": 90.69,
+      "season_projection": 2124.62,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "LAL @ HOU",
+          "result": "W",
+          "stats": {
+            "PTS": 21.0,
+            "REB": 6.0,
+            "AST": 2.0,
+            "STL": 0.0,
+            "BLK": 1.0,
+            "TOV": 0.0,
+            "MIN": 35.0,
+            "FG3M": 5.0
+          },
+          "fantasy_points": 35.7
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "LAL vs. HOU",
@@ -11567,22 +11583,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 22.0
-        },
-        {
-          "date": "Apr 05, 2026",
-          "matchup": "LAL @ DAL",
-          "result": "L",
-          "stats": {
-            "PTS": 21.0,
-            "REB": 7.0,
-            "AST": 1.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 0.0,
-            "MIN": 39.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 34.4
         }
       ]
     },
@@ -11601,10 +11601,26 @@
         "FG3M": 1.6,
         "TOV": 1.5
       },
-      "avg_fantasy_points": 25.86,
-      "weekly_projection": 90.51,
-      "season_projection": 2120.52,
+      "avg_fantasy_points": 26.54,
+      "weekly_projection": 92.89,
+      "season_projection": 2176.28,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "LAL @ HOU",
+          "result": "W",
+          "stats": {
+            "PTS": 7.0,
+            "REB": 7.0,
+            "AST": 1.0,
+            "STL": 2.0,
+            "BLK": 2.0,
+            "TOV": 1.0,
+            "MIN": 35.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 24.4
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "LAL vs. HOU",
@@ -11748,22 +11764,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 22.9
-        },
-        {
-          "date": "Mar 18, 2026",
-          "matchup": "LAL @ HOU",
-          "result": "W",
-          "stats": {
-            "PTS": 5.0,
-            "REB": 3.0,
-            "AST": 4.0,
-            "STL": 2.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 34.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 17.6
         }
       ]
     },
@@ -11963,10 +11963,26 @@
         "FG3M": 0.1,
         "TOV": 1.5
       },
-      "avg_fantasy_points": 28.13,
-      "weekly_projection": 98.45,
-      "season_projection": 2306.66,
+      "avg_fantasy_points": 29.13,
+      "weekly_projection": 101.95,
+      "season_projection": 2388.66,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "DET @ ORL",
+          "result": "W",
+          "stats": {
+            "PTS": 4.0,
+            "REB": 10.0,
+            "AST": 6.0,
+            "STL": 1.0,
+            "BLK": 4.0,
+            "TOV": 0.0,
+            "MIN": 37.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 35.0
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "DET vs. ORL",
@@ -12110,22 +12126,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 25.1
-        },
-        {
-          "date": "Apr 04, 2026",
-          "matchup": "DET @ PHI",
-          "result": "W",
-          "stats": {
-            "PTS": 14.0,
-            "REB": 5.0,
-            "AST": 2.0,
-            "STL": 3.0,
-            "BLK": 1.0,
-            "TOV": 4.0,
-            "MIN": 25.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 25.0
         }
       ]
     },
@@ -12144,10 +12144,26 @@
         "FG3M": 1.3,
         "TOV": 1.0
       },
-      "avg_fantasy_points": 28.69,
-      "weekly_projection": 100.42,
-      "season_projection": 2352.58,
+      "avg_fantasy_points": 32.04,
+      "weekly_projection": 112.14,
+      "season_projection": 2627.28,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "DET @ ORL",
+          "result": "W",
+          "stats": {
+            "PTS": 22.0,
+            "REB": 10.0,
+            "AST": 0.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 0.0,
+            "MIN": 38.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 37.0
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "DET vs. ORL",
@@ -12291,22 +12307,6 @@
             "FG3M": 1.0
           },
           "fantasy_points": 33.8
-        },
-        {
-          "date": "Apr 02, 2026",
-          "matchup": "DET vs. MIN",
-          "result": "W",
-          "stats": {
-            "PTS": 2.0,
-            "REB": 0.0,
-            "AST": 1.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 0.0,
-            "MIN": 6.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 3.5
         }
       ]
     },
@@ -12325,10 +12325,26 @@
         "FG3M": 2.9,
         "TOV": 0.7
       },
-      "avg_fantasy_points": 19.59,
-      "weekly_projection": 68.56,
-      "season_projection": 1606.38,
+      "avg_fantasy_points": 19.46,
+      "weekly_projection": 68.11,
+      "season_projection": 1595.72,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "DET @ ORL",
+          "result": "W",
+          "stats": {
+            "PTS": 14.0,
+            "REB": 5.0,
+            "AST": 3.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 2.0,
+            "MIN": 36.0,
+            "FG3M": 4.0
+          },
+          "fantasy_points": 23.5
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "DET vs. ORL",
@@ -12472,22 +12488,6 @@
             "FG3M": 3.0
           },
           "fantasy_points": 17.9
-        },
-        {
-          "date": "Apr 02, 2026",
-          "matchup": "DET vs. MIN",
-          "result": "W",
-          "stats": {
-            "PTS": 15.0,
-            "REB": 4.0,
-            "AST": 3.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 29.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 24.8
         }
       ]
     },
@@ -12506,10 +12506,26 @@
         "FG3M": 2.7,
         "TOV": 1.4
       },
-      "avg_fantasy_points": 28.84,
-      "weekly_projection": 100.94,
-      "season_projection": 2364.88,
+      "avg_fantasy_points": 29.32,
+      "weekly_projection": 102.62,
+      "season_projection": 2404.24,
       "recent_games": [
+        {
+          "date": "May 02, 2026",
+          "matchup": "BOS vs. PHI",
+          "result": "L",
+          "stats": {
+            "PTS": 13.0,
+            "REB": 5.0,
+            "AST": 7.0,
+            "STL": 1.0,
+            "BLK": 0.0,
+            "TOV": 0.0,
+            "MIN": 39.0,
+            "FG3M": 2.0
+          },
+          "fantasy_points": 32.5
+        },
         {
           "date": "Apr 30, 2026",
           "matchup": "BOS @ PHI",
@@ -12653,22 +12669,6 @@
             "FG3M": 4.0
           },
           "fantasy_points": 20.3
-        },
-        {
-          "date": "Apr 05, 2026",
-          "matchup": "BOS vs. TOR",
-          "result": "W",
-          "stats": {
-            "PTS": 17.0,
-            "REB": 1.0,
-            "AST": 3.0,
-            "STL": 3.0,
-            "BLK": 0.0,
-            "TOV": 1.0,
-            "MIN": 30.0,
-            "FG3M": 1.0
-          },
-          "fantasy_points": 27.7
         }
       ]
     },
@@ -13049,10 +13049,26 @@
         "FG3M": 1.4,
         "TOV": 0.8
       },
-      "avg_fantasy_points": 18.89,
-      "weekly_projection": 66.12,
-      "season_projection": 1548.98,
+      "avg_fantasy_points": 17.7,
+      "weekly_projection": 61.95,
+      "season_projection": 1451.4,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "TOR vs. CLE",
+          "result": "W",
+          "stats": {
+            "PTS": 2.0,
+            "REB": 4.0,
+            "AST": 1.0,
+            "STL": 1.0,
+            "BLK": 1.0,
+            "TOV": 0.0,
+            "MIN": 14.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 12.3
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "TOR @ CLE",
@@ -13196,22 +13212,6 @@
             "FG3M": 2.0
           },
           "fantasy_points": 18.0
-        },
-        {
-          "date": "Apr 05, 2026",
-          "matchup": "TOR @ BOS",
-          "result": "L",
-          "stats": {
-            "PTS": 10.0,
-            "REB": 6.0,
-            "AST": 4.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 0.0,
-            "MIN": 24.0,
-            "FG3M": 2.0
-          },
-          "fantasy_points": 24.2
         }
       ]
     },
@@ -13230,10 +13230,26 @@
         "FG3M": 0.0,
         "TOV": 1.2
       },
-      "avg_fantasy_points": 18.18,
-      "weekly_projection": 63.63,
-      "season_projection": 1490.76,
+      "avg_fantasy_points": 18.42,
+      "weekly_projection": 64.47,
+      "season_projection": 1510.44,
       "recent_games": [
+        {
+          "date": "May 01, 2026",
+          "matchup": "TOR vs. CLE",
+          "result": "W",
+          "stats": {
+            "PTS": 2.0,
+            "REB": 4.0,
+            "AST": 1.0,
+            "STL": 2.0,
+            "BLK": 1.0,
+            "TOV": 0.0,
+            "MIN": 22.0,
+            "FG3M": 0.0
+          },
+          "fantasy_points": 14.3
+        },
         {
           "date": "Apr 29, 2026",
           "matchup": "TOR @ CLE",
@@ -13377,22 +13393,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 33.2
-        },
-        {
-          "date": "Apr 05, 2026",
-          "matchup": "TOR @ BOS",
-          "result": "L",
-          "stats": {
-            "PTS": 14.0,
-            "REB": 2.0,
-            "AST": 0.0,
-            "STL": 0.0,
-            "BLK": 0.0,
-            "TOV": 3.0,
-            "MIN": 20.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 11.9
         }
       ]
     },
@@ -14135,10 +14135,26 @@
         "FG3M": 2.7,
         "TOV": 1.7
       },
-      "avg_fantasy_points": 28.23,
-      "weekly_projection": 98.81,
-      "season_projection": 2314.86,
+      "avg_fantasy_points": 28.81,
+      "weekly_projection": 100.83,
+      "season_projection": 2362.42,
       "recent_games": [
+        {
+          "date": "May 02, 2026",
+          "matchup": "PHI @ BOS",
+          "result": "W",
+          "stats": {
+            "PTS": 13.0,
+            "REB": 3.0,
+            "AST": 1.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 3.0,
+            "MIN": 42.0,
+            "FG3M": 3.0
+          },
+          "fantasy_points": 15.1
+        },
         {
           "date": "Apr 30, 2026",
           "matchup": "PHI vs. BOS",
@@ -14282,22 +14298,6 @@
             "FG3M": 3.0
           },
           "fantasy_points": 32.0
-        },
-        {
-          "date": "Apr 09, 2026",
-          "matchup": "PHI @ HOU",
-          "result": "L",
-          "stats": {
-            "PTS": 7.0,
-            "REB": 4.0,
-            "AST": 1.0,
-            "STL": 1.0,
-            "BLK": 0.0,
-            "TOV": 4.0,
-            "MIN": 24.0,
-            "FG3M": 0.0
-          },
-          "fantasy_points": 9.3
         }
       ]
     },
@@ -14316,10 +14316,26 @@
         "FG3M": 2.0,
         "TOV": 1.8
       },
-      "avg_fantasy_points": 32.25,
-      "weekly_projection": 112.88,
-      "season_projection": 2644.5,
+      "avg_fantasy_points": 31.5,
+      "weekly_projection": 110.25,
+      "season_projection": 2583.0,
       "recent_games": [
+        {
+          "date": "May 02, 2026",
+          "matchup": "PHI @ BOS",
+          "result": "W",
+          "stats": {
+            "PTS": 23.0,
+            "REB": 6.0,
+            "AST": 4.0,
+            "STL": 0.0,
+            "BLK": 0.0,
+            "TOV": 3.0,
+            "MIN": 44.0,
+            "FG3M": 5.0
+          },
+          "fantasy_points": 34.2
+        },
         {
           "date": "Apr 30, 2026",
           "matchup": "PHI vs. BOS",
@@ -14463,22 +14479,6 @@
             "FG3M": 0.0
           },
           "fantasy_points": 37.8
-        },
-        {
-          "date": "Apr 09, 2026",
-          "matchup": "PHI @ HOU",
-          "result": "L",
-          "stats": {
-            "PTS": 20.0,
-            "REB": 6.0,
-            "AST": 8.0,
-            "STL": 2.0,
-            "BLK": 0.0,
-            "TOV": 2.0,
-            "MIN": 40.0,
-            "FG3M": 3.0
-          },
-          "fantasy_points": 41.7
         }
       ]
     }
