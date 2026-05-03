@@ -164,19 +164,24 @@ def fetch_curated_players(season: str = None) -> List[dict]:
 
         stats = fetch_player_season_stats(nba_id, season)
         try:
-            recent_games = fetch_player_game_log(nba_id, last_n_games=10)
+            # Playoffs only — April 18 2026 onward. Players who didn't play
+            # (injured, eliminated early) correctly show 0.
+            all_playoff_games = fetch_player_game_log(nba_id, season_type="playoffs")
+            PLAYOFF_START = datetime(2026, 4, 18)
+            recent_games = [
+                g for g in all_playoff_games
+                if datetime.strptime(g["date"], "%b %d, %Y") >= PLAYOFF_START
+            ]
         except Exception as e:
             logger.warning("[%d/%d] %s — game log failed: %s", i + 1, len(curated), p["name"], e)
             recent_games = []
 
-        # avg_fantasy_points from last 10 games (sliding window — updates as new games are played).
-        # Falls back to full season avg if fewer than 3 recent games exist (e.g. early season).
-        if len(recent_games) >= 3:
+        # avg_fantasy_points = playoff average (April 18 onward).
+        # No fallback to season avg — if a player has 0 playoff games, they show 0.
+        if recent_games:
             recent_avg_fp = round(
                 sum(g["fantasy_points"] for g in recent_games) / len(recent_games), 2
             )
-        elif stats:
-            recent_avg_fp = stats["avg_fantasy_points"]
         else:
             recent_avg_fp = 0.0
 

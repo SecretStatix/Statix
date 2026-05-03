@@ -41,7 +41,7 @@ export function HotPlayers({ players, loading }: HotPlayersProps) {
       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         <Flame className="w-4 h-4 text-orange-400 shrink-0" />
         <h3 className="text-sm font-semibold text-foreground">Hot Players</h3>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wide">by avg fantasy / game</span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wide">by playoff fantasy avg</span>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-1">
         {hotPlayers.map(player => (

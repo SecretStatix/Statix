@@ -595,7 +595,7 @@ export default function PlayerProfilePage() {
               </h3>
               <div className="flex items-center gap-0.5">
                 {([
-                  { key: 'season' as StatsPeriod, label: 'Last 10' },
+                  { key: 'season' as StatsPeriod, label: 'Playoffs' },
                   { key: 'last5' as StatsPeriod, label: 'Last 5' },
                   { key: 'last1' as StatsPeriod, label: 'Last Game' },
                 ]).map(({ key, label }) => (
@@ -635,14 +635,14 @@ export default function PlayerProfilePage() {
           {/* Fantasy Projections — stat cards with accent bars */}
           <div>
             <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mb-4">
-              Avg Fantasy (Last 10 Games)
+              Avg Fantasy (Playoffs)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="relative overflow-hidden rounded-xl bg-card border border-white/[0.06] p-4">
                 <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
                 <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium ml-2">FPts/Game</p>
                 <p className="text-2xl font-bold text-primary mt-2 ml-2 tabular-nums">{avgFpts.toFixed(1)}</p>
-                <p className="text-[10px] text-muted-foreground/30 mt-1 ml-2">last 10 games avg</p>
+                <p className="text-[10px] text-muted-foreground/30 mt-1 ml-2">playoff games avg</p>
                 <div className="absolute -bottom-3 -right-3 w-20 h-20 bg-primary/[0.06] rounded-full blur-2xl" />
               </div>
               <div className="relative overflow-hidden rounded-xl bg-card border border-white/[0.06] p-4">
@@ -669,7 +669,7 @@ export default function PlayerProfilePage() {
           {games.length > 0 && (
             <div>
               <h3 className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest mb-4">
-                Recent Games
+                Playoff Games
               </h3>
               <div className="overflow-x-auto rounded-xl border border-white/[0.04] bg-white/[0.01]">
                 <table className="w-full text-sm">
