@@ -94,7 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Only re-check approval on actual sign-in events, not token refreshes.
         // Token refreshes don't change the user or their approval status, and
         // re-running checkApproval risks a failed query setting isApproved=false.
-        if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+        if (event === 'PASSWORD_RECOVERY') {
+          // Temporary recovery session — don't check approval, just unblock loading
+          // so the /reset-password page can render its form.
+          if (!cancelled) setLoading(false);
+        } else if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
           try {
             await checkApproval(session.user.id);
           } finally {
