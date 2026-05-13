@@ -123,6 +123,7 @@ class PlayerPriceHistoryResponse(BaseModel):
     current_price_source: str  # "chain" | "snapshot" | "default"
     range_change_pct: Optional[float]  # (last - first) / first * 100 for returned series
     vs_listing_pct: float  # (current - INITIAL_POOL_PRICE) / INITIAL_POOL_PRICE * 100
+    vs_round_start_pct: Optional[float]  # (current - price at round start) / price at round start * 100
 
 
 def _get_players() -> list:
@@ -243,6 +244,36 @@ def _fetch_snapshot_rows(pool_index: int, days: int, max_rows: int = 8000) -> li
         return []
 
 
+# Round 2 started when Round 1 dividends were distributed on-chain.
+_ROUND_2_START = datetime(2026, 5, 4, 5, 4, 34, tzinfo=timezone.utc)
+
+
+def _round_start_price(pool_index: int, listing: float) -> float:
+    """Return the last known price for a pool at or before Round 2 start.
+
+    Falls back to the listing price if no snapshot exists before that time.
+    """
+    sb = get_supabase()
+    if sb is None:
+        return listing
+    try:
+        res = (
+            sb.table("pool_price_snapshots")
+            .select("price")
+            .eq("pool_index", pool_index)
+            .lte("timestamp", _ROUND_2_START.isoformat())
+            .order("block_number", desc=True)
+            .order("log_index", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if res.data:
+            return float(res.data[0]["price"])
+    except Exception as e:
+        logger.warning("round_start_price query failed for pool %d: %s", pool_index, e)
+    return listing
+
+
 def _build_price_history(
     pool_index: int,
     player_id: str,
@@ -339,6 +370,9 @@ def _build_price_history(
         4,
     )
 
+    round_start = _round_start_price(pool_index, base_price)
+    vs_round_start = round((current_price - round_start) / round_start * 100, 4) if round_start else None
+
     return PlayerPriceHistoryResponse(
         player_index=pool_index,
         player_id=player_id,
@@ -348,6 +382,7 @@ def _build_price_history(
         current_price_source=current_source,
         range_change_pct=range_change_pct,
         vs_listing_pct=vs_listing,
+        vs_round_start_pct=vs_round_start,
     )
 
 
@@ -423,6 +458,52 @@ async def get_upcoming_games(
             status_code=503,
             detail="Could not load NBA schedule",
         ) from e
+
+
+@router.get("/price-changes")
+async def get_price_changes():
+    """Return % price change vs round start for all players in one batch query.
+
+    Uses a single Supabase query to get the last snapshot per pool before Round 2
+    started, then computes (current - round_start) / round_start * 100.
+    Falls back to listing price for pools with no pre-round snapshot.
+    """
+    players = _get_players()
+    sb = get_supabase()
+
+    # Batch-fetch last snapshot per pool before round 2 start
+    round_start_by_pool: dict[int, float] = {}
+    if sb:
+        try:
+            res = (
+                sb.table("pool_price_snapshots")
+                .select("pool_index, price, block_number")
+                .lte("timestamp", _ROUND_2_START.isoformat())
+                .order("block_number", desc=True)
+                .limit(5000)
+                .execute()
+            )
+            # Keep only the highest block_number per pool (newest before round start)
+            for row in res.data or []:
+                idx = int(row["pool_index"])
+                if idx not in round_start_by_pool:
+                    round_start_by_pool[idx] = float(row["price"])
+        except Exception as e:
+            logger.warning("price-changes batch query failed: %s", e)
+
+    result = {}
+    for p in players:
+        idx = p.get("index")
+        pid = p.get("id")
+        if idx is None or not pid:
+            continue
+        base = listing_price(pid)
+        round_start = round_start_by_pool.get(idx, base)
+        current = p.get("price") or base
+        pct = round((current - round_start) / round_start * 100, 2) if round_start else 0.0
+        result[pid] = {"round_start_price": round(round_start, 4), "current_price": round(current, 4), "pct": pct}
+
+    return result
 
 
 @router.get("/{player_id}/price-history", response_model=PlayerPriceHistoryResponse)

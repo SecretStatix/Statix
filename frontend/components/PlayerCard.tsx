@@ -13,10 +13,7 @@ interface PlayerCardProps {
 }
 
 export function PlayerCard({ player, onTrade, flashSide = null }: PlayerCardProps) {
-  const TIER1 = new Set(['shai_gilgeous_alexander','victor_wembanyama','nikola_jokic','luka_doncic','anthony_edwards','jayson_tatum','jalen_brunson','donovan_mitchell','cade_cunningham','stephen_curry']);
-  const TIER2 = new Set(['jalen_williams','chet_holmgren','de_aaron_fox','dylan_harper','jamal_murray','lebron_james','austin_reaves','alperen_sengun','kevin_durant','amen_thompson','julius_randle','devin_booker','jalen_green','kawhi_leonard','jaylen_brown','karl_anthony_towns','mikal_bridges','evan_mobley','james_harden','paolo_banchero','franz_wagner','lamelo_ball','tyrese_maxey','joel_embiid','bam_adebayo','tyler_herro','scottie_barnes','brandon_ingram','jalen_johnson','og_anunoby']);
-  const base = TIER1.has(player.id) ? 15 : TIER2.has(player.id) ? 12.5 : 10;
-  const pctChange = ((player.price - base) / base) * 100;
+  const pctChange = player.roundStartPct ?? 0;
   const isPositive = pctChange >= 0;
   const accentStyle = getTeamAccentStyle(player.team);
   const flashClass = flashSide === 'buy' ? 'card-flash-buy' : flashSide === 'sell' ? 'card-flash-sell' : '';

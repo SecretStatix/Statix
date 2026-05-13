@@ -20,6 +20,7 @@ export interface PlayerData {
   weeklyProjection: number;
   seasonProjection: number;
   totalShares: number;
+  roundStartPct?: number;  // % change since current playoff round started
 }
 
 type FilterTab = 'trending' | 'movers' | 'guards' | 'forwards' | 'centers' | 'all';

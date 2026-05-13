@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { getPlayers } from '@/lib/api';
+import { getPlayers, getPriceChanges } from '@/lib/api';
 import { AuthGate } from '@/components/AuthGate';
 import { useAllPlayers } from '@/hooks/useContracts';
 import { formatUnits } from 'viem';
@@ -15,19 +15,21 @@ import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 function MarketContent() {
   const [rawPlayers, setRawPlayers] = useState<any[]>([]);
   const [players, setPlayers] = useState<PlayerData[]>([]);
+  const [priceChanges, setPriceChanges] = useState<Record<string, { pct: number }>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const { data: onChainData } = useAllPlayers();
 
-  // Fetch player list from API exactly once on mount.
+  // Fetch player list and round-start price changes on mount.
   useEffect(() => {
     async function load() {
       setLoadError(null);
       try {
-        const apiPlayers = await getPlayers();
+        const [apiPlayers, changes] = await Promise.all([getPlayers(), getPriceChanges()]);
         setRawPlayers(apiPlayers);
+        setPriceChanges(changes);
       } catch (err) {
         console.error('Failed to load players:', err);
         setLoadError('Unable to fetch player data');
@@ -38,8 +40,7 @@ function MarketContent() {
     load();
   }, []);
 
-  // Merge chain prices into the player list whenever API data or chain data updates.
-  // No extra API call — just re-maps the already-fetched rawPlayers.
+  // Merge chain prices + round-start % change into the player list.
   useEffect(() => {
     if (!rawPlayers.length) return;
     // Defensive extraction: onChainData is the `getAllPlayers` tuple
@@ -73,10 +74,11 @@ function MarketContent() {
         weeklyProjection: p.weekly_projection ?? 0,
         seasonProjection: p.season_projection ?? 0,
         totalShares: 0,
+        roundStartPct: priceChanges[p.id]?.pct,
       };
     });
     setPlayers(mapped);
-  }, [rawPlayers, onChainData]);
+  }, [rawPlayers, onChainData, priceChanges]);
 
   if (loadError) {
     return (
