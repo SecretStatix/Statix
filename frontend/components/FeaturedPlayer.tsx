@@ -22,17 +22,9 @@ export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
   const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const [tradeMode, setTradeMode] = useState<'buy' | 'sell'>('buy');
 
-  const TIER1 = new Set(['shai_gilgeous_alexander','victor_wembanyama','nikola_jokic','luka_doncic','anthony_edwards','jayson_tatum','jalen_brunson','donovan_mitchell','cade_cunningham','stephen_curry']);
-  const TIER2 = new Set(['jalen_williams','chet_holmgren','de_aaron_fox','dylan_harper','jamal_murray','lebron_james','austin_reaves','alperen_sengun','kevin_durant','amen_thompson','julius_randle','devin_booker','jalen_green','kawhi_leonard','jaylen_brown','karl_anthony_towns','mikal_bridges','evan_mobley','james_harden','paolo_banchero','franz_wagner','lamelo_ball','tyrese_maxey','joel_embiid','bam_adebayo','tyler_herro','scottie_barnes','brandon_ingram','jalen_johnson','og_anunoby']);
-  const listingPriceFor = (id: string) => TIER1.has(id) ? 15 : TIER2.has(id) ? 12.5 : 10;
-
   const featured = useMemo(() => {
     if (players.length === 0) return null;
-    return [...players].sort((a, b) => {
-      const pctA = (a.price - listingPriceFor(a.id)) / listingPriceFor(a.id);
-      const pctB = (b.price - listingPriceFor(b.id)) / listingPriceFor(b.id);
-      return pctB - pctA;
-    })[0];
+    return [...players].sort((a, b) => (b.weeklyPct ?? 0) - (a.weeklyPct ?? 0))[0];
   }, [players]);
 
   const chartData = useMemo(() => {
@@ -75,7 +67,7 @@ export function FeaturedPlayer({ players, loading }: FeaturedPlayerProps) {
 
   if (!featured) return null;
 
-  const pctChange = ((featured.price - listingPriceFor(featured.id)) / listingPriceFor(featured.id)) * 100;
+  const pctChange = featured.weeklyPct ?? 0;
   const isPositive = pctChange >= 0;
   return (
     <>
