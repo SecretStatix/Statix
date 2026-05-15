@@ -74,7 +74,13 @@ function MarketContent() {
         weeklyProjection: p.weekly_projection ?? 0,
         seasonProjection: p.season_projection ?? 0,
         totalShares: 0,
-        weeklyPct: priceChanges[p.id]?.pct,
+        weeklyPct: (() => {
+          const change = priceChanges[p.id];
+          if (!change) return undefined;
+          const oldPrice = change.old_price;
+          if (!oldPrice) return undefined;
+          return Math.round(((price - oldPrice) / oldPrice) * 1000) / 10;
+        })(),
       };
     });
     setPlayers(mapped);

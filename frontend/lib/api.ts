@@ -45,7 +45,7 @@ export async function getPlayerGames(id: string, lastN = 10) {
   return fetchAPI(`/api/players/${id}/games?last_n=${lastN}`);
 }
 
-export async function getPriceChanges(): Promise<Record<string, { pct: number }>> {
+export async function getPriceChanges(): Promise<Record<string, { pct: number; old_price: number; current_price: number }>> {
   if (DEMO) return {};
   return fetchAPI('/api/players/price-changes');
 }
