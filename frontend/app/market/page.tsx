@@ -15,7 +15,7 @@ import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 function MarketContent() {
   const [rawPlayers, setRawPlayers] = useState<any[]>([]);
   const [players, setPlayers] = useState<PlayerData[]>([]);
-  const [priceChanges, setPriceChanges] = useState<Record<string, { pct: number }>>({});
+  const [priceChanges, setPriceChanges] = useState<Record<string, { pct: number; old_price: number; current_price: number }>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
