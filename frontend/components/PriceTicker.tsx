@@ -13,7 +13,7 @@ export function PriceTicker({ players, loading }: PriceTickerProps) {
   if (loading || players.length === 0) return null;
 
   const top = [...players]
-    .map((p) => ({ ...p, pct: p.roundStartPct ?? 0 }))
+    .map((p) => ({ ...p, pct: p.weeklyPct ?? 0 }))
     .sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct))
     .slice(0, 20);
 

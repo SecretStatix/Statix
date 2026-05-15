@@ -461,33 +461,33 @@ async def get_upcoming_games(
 
 
 @router.get("/price-changes")
-async def get_price_changes():
-    """Return % price change vs round start for all players in one batch query.
+async def get_price_changes(days: int = Query(default=7, ge=1, le=90)):
+    """Return % price change over the last N days (default 7) for all players.
 
-    Uses a single Supabase query to get the last snapshot per pool before Round 2
-    started, then computes (current - round_start) / round_start * 100.
-    Falls back to listing price for pools with no pre-round snapshot.
+    Finds the last price snapshot per pool just before the window start,
+    compares to current price. Falls back to listing price if no snapshot exists.
     """
     players = _get_players()
     sb = get_supabase()
 
-    # Batch-fetch last snapshot per pool before round 2 start
-    round_start_by_pool: dict[int, float] = {}
+    window_start = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+    # Batch-fetch last snapshot per pool BEFORE the window start (that's the "old" price)
+    old_price_by_pool: dict[int, float] = {}
     if sb:
         try:
             res = (
                 sb.table("pool_price_snapshots")
                 .select("pool_index, price, block_number")
-                .lte("timestamp", _ROUND_2_START.isoformat())
+                .lte("timestamp", window_start)
                 .order("block_number", desc=True)
                 .limit(5000)
                 .execute()
             )
-            # Keep only the highest block_number per pool (newest before round start)
             for row in res.data or []:
                 idx = int(row["pool_index"])
-                if idx not in round_start_by_pool:
-                    round_start_by_pool[idx] = float(row["price"])
+                if idx not in old_price_by_pool:
+                    old_price_by_pool[idx] = float(row["price"])
         except Exception as e:
             logger.warning("price-changes batch query failed: %s", e)
 
@@ -498,10 +498,10 @@ async def get_price_changes():
         if idx is None or not pid:
             continue
         base = listing_price(pid)
-        round_start = round_start_by_pool.get(idx, base)
+        old_price = old_price_by_pool.get(idx, base)
         current = p.get("price") or base
-        pct = round((current - round_start) / round_start * 100, 2) if round_start else 0.0
-        result[pid] = {"round_start_price": round(round_start, 4), "current_price": round(current, 4), "pct": pct}
+        pct = round((current - old_price) / old_price * 100, 2) if old_price else 0.0
+        result[pid] = {"old_price": round(old_price, 4), "current_price": round(current, 4), "pct": pct}
 
     return result
 

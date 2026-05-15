@@ -13,7 +13,7 @@ interface PlayerCardProps {
 }
 
 export function PlayerCard({ player, onTrade, flashSide = null }: PlayerCardProps) {
-  const pctChange = player.roundStartPct ?? 0;
+  const pctChange = player.weeklyPct ?? 0;
   const isPositive = pctChange >= 0;
   const accentStyle = getTeamAccentStyle(player.team);
   const flashClass = flashSide === 'buy' ? 'card-flash-buy' : flashSide === 'sell' ? 'card-flash-sell' : '';

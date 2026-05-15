@@ -74,7 +74,7 @@ function MarketContent() {
         weeklyProjection: p.weekly_projection ?? 0,
         seasonProjection: p.season_projection ?? 0,
         totalShares: 0,
-        roundStartPct: priceChanges[p.id]?.pct,
+        weeklyPct: priceChanges[p.id]?.pct,
       };
     });
     setPlayers(mapped);

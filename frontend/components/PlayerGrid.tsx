@@ -20,7 +20,7 @@ export interface PlayerData {
   weeklyProjection: number;
   seasonProjection: number;
   totalShares: number;
-  roundStartPct?: number;  // % change since current playoff round started
+  weeklyPct?: number;  // % price change over last 7 days
 }
 
 type FilterTab = 'trending' | 'movers' | 'guards' | 'forwards' | 'centers' | 'all';
