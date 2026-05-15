@@ -216,6 +216,35 @@ def _parse_ts(ts) -> datetime:
     return datetime.fromisoformat(s)
 
 
+def _get_price_at_window_start(pool_index: int, days: int, fallback: float) -> float:
+    """Return the last known price for a pool just before the window start (now - days).
+
+    Used as the chart anchor so the % change badge reflects the selected time range,
+    not the all-time change from listing price. Falls back to listing price if no
+    snapshot existed before the window (player was listed within the window).
+    """
+    sb = get_supabase()
+    if sb is None:
+        return fallback
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    try:
+        res = (
+            sb.table("pool_price_snapshots")
+            .select("price")
+            .eq("pool_index", pool_index)
+            .lte("timestamp", cutoff)
+            .order("block_number", desc=True)
+            .order("log_index", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if res.data:
+            return float(res.data[0]["price"])
+    except Exception as e:
+        logger.warning("window_start_price query failed for pool %d: %s", pool_index, e)
+    return fallback
+
+
 def _fetch_snapshot_rows(pool_index: int, days: int, max_rows: int = 8000) -> list:
     """Rows from pool_price_snapshots since now - days, ordered by chain position.
 
@@ -307,7 +336,12 @@ def _build_price_history(
 
     base_price = listing_price(player_id)
 
-    # Anchor chart at listing price immediately before first trade (backend-side).
+    # Anchor the chart at the actual price at the start of the requested window so
+    # that range_change_pct reflects the selected tab (1W / 1M / 3M), not the
+    # all-time change from the listing price.
+    # Falls back to listing price only when the player had no prior trades before the window.
+    window_start_price = _get_price_at_window_start(pool_index, days, base_price)
+
     if points:
         t0 = _parse_ts(points[0].timestamp)
         anchor_ts = (t0 - timedelta(seconds=1)).isoformat()
@@ -315,7 +349,7 @@ def _build_price_history(
             0,
             PriceHistoryPoint(
                 timestamp=anchor_ts,
-                price=base_price,
+                price=window_start_price,
                 block_number=0,
                 log_index=-1,
             ),
