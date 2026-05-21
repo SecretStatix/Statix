@@ -78,7 +78,6 @@ export default function LandingPage() {
               ['#how', 'How it works'],
               ['#scoring', 'Scoring'],
               ['#dividends', 'Dividends'],
-              ['#prizes', 'Prizes'],
             ].map(([href, label]) => (
               <a
                 key={href}
@@ -151,7 +150,7 @@ export default function LandingPage() {
                 transition={{ duration: 0.7, delay: 1.0 }}
                 className="mt-6 max-w-lg text-base text-muted-foreground sm:text-lg"
               >
-                Build a portfolio of basketball stars. Buy and sell shares through an open market, earn dividends every playoff round, and compete for real cash prizes.
+                Build a portfolio of basketball stars. Buy and sell shares through an open market, earn dividends every playoff round, and track how you stack up on the leaderboard.
               </motion.p>
 
               <motion.div
@@ -478,50 +477,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Prizes ───────────────────────────────────────────────────────── */}
-      <section id="prizes" className="relative py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <RevealOnScroll className="mx-auto max-w-2xl text-center">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground/70">
-              Prizes
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Real cash for the top three
-            </h2>
-            <p className="mt-4 text-base text-muted-foreground">
-              Final standings are determined by total portfolio value at the end of the Finals — cash + share value + unclaimed dividends.
-            </p>
-          </RevealOnScroll>
-
-          <RevealStagger className="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-3" stagger={0.15}>
-            {[
-              { place: '1st Place', prize: 250, accent: 'from-amber-400/25 to-amber-400/0', text: 'text-amber-400', ring: 'ring-amber-400/30' },
-              { place: '2nd Place', prize: 100, accent: 'from-slate-300/20 to-slate-300/0', text: 'text-slate-200', ring: 'ring-slate-300/25' },
-              { place: '3rd Place', prize: 50, accent: 'from-amber-600/20 to-amber-600/0', text: 'text-amber-500', ring: 'ring-amber-600/25' },
-            ].map(({ place, prize, accent, text, ring }) => (
-              <RevealItem key={place}>
-                <TiltCard
-                  max={6}
-                  className={`relative h-full overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b ${accent} p-8 text-center ring-1 ${ring}`}
-                >
-                  <motion.div
-                    animate={{ y: [0, -3, 0], rotate: [-2, 2, -2] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                    className="mx-auto"
-                  >
-                    <Trophy className={`mx-auto h-8 w-8 ${text}`} />
-                  </motion.div>
-                  <p className={`mt-5 text-5xl font-bold tracking-tight ${text}`}>
-                    <AnimatedNumber value={prize} prefix="$" />
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-muted-foreground">{place}</p>
-                </TiltCard>
-              </RevealItem>
-            ))}
-          </RevealStagger>
-        </div>
-      </section>
-
       {/* ── Final CTA ────────────────────────────────────────────────────── */}
       <section className="relative py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -579,7 +534,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <Image src="/logo.png" alt="Statix" width={20} height={20} className="rounded" />
               <span className="font-medium text-foreground/80">Statix</span>
-              <span className="text-muted-foreground/60">— closed beta. Simulated currency, real prizes.</span>
+              <span className="text-muted-foreground/60">— closed beta. Simulated currency.</span>
             </div>
             <div className="flex items-center gap-4">
               <Link href="/login" className="hover:text-foreground transition-colors">
