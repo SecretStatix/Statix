@@ -141,7 +141,7 @@ export default function LandingPage() {
               <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
                 <StaggerWords words={HEADLINE_LINE_1} />
                 <br />
-                <StaggerWords words={HEADLINE_LINE_2} delayBase={0.4} wordClassName="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent" noWillChange />
+                <StaggerWords words={HEADLINE_LINE_2} delayBase={0.4} wordClassName="bg-gradient-to-r from-primary via-accent to-success bg-clip-text text-transparent pb-2" noWillChange />
               </h1>
 
               <motion.p
