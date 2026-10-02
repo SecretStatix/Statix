@@ -16,6 +16,10 @@ import {
   Sparkles,
   Target,
   ShieldCheck,
+  Activity,
+  Bot,
+  CalendarDays,
+  Scale,
 } from 'lucide-react';
 
 import { HeroPlayerStack } from '@/components/landing/HeroPlayerStack';
@@ -39,7 +43,7 @@ export default function LandingPage() {
   const signedIn = Boolean(session);
   // While auth is still loading show a neutral state — prevents the "Continue → /pending" flash.
   const ctaHref = loading ? '#' : signedIn ? '/market' : '/signup';
-  const ctaLabel = loading ? 'Loading…' : signedIn ? 'Open Market' : 'Get Started';
+  const ctaLabel = loading ? 'Loading…' : signedIn ? 'Open Market' : 'Join the waitlist';
 
   // Parallax: hero glow drifts up as you scroll the hero section.
   const heroRef = useRef<HTMLElement>(null);
@@ -75,6 +79,7 @@ export default function LandingPage() {
 
           <nav className="hidden md:flex items-center gap-1 text-sm">
             {[
+              ['#mvp', 'The MVP'],
               ['#how', 'How it works'],
               ['#scoring', 'Scoring'],
               ['#dividends', 'Dividends'],
@@ -99,21 +104,13 @@ export default function LandingPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/signup"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary to-accent px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:scale-[1.02] hover:glow-primary active:scale-[0.98]"
-                >
-                  Sign up
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </>
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary to-accent px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:scale-[1.02] hover:glow-primary active:scale-[0.98]"
+              >
+                Join the waitlist
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             )}
           </div>
         </div>
@@ -135,7 +132,7 @@ export default function LandingPage() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
                 </span>
-                Live for the 2026 Playoffs
+                MVP complete · Launching for the 2027–28 season
               </motion.div>
 
               <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
@@ -185,7 +182,7 @@ export default function LandingPage() {
                 <div className="hidden sm:block h-3 w-px bg-white/10" />
                 <div className="hidden sm:flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  Closed beta — invitation only
+                  Pursuing regulatory approval for real-money trading
                 </div>
               </motion.div>
             </div>
@@ -201,6 +198,68 @@ export default function LandingPage() {
             scrolling row of player chips fading into the page edges. */}
         <div className="mt-6 sm:mt-10">
           <PlayerTicker />
+        </div>
+      </section>
+
+      {/* ── The MVP (2026 Playoffs recap + what's next) ───────────────────── */}
+      <section id="mvp" className="relative scroll-mt-20 pt-24 sm:pt-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <RevealOnScroll className="max-w-3xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/80">
+              The MVP · 2026 NBA Playoffs
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl">
+              We built it, shipped it, and people traded.
+            </h2>
+            <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
+              We ran a 4-week closed beta on Base during the 2026 NBA Playoffs. Testers traded shares of NBA players
+              through live AMM pricing, and a dividend payout went to holders of the top 10 fantasy performers. A fleet
+              of autonomous AI trading agents, including 15 powered by Gemini, kept every market liquid.
+            </p>
+          </RevealOnScroll>
+
+          <RevealStagger className="mt-12 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" stagger={0.1}>
+            {[
+              { icon: Users, value: 60, suffix: '', label: 'Beta testers' },
+              { icon: Activity, value: 1000, suffix: '+', label: 'On-chain trades' },
+              { icon: Bot, value: 30, suffix: '', label: 'AI trading agents' },
+              { icon: CalendarDays, value: 4, suffix: ' weeks', label: 'Live during the playoffs' },
+            ].map(({ icon: Icon, value, suffix, label }) => (
+              <RevealItem key={label}>
+                <div className="h-full rounded-2xl border border-white/[0.06] bg-white/[0.015] p-5 sm:p-6">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <p className="mt-4 text-3xl font-bold tracking-tight tabular-nums sm:text-4xl">
+                    <AnimatedNumber value={value} suffix={suffix} />
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">{label}</p>
+                </div>
+              </RevealItem>
+            ))}
+          </RevealStagger>
+
+          <RevealOnScroll className="mt-6">
+            <div className="flex flex-col gap-4 rounded-2xl border border-white/[0.06] bg-gradient-to-r from-primary/[0.08] via-white/[0.015] to-accent/[0.06] p-6 sm:flex-row sm:items-center sm:gap-6 sm:p-7">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                <Scale className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/80">What&apos;s next</p>
+                <p className="mt-1.5 text-base leading-relaxed text-foreground sm:text-lg">
+                  We&apos;re pursuing regulatory approval to launch real-money trading for the{' '}
+                  <span className="whitespace-nowrap font-semibold">2027–28 NBA season</span>.
+                </p>
+              </div>
+              <Link
+                href="/signup"
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:scale-[1.02] hover:glow-primary active:scale-[0.98]"
+              >
+                Join the waitlist
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </RevealOnScroll>
         </div>
       </section>
 
@@ -502,7 +561,7 @@ export default function LandingPage() {
                   Ready to draft your portfolio?
                 </h2>
                 <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-                  Sign up and start trading the 2026 Playoffs. The closed beta is open now.
+                  Real-money trading is coming for the 2027–28 NBA season. Join the waitlist and we&apos;ll let you know when we launch.
                 </p>
                 <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <MagneticButton
@@ -512,14 +571,6 @@ export default function LandingPage() {
                     {ctaLabel}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </MagneticButton>
-                  {!signedIn && (
-                    <Link
-                      href="/login"
-                      className="inline-flex items-center px-6 py-4 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Already have an account? Sign in
-                    </Link>
-                  )}
                 </div>
               </div>
             </div>
@@ -534,14 +585,11 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <Image src="/logo.png" alt="Statix" width={20} height={20} className="rounded" />
               <span className="font-medium text-foreground/80">Statix</span>
-              <span className="text-muted-foreground/60">— closed beta. Simulated currency.</span>
+              <span className="text-muted-foreground/60">— MVP ran on simulated currency.</span>
             </div>
             <div className="flex items-center gap-4">
-              <Link href="/login" className="hover:text-foreground transition-colors">
-                Sign in
-              </Link>
               <Link href="/signup" className="hover:text-foreground transition-colors">
-                Sign up
+                Join the waitlist
               </Link>
             </div>
           </div>
