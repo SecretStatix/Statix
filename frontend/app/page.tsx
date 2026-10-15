@@ -17,7 +17,6 @@ import {
   Target,
   ShieldCheck,
   Activity,
-  Bot,
   CalendarDays,
   Scale,
 } from 'lucide-react';
@@ -213,16 +212,14 @@ export default function LandingPage() {
             </h2>
             <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
               We ran a 4-week closed beta on Base during the 2026 NBA Playoffs. Testers traded shares of NBA players
-              through live AMM pricing, and a dividend payout went to holders of the top 10 fantasy performers. A fleet
-              of autonomous AI trading agents, including 15 powered by Gemini, kept every market liquid.
+              through live AMM pricing, and a dividend payout went to holders of the top 10 fantasy performers.
             </p>
           </RevealOnScroll>
 
-          <RevealStagger className="mt-12 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4" stagger={0.1}>
+          <RevealStagger className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6" stagger={0.1}>
             {[
-              { icon: Users, value: 60, suffix: '', label: 'Beta testers' },
+              { icon: Users, value: 100, suffix: '+', label: 'Beta testers' },
               { icon: Activity, value: 1000, suffix: '+', label: 'On-chain trades' },
-              { icon: Bot, value: 30, suffix: '', label: 'AI trading agents' },
               { icon: CalendarDays, value: 4, suffix: ' weeks', label: 'Live during the playoffs' },
             ].map(({ icon: Icon, value, suffix, label }) => (
               <RevealItem key={label}>
