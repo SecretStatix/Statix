@@ -23,9 +23,9 @@ export function AuthGate({ children }: AuthGateProps) {
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-5 px-4 text-center">
         <div className="text-4xl">🔒</div>
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Sign up to access this page</h2>
+          <h2 className="text-xl font-semibold text-foreground">Trading is closed until launch</h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Create a free account to trade player shares and earn dividends.
+            Our MVP has wrapped. Join the waitlist to hear when real-money trading launches for the 2027–28 season.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -33,13 +33,13 @@ export function AuthGate({ children }: AuthGateProps) {
             href="/signup"
             className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition"
           >
-            Get Started
+            Join the waitlist
           </Link>
           <Link
-            href="/login"
+            href="/"
             className="rounded-lg border border-white/10 px-5 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-white/20 transition"
           >
-            Log In
+            Back to home
           </Link>
         </div>
       </div>
